@@ -333,8 +333,9 @@ model CatalogEntry {
 
 ## **5.1. Autenticação, Sessões e Segurança (Supabase Auth)**
 
-- 5.1.1. Middleware (`hooks.server.ts`): configurar o `@supabase/ssr` para criar um cliente Supabase no servidor a cada requisição. Validar o usuário com `supabase.auth.getUser()` (e não apenas `getSession()`, que não revalida o token) e injetá-lo em `event.locals.user`.
-- 5.1.2. Proteção de Rotas: nas funções `load` de rotas privadas (ex.: `/dashboard`), se `event.locals.user` for nulo, `redirect(303, '/login')`.
+- 5.1.1. Middleware (`hooks.server.ts`): configurar o `@supabase/ssr` para criar um cliente Supabase no servidor a cada requisição. Validar o usuário com `supabase.auth.getClaims()` (verifica a assinatura do JWT; `getSession()` sozinho não é confiável no servidor) e injetá-lo em `event.locals.user`.
+- 5.1.2. Proteção de Rotas: centralizada no `hooks.server.ts` (`authGuard`), que cobre `load`, _actions_ e endpoints. Rotas protegidas (`/dashboard`, `/diary`, `/lists`, `/feed`) redirecionam para `/login?next=<rota>`; usuários logados em `/login` ou `/signup` vão para `/dashboard`. O `next` é sanitizado contra _open redirect_ (`safeRedirectPath`).
+- 5.1.2.1. Login: e-mail/senha e Google (OAuth com PKCE), ambos via Form Actions em `/login`. Cadastro em `/signup` envia o `username` em `raw_user_meta_data`, lido pelo trigger. Logout é um POST para `/logout`.
 - 5.1.3. Sincronização Supabase → Prisma: um **trigger no Postgres** (`AFTER INSERT ON auth.users`), criado via SQL em uma migração, insere o registro correspondente em `public."User"` com o mesmo `id`. O `username` vem de `raw_user_meta_data->>'username'` (informado no cadastro) ou, na ausência, é gerado a partir do e-mail com sufixo aleatório.
 - 5.1.4. Callback de OAuth / confirmação de e-mail: `src/routes/auth/callback/+server.ts` (troca do código por sessão).
 - 5.1.5. Acesso ao banco: o Prisma conecta com um papel que ignora o RLS do Supabase. Portanto, **toda** checagem de autorização (dono da lista, lista pública/privada) deve ser feita explicitamente no servidor. Habilitar RLS sem políticas nas tabelas `public` para bloquear o acesso pela API REST do Supabase com a chave anon.

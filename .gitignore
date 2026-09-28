@@ -24,3 +24,6 @@ vite.config.ts.timestamp-*
 
 # Prisma Client gerado
 /src/lib/server/generated
+
+# Referências visuais (locais)
+/inspo
