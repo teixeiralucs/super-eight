@@ -57,6 +57,9 @@
 		"vitest-browser-svelte": "^2.1.1"
 	},
 	"dependencies": {
+		"@fontsource-variable/inter-tight": "^5.3.0",
+		"@fontsource/instrument-serif": "^5.3.0",
+		"@fontsource/mr-dafoe": "^5.3.0",
 		"@prisma/adapter-pg": "7.10.0",
 		"@prisma/client": "7.10.0",
 		"@supabase/ssr": "^0.12.7",
