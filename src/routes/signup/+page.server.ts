@@ -6,6 +6,17 @@ import type { Actions } from './$types';
 
 type FieldErrors = Partial<Record<keyof SignupInput, string[]>>;
 
+/** Códigos de erro do Supabase Auth → mensagens para o usuário. */
+const SIGNUP_ERRORS: Record<string, string> = {
+	user_already_exists: 'Já existe uma conta com esse e-mail.',
+	email_exists: 'Já existe uma conta com esse e-mail.',
+	weak_password: 'Senha muito fraca. Use uma senha mais longa ou variada.',
+	email_address_invalid: 'Esse endereço de e-mail não é aceito.',
+	over_email_send_rate_limit: 'Muitas tentativas em pouco tempo. Aguarde alguns minutos.',
+	signup_disabled: 'Cadastros estão temporariamente desativados.',
+	email_provider_disabled: 'Cadastro por e-mail está desativado no momento.'
+};
+
 export const actions: Actions = {
 	default: async ({ request, url, locals }) => {
 		const formData = Object.fromEntries(await request.formData());
@@ -40,7 +51,11 @@ export const actions: Actions = {
 		});
 
 		if (error) {
-			return fail(400, { ...values, message: 'Não foi possível criar a conta. Tente novamente.' });
+			console.error('[signup] Supabase signUp falhou:', error.code, error.status, error.message);
+			const message =
+				(error.code && SIGNUP_ERRORS[error.code]) ??
+				'Não foi possível criar a conta. Tente novamente.';
+			return fail(400, { ...values, message });
 		}
 
 		// Com "Confirm email" desligado o Supabase já devolve a sessão.
