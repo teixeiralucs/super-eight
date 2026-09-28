@@ -406,8 +406,14 @@ model CatalogEntry {
   - `DATABASE_URL`: URL do pooler, usada pela aplicação em runtime.
   - `DIRECT_URL`: URL direta do banco, usada exclusivamente pelas migrações.
   - A forma de declarar essas URLs muda entre versões do Prisma (as versões recentes usam `prisma.config.ts` e _driver adapters_ em vez de `url`/`directUrl` no `schema.prisma`). Seguir a documentação da versão instalada no momento do setup.
+  - _Implementado (Prisma 7.10.0, versões fixadas):_ `prisma.config.ts` usa `DIRECT_URL` para o CLI; `src/lib/server/db.ts` usa `DATABASE_URL` via `@prisma/adapter-pg`. O client é gerado em `src/lib/server/generated/prisma` (ignorado pelo git).
 - 7.2.3. Instância única: exportar o Prisma Client de `src/lib/server/db.ts` como singleton.
-- 7.2.4. Script de Build: garantir que o Prisma Client seja gerado antes do build: `"build": "prisma generate && vite build"`.
+- 7.2.4. Fluxo de migrações: o `prisma migrate dev` não funciona através do pooler do Supabase (a _shadow database_ não é roteável). Para criar uma migração:
+  1. `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script -o prisma/migrations/<timestamp>_<nome>/migration.sql`
+  2. Revisar o SQL (e acrescentar SQL manual, se necessário).
+  3. `npm run db:deploy` para aplicar.
+  - A migração `init` contém SQL manual: CHECK constraints, triggers de sincronização `auth.users` → `public."User"` e RLS habilitado em todas as tabelas.
+- 7.2.5. Script de Build: garantir que o Prisma Client seja gerado antes do build: `"build": "prisma generate && vite build"`.
 
 ## **7.3. Variáveis de Ambiente e Segurança**
 
