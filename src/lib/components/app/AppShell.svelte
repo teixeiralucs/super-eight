@@ -96,6 +96,16 @@
 			</form>
 
 			<div class={['ml-auto flex items-center gap-3', showTopSearch && 'md:ml-0']}>
+				<!-- Celular: o campo do topo some, então a busca vira um ícone -->
+				{#if showTopSearch}
+					<a
+						href={resolve('/search')}
+						class="grid size-9 place-items-center rounded-full border border-white/10 text-white/70 transition hover:text-white md:hidden"
+						aria-label="Buscar filmes"
+					>
+						<SearchIcon class="size-4" aria-hidden="true" />
+					</a>
+				{/if}
 				{#if !profile}
 					<a
 						href={resolve('/login')}
