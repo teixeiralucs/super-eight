@@ -1,5 +1,5 @@
 import { TMDB_READ_ACCESS_TOKEN } from '$env/static/private';
-import type { TMDbMovie, TMDbMovieDetails } from '$lib/tmdb/types';
+import type { TMDbMovie, TMDbMovieDetails, TMDbMovieFull, Trailer } from '$lib/tmdb/types';
 
 const API_BASE = 'https://api.themoviedb.org/3';
 const LANGUAGE = 'pt-BR';
@@ -40,7 +40,34 @@ interface RawMovieDetails extends Omit<RawMovie, 'genre_ids'> {
 	genres: { id: number; name: string }[];
 	origin_country?: string[];
 	production_countries?: { iso_3166_1: string }[];
-	credits?: { crew: { job: string; name: string }[] };
+	credits?: {
+		crew: { job: string; name: string; department?: string }[];
+		cast?: RawCastMember[];
+	};
+}
+
+interface RawCastMember {
+	id: number;
+	name: string;
+	character: string;
+	profile_path: string | null;
+	order: number;
+}
+
+interface RawVideo {
+	key: string;
+	name: string;
+	site: string;
+	type: string;
+	official: boolean;
+	iso_639_1: string;
+}
+
+interface RawMovieFull extends RawMovieDetails {
+	tagline: string;
+	vote_count: number;
+	videos?: { results: RawVideo[] };
+	images?: { backdrops: { file_path: string; iso_639_1: string | null }[] };
 }
 
 export class TMDbError extends Error {
@@ -186,4 +213,68 @@ export function toMovieDetails(raw: RawMovieDetails): TMDbMovieDetails {
 			.map((member) => member.name),
 		countries
 	};
+}
+
+// ─── Detalhes completos (página /movie/[id]) ─────────────────────────
+const unique = (items: string[]) => [...new Set(items)];
+
+/** Trailer do YouTube: tipo Trailer > Teaser; pt > en > outros; oficial primeiro. */
+export function pickTrailer(videos: RawVideo[]): Trailer | null {
+	const score = (video: RawVideo) =>
+		(video.type === 'Trailer' ? 100 : 0) +
+		(video.iso_639_1 === 'pt' ? 20 : video.iso_639_1 === 'en' ? 10 : 0) +
+		(video.official ? 5 : 0);
+
+	const best = videos
+		.filter((video) => video.site === 'YouTube' && ['Trailer', 'Teaser'].includes(video.type))
+		.sort((a, b) => score(b) - score(a))[0];
+	return best ? { key: best.key, name: best.name } : null;
+}
+
+export function toMovieFull(raw: RawMovieFull): TMDbMovieFull {
+	const crew = raw.credits?.crew ?? [];
+	return {
+		...toMovieDetails(raw),
+		tagline: raw.tagline || null,
+		voteCount: raw.vote_count,
+		writers: unique(
+			crew
+				.filter((member) => ['Screenplay', 'Writer', 'Novel', 'Story'].includes(member.job))
+				.map((member) => member.name)
+		).slice(0, 3),
+		composers: unique(
+			crew.filter((member) => member.job === 'Original Music Composer').map((member) => member.name)
+		),
+		cast: [...(raw.credits?.cast ?? [])]
+			.sort((a, b) => a.order - b.order)
+			.slice(0, 12)
+			.map((member) => ({
+				id: member.id,
+				name: member.name,
+				character: member.character,
+				profilePath: member.profile_path
+			})),
+		trailer: pickTrailer(raw.videos?.results ?? []),
+		// Backdrops sem texto (iso_639_1 nulo) ficam melhores como imagem aberta.
+		gallery: (raw.images?.backdrops ?? [])
+			.filter((image) => image.iso_639_1 === null)
+			.slice(0, 12)
+			.map((image) => image.file_path)
+	};
+}
+
+export function getMovieFull(id: number, fetchFn?: typeof fetch): Promise<TMDbMovieFull> {
+	return cached(`movie-full:${id}`, CATALOG_TTL_MS, async () =>
+		toMovieFull(
+			await tmdbFetch<RawMovieFull>(
+				`/movie/${id}`,
+				{
+					append_to_response: 'credits,videos,images',
+					include_video_language: 'pt,en,null',
+					include_image_language: 'null,en,pt'
+				},
+				fetchFn
+			)
+		)
+	);
 }

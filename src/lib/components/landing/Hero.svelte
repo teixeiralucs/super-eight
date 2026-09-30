@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
@@ -123,6 +124,7 @@
 				{#key current.id}
 					<a
 						href={resolve('/movie/[id]', { id: String(current.id) })}
+						onclick={(event) => openMovie(event, current.id)}
 						class="group block"
 						in:fade={{ duration: prefersReducedMotion.current ? 0 : 600, delay: 200 }}
 					>

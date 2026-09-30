@@ -14,6 +14,32 @@ export interface TMDbMovie {
 	genres: string[];
 }
 
+export interface CastMember {
+	id: number;
+	name: string;
+	character: string;
+	profilePath: string | null;
+}
+
+export interface Trailer {
+	/** ID do vídeo no YouTube. */
+	key: string;
+	name: string;
+}
+
+/** Tudo que a página de detalhes precisa (earlySetup.md §4.2.2). */
+export interface TMDbMovieFull extends TMDbMovieDetails {
+	tagline: string | null;
+	posterPath: string | null;
+	writers: string[];
+	composers: string[];
+	cast: CastMember[];
+	trailer: Trailer | null;
+	/** Caminhos de backdrops sem texto, para a galeria. */
+	gallery: string[];
+	voteCount: number;
+}
+
 export interface TMDbMovieDetails extends TMDbMovie {
 	runtime: number | null;
 	/** Nomes de quem dirigiu (pode haver mais de um). */

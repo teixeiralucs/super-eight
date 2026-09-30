@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
@@ -70,7 +71,11 @@
 	>
 		{#each movies as movie, i (movie.id)}
 			<li class="w-[58vw] shrink-0 snap-start sm:w-[220px] md:w-[260px]">
-				<a href={resolve('/movie/[id]', { id: String(movie.id) })} class="group block">
+				<a
+					href={resolve('/movie/[id]', { id: String(movie.id) })}
+					onclick={(event) => openMovie(event, movie.id)}
+					class="group block"
+				>
 					<div
 						class="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted ring-1 ring-white/10 transition duration-300 group-hover:ring-2 group-hover:ring-neon-pink"
 					>

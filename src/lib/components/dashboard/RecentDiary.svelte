@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import { formatShortDate } from '$lib/format';
@@ -28,6 +29,7 @@
 			<li>
 				<a
 					href={resolve('/movie/[id]', { id: String(session.movie.id) })}
+					onclick={(event) => openMovie(event, session.movie.id)}
 					class="flex items-center gap-4 rounded-xl p-2 transition hover:bg-white/5"
 				>
 					<img

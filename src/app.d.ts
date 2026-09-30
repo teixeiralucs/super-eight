@@ -11,7 +11,10 @@ declare global {
 			user: SessionUser | null;
 		}
 		// interface PageData {}
-		// interface PageState {}
+		interface PageState {
+			/** Detalhes abertos por cima da página atual (shallow routing). */
+			movie?: import('$lib/movie/types').MovieDetailData;
+		}
 		// interface Platform {}
 	}
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { openMovie } from '$lib/movie/open.svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
@@ -51,7 +52,11 @@
 </script>
 
 <article class="group relative">
-	<a href={resolve('/movie/[id]', { id: String(movie.id) })} class="block">
+	<a
+		href={resolve('/movie/[id]', { id: String(movie.id) })}
+		onclick={(event) => openMovie(event, movie.id)}
+		class="block"
+	>
 		<div
 			class="relative aspect-[2/3] overflow-hidden rounded-xl bg-muted ring-1 ring-white/10 transition duration-300 group-hover:ring-2 group-hover:ring-neon-pink"
 		>

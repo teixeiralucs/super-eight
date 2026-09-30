@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import { backdropSrcset, backdropUrl, posterSrcset, posterUrl } from '$lib/tmdb/images';
@@ -33,6 +34,7 @@
 			<!-- Imagem grande -->
 			<a
 				href={resolve('/movie/[id]', { id: String(movie.id) })}
+				onclick={(event) => openMovie(event, movie.id)}
 				class="group relative block aspect-[4/5] overflow-hidden rounded-lg ring-1 ring-white/10 transition duration-300 hover:ring-2 hover:ring-neon-pink md:aspect-[16/10] lg:aspect-auto lg:min-h-[560px]"
 			>
 				<img
@@ -98,6 +100,7 @@
 						<div>
 							<a
 								href={resolve('/movie/[id]', { id: String(movie.id) })}
+								onclick={(event) => openMovie(event, movie.id)}
 								class="inline-flex items-center gap-1.5 text-sm font-medium text-neon-cyan underline-offset-4 hover:underline"
 							>
 								Ver detalhes <ArrowUpRightIcon class="size-4" aria-hidden="true" />

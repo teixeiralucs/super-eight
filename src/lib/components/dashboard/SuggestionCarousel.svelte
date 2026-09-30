@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
@@ -79,6 +80,7 @@
 		<!-- Card clicável -->
 		<a
 			href={resolve('/movie/[id]', { id: String(current.id) })}
+			onclick={(event) => openMovie(event, current.id)}
 			class="absolute inset-0 flex flex-col justify-between p-6 md:p-8"
 		>
 			<p class="flex items-center gap-3 text-xs tracking-[0.25em] uppercase">

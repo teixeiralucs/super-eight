@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('$env/static/private', () => ({ TMDB_READ_ACCESS_TOKEN: 'test-token' }));
 
-const { isShowcaseable, toMovie, toMovieDetails } = await import('./tmdb');
+const { isShowcaseable, pickTrailer, toMovie, toMovieDetails, toMovieFull } =
+	await import('./tmdb');
 
 const raw = {
 	id: 1,
@@ -85,5 +86,71 @@ describe('toMovieDetails', () => {
 		const movie = toMovieDetails({ ...details, runtime: 0, credits: undefined });
 		expect(movie.runtime).toBeNull();
 		expect(movie.directors).toEqual([]);
+	});
+});
+
+describe('pickTrailer', () => {
+	const video = (over: Record<string, unknown>) => ({
+		key: 'k',
+		name: 'v',
+		site: 'YouTube',
+		type: 'Trailer',
+		official: true,
+		iso_639_1: 'en',
+		...over
+	});
+
+	it('prefere trailer em português, depois inglês oficial', () => {
+		const videos = [
+			video({ key: 'teaser-pt', type: 'Teaser', iso_639_1: 'pt' }),
+			video({ key: 'en' }),
+			video({ key: 'pt', iso_639_1: 'pt', official: false }),
+			video({ key: 'featurette', type: 'Featurette', iso_639_1: 'pt' })
+		];
+		expect(pickTrailer(videos)?.key).toBe('pt');
+		expect(pickTrailer(videos.filter((v) => v.key !== 'pt'))?.key).toBe('en');
+	});
+
+	it('ignora vídeos fora do YouTube e retorna nulo sem trailer', () => {
+		expect(pickTrailer([video({ site: 'Vimeo' })])).toBeNull();
+		expect(pickTrailer([])).toBeNull();
+	});
+});
+
+describe('toMovieFull', () => {
+	it('extrai roteiro, música, elenco ordenado e galeria sem texto', () => {
+		const movie = toMovieFull({
+			...raw,
+			runtime: 120,
+			genres: [],
+			tagline: '',
+			vote_count: 10,
+			credits: {
+				crew: [
+					{ job: 'Director', name: 'D' },
+					{ job: 'Screenplay', name: 'W1' },
+					{ job: 'Writer', name: 'W1' },
+					{ job: 'Original Music Composer', name: 'M' },
+					{ job: 'Music Editor', name: 'X' }
+				],
+				cast: [
+					{ id: 2, name: 'B', character: 'b', profile_path: null, order: 1 },
+					{ id: 1, name: 'A', character: 'a', profile_path: '/a.jpg', order: 0 }
+				]
+			},
+			images: {
+				backdrops: [
+					{ file_path: '/texto.jpg', iso_639_1: 'en' },
+					{ file_path: '/limpo.jpg', iso_639_1: null }
+				]
+			}
+		});
+
+		expect(movie.tagline).toBeNull();
+		expect(movie.writers).toEqual(['W1']);
+		expect(movie.composers).toEqual(['M']);
+		expect(movie.cast.map((c) => c.name)).toEqual(['A', 'B']);
+		expect(movie.gallery).toEqual(['/limpo.jpg']);
+		expect(movie.trailer).toBeNull();
 	});
 });
