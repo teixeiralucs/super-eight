@@ -33,7 +33,7 @@
 			<!-- Imagem grande -->
 			<a
 				href={resolve('/movie/[id]', { id: String(movie.id) })}
-				class="group relative block aspect-[4/5] overflow-hidden rounded-lg ring-1 ring-white/10 md:aspect-[16/10] lg:aspect-auto lg:min-h-[560px]"
+				class="group relative block aspect-[4/5] overflow-hidden rounded-lg ring-1 ring-white/10 transition duration-300 hover:ring-2 hover:ring-neon-pink md:aspect-[16/10] lg:aspect-auto lg:min-h-[560px]"
 			>
 				<img
 					src={backdropUrl(movie.backdropPath, 'w1280') ?? posterUrl(movie.posterPath, 'w780')}
@@ -43,7 +43,7 @@
 					sizes="(min-width: 1024px) 55vw, 100vw"
 					alt=""
 					loading="lazy"
-					class="absolute inset-0 size-full object-cover transition duration-1000 group-hover:scale-[1.02]"
+					class="absolute inset-0 size-full object-cover"
 				/>
 				<div class="absolute inset-0 bg-gradient-to-t from-background/70 to-transparent"></div>
 			</a>

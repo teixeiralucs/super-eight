@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('$env/static/private', () => ({ TMDB_READ_ACCESS_TOKEN: 'test-token' }));
 
-const { isShowcaseable, toMovie } = await import('./tmdb');
+const { isShowcaseable, toMovie, toMovieDetails } = await import('./tmdb');
 
 const raw = {
 	id: 1,
@@ -51,5 +51,39 @@ describe('isShowcaseable', () => {
 		expect(isShowcaseable({ ...raw, adult: true })).toBe(false);
 		expect(isShowcaseable({ ...raw, softcore: true })).toBe(false);
 		expect(isShowcaseable({ ...raw, poster_path: null })).toBe(false);
+	});
+});
+
+describe('toMovieDetails', () => {
+	const details = {
+		...raw,
+		runtime: 166,
+		genres: [{ id: 18, name: 'Drama' }],
+		origin_country: ['US'],
+		production_countries: [{ iso_3166_1: 'GB' }],
+		credits: {
+			crew: [
+				{ job: 'Director', name: 'Christopher Nolan' },
+				{ job: 'Producer', name: 'Emma Thomas' }
+			]
+		}
+	};
+
+	it('extrai direção, país de origem e duração', () => {
+		const movie = toMovieDetails(details);
+		expect(movie.directors).toEqual(['Christopher Nolan']);
+		expect(movie.countries).toEqual(['US']);
+		expect(movie.runtime).toBe(166);
+		expect(movie.genres).toEqual(['Drama']);
+	});
+
+	it('usa países de produção quando não há país de origem', () => {
+		expect(toMovieDetails({ ...details, origin_country: [] }).countries).toEqual(['GB']);
+	});
+
+	it('trata duração zero e créditos ausentes', () => {
+		const movie = toMovieDetails({ ...details, runtime: 0, credits: undefined });
+		expect(movie.runtime).toBeNull();
+		expect(movie.directors).toEqual([]);
 	});
 });

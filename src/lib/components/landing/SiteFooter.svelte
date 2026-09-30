@@ -9,7 +9,16 @@
 	>
 		<div class="space-y-4">
 			<Logo class="h-10 w-auto" />
-			<!-- Atribuição exigida pelos termos da API do TMDb (earlySetup.md §4.1.4) -->
+			<!-- Atribuição exigida pelos termos da API do TMDb (earlySetup.md §4.1.4).
+			     O logo do TMDb deve ser menos proeminente que o do Super Eight. -->
+			<a
+				href="https://www.themoviedb.org/"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="inline-block pt-2 opacity-80 transition hover:opacity-100"
+			>
+				<img src="/tmdb-logo.svg" alt="The Movie Database (TMDB)" class="h-3 w-auto" />
+			</a>
 			<p class="max-w-md text-xs leading-relaxed text-muted-foreground">
 				Dados e imagens de filmes fornecidos por
 				<a

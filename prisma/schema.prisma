@@ -48,6 +48,8 @@ model Movie {
   releaseDate   DateTime? @db.Date
   runtime       Int?
   genres        String[]
+  directors     String[]  @default([])
+  countries     String[]  @default([]) // ISO 3166-1 (ex.: "US")
   voteAverage   Float?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

@@ -1,5 +1,5 @@
 import { TMDB_READ_ACCESS_TOKEN } from '$env/static/private';
-import type { TMDbMovie } from '$lib/tmdb/types';
+import type { TMDbMovie, TMDbMovieDetails } from '$lib/tmdb/types';
 
 const API_BASE = 'https://api.themoviedb.org/3';
 const LANGUAGE = 'pt-BR';
@@ -33,6 +33,14 @@ interface RawPage<T> {
 
 interface RawGenreList {
 	genres: { id: number; name: string }[];
+}
+
+interface RawMovieDetails extends Omit<RawMovie, 'genre_ids'> {
+	runtime: number | null;
+	genres: { id: number; name: string }[];
+	origin_country?: string[];
+	production_countries?: { iso_3166_1: string }[];
+	credits?: { crew: { job: string; name: string }[] };
 }
 
 export class TMDbError extends Error {
@@ -117,3 +125,32 @@ async function getCatalog(path: string, fetchFn?: typeof fetch) {
 
 export const getPopular = (fetchFn?: typeof fetch) => getCatalog('/movie/popular', fetchFn);
 export const getNowPlaying = (fetchFn?: typeof fetch) => getCatalog('/movie/now_playing', fetchFn);
+export const getTopRated = (fetchFn?: typeof fetch) => getCatalog('/movie/top_rated', fetchFn);
+
+/** Detalhes de um filme, com direção e país de origem (usado para popular o cache local `Movie`). */
+export function getMovieDetails(id: number, fetchFn?: typeof fetch): Promise<TMDbMovieDetails> {
+	return cached(`movie:${id}`, CATALOG_TTL_MS, async () => {
+		const raw = await tmdbFetch<RawMovieDetails>(
+			`/movie/${id}`,
+			{ append_to_response: 'credits' },
+			fetchFn
+		);
+		return toMovieDetails(raw);
+	});
+}
+
+export function toMovieDetails(raw: RawMovieDetails): TMDbMovieDetails {
+	const genreNames = new Map(raw.genres.map((genre) => [genre.id, genre.name]));
+	const countries = raw.origin_country?.length
+		? raw.origin_country
+		: (raw.production_countries ?? []).map((country) => country.iso_3166_1);
+
+	return {
+		...toMovie({ ...raw, genre_ids: raw.genres.map((genre) => genre.id) }, genreNames),
+		runtime: raw.runtime || null,
+		directors: (raw.credits?.crew ?? [])
+			.filter((member) => member.job === 'Director')
+			.map((member) => member.name),
+		countries
+	};
+}

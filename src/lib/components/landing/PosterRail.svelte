@@ -72,7 +72,7 @@
 			<li class="w-[58vw] shrink-0 snap-start sm:w-[220px] md:w-[260px]">
 				<a href={resolve('/movie/[id]', { id: String(movie.id) })} class="group block">
 					<div
-						class="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted ring-1 ring-white/10 transition duration-500 group-hover:-translate-y-1 group-hover:shadow-[0_18px_50px_-12px_var(--neon-pink)] group-hover:ring-[var(--neon-pink)]/70"
+						class="relative aspect-[2/3] overflow-hidden rounded-lg bg-muted ring-1 ring-white/10 transition duration-300 group-hover:ring-2 group-hover:ring-neon-pink"
 					>
 						<img
 							src={posterUrl(movie.posterPath, 'w342')}
@@ -80,7 +80,7 @@
 							sizes="(min-width: 768px) 260px, (min-width: 640px) 220px, 58vw"
 							alt="Pôster de {movie.title}"
 							loading="lazy"
-							class="size-full object-cover transition duration-700 group-hover:scale-[1.03]"
+							class="size-full object-cover"
 						/>
 						{#if ranked}
 							<span

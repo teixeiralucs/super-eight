@@ -13,3 +13,11 @@ export interface TMDbMovie {
 	voteAverage: number;
 	genres: string[];
 }
+
+export interface TMDbMovieDetails extends TMDbMovie {
+	runtime: number | null;
+	/** Nomes de quem dirigiu (pode haver mais de um). */
+	directors: string[];
+	/** Códigos ISO 3166-1 (ex.: "US", "BR"); o nome é traduzido na UI. */
+	countries: string[];
+}
