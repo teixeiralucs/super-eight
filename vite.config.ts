@@ -13,7 +13,8 @@ export default defineConfig({
 				runes: ({ filename }) =>
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
-			adapter: adapter()
+			// Runtime fixo: o build não depende do Node instalado na máquina e bate com `engines`.
+			adapter: adapter({ runtime: 'nodejs24.x' })
 		})
 	],
 	test: {
