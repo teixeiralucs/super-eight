@@ -1,6 +1,7 @@
 import { prisma } from '$lib/server/db';
 import type { Prisma } from '$lib/server/generated/prisma/client';
 import type { LibraryFilters } from '$lib/library/filters';
+import { shuffle } from '$lib/library/shuffle';
 import { computeStats } from '$lib/library/stats';
 
 const movieCard = {
@@ -15,12 +16,26 @@ const movieCard = {
 	countries: true
 } satisfies Prisma.MovieSelect;
 
-const ORDER_BY: Record<LibraryFilters['sort'], Prisma.LibraryEntryOrderByWithRelationInput[]> = {
-	recent: [{ updatedAt: 'desc' }],
-	rating: [{ rating: { sort: 'desc', nulls: 'last' } }, { updatedAt: 'desc' }],
-	release: [{ movie: { releaseDate: { sort: 'desc', nulls: 'last' } } }],
-	title: [{ movie: { title: 'asc' } }]
-};
+type Ordering = Prisma.LibraryEntryOrderByWithRelationInput[];
+
+/** Ordenação no banco; `random` é embaralhado depois da consulta. Nulos sempre no fim. */
+function orderBy({ sort, dir }: LibraryFilters): Ordering {
+	switch (sort) {
+		case 'recent':
+			return [{ addedAt: dir }];
+		case 'rating':
+			return [{ rating: { sort: dir, nulls: 'last' } }, { movie: { title: 'asc' } }];
+		case 'title':
+			return [{ movie: { title: dir } }];
+		case 'release':
+			return [
+				{ movie: { releaseDate: { sort: dir, nulls: 'last' } } },
+				{ movie: { title: 'asc' } }
+			];
+		case 'random':
+			return [];
+	}
+}
 
 /** Grade da biblioteca (lista principal) com filtros da URL e nº de sessões por filme. */
 export async function getLibraryGrid(userId: string, filters: LibraryFilters) {
@@ -33,7 +48,7 @@ export async function getLibraryGrid(userId: string, filters: LibraryFilters) {
 	const [entries, sessions] = await Promise.all([
 		prisma.libraryEntry.findMany({
 			where,
-			orderBy: ORDER_BY[filters.sort],
+			orderBy: orderBy(filters),
 			select: {
 				status: true,
 				rating: true,
@@ -45,7 +60,22 @@ export async function getLibraryGrid(userId: string, filters: LibraryFilters) {
 	]);
 
 	const watchCounts = new Map(sessions.map((row) => [row.movieId, row._count._all]));
-	return entries.map((entry) => ({ ...entry, watchCount: watchCounts.get(entry.movie.id) ?? 0 }));
+	const items = entries.map((entry) => ({
+		...entry,
+		watchCount: watchCounts.get(entry.movie.id) ?? 0
+	}));
+	return filters.sort === 'random' ? shuffle(items) : items;
+}
+
+/** Filmes aleatórios da própria biblioteca (assistidos ou não) para o carrossel. */
+export async function getLibrarySuggestions(userId: string, count = 8) {
+	const entries = await prisma.libraryEntry.findMany({
+		where: { userId, movie: { backdropPath: { not: null } } },
+		select: { status: true, movie: { select: movieCard } }
+	});
+	return shuffle(entries)
+		.slice(0, count)
+		.map((entry) => ({ ...entry.movie, watched: entry.status === 'WATCHED' }));
 }
 
 /** Métricas, diário recente e gêneros disponíveis para o filtro. */

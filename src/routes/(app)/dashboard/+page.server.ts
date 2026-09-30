@@ -2,21 +2,17 @@ import { error, fail } from '@sveltejs/kit';
 import { dev } from '$app/environment';
 import { parseLibraryFilters } from '$lib/library/filters';
 import { clearLibrary, seedDemoLibrary } from '$lib/server/dev-seed';
-import { getDashboardOverview, getLibraryGrid } from '$lib/server/library';
-import { getSuggestions } from '$lib/server/suggestions';
+import { getDashboardOverview, getLibraryGrid, getLibrarySuggestions } from '$lib/server/library';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals, url, fetch }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	if (!locals.user) error(401);
 
 	const filters = parseLibraryFilters(url.searchParams);
 	const [overview, library, suggestions] = await Promise.all([
 		getDashboardOverview(locals.user.id),
 		getLibraryGrid(locals.user.id, filters),
-		getSuggestions(locals.user.id, fetch).catch((err) => {
-			console.error('[dashboard] sugestões indisponíveis:', err);
-			return [];
-		})
+		getLibrarySuggestions(locals.user.id)
 	]);
 
 	return { ...overview, library, suggestions, filters, dev };

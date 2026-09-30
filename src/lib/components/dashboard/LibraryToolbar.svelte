@@ -1,8 +1,13 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import ArrowDownWideNarrowIcon from '@lucide/svelte/icons/arrow-down-wide-narrow';
+	import ArrowUpNarrowWideIcon from '@lucide/svelte/icons/arrow-up-narrow-wide';
+	import ShuffleIcon from '@lucide/svelte/icons/shuffle';
 	import { VIEW_ICONS } from './library-icons';
 	import {
-		DEFAULT_SORT,
+		DIRECTION_LABELS,
+		filtersQuery,
 		LIBRARY_SORTS,
 		LIBRARY_VIEWS,
 		SORT_LABELS,
@@ -21,18 +26,21 @@
 		counts: Record<LibraryView, number>;
 	} = $props();
 
-	/** Link da aba preservando gênero/ordenação; omite valores padrão para URLs limpas. */
-	function viewHref(view: LibraryView) {
-		const pairs = [
-			view !== 'all' && ['view', view],
-			filters.genre && ['genre', filters.genre],
-			filters.sort !== DEFAULT_SORT && ['sort', filters.sort]
-		].filter((pair): pair is [string, string] => Array.isArray(pair));
-		const query = pairs.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&');
-		return `${resolve('/dashboard')}${query ? `?${query}` : ''}#biblioteca`;
-	}
+	/** Link para a biblioteca com os filtros alterados (valores padrão omitidos da URL). */
+	const hrefWith = (changes: Partial<LibraryFilters>) =>
+		`${resolve('/dashboard')}${filtersQuery({ ...filters, ...changes })}#biblioteca`;
 
 	const submit = (event: Event) => (event.currentTarget as HTMLSelectElement).form?.requestSubmit();
+
+	/** Trocar a ordenação volta a direção ao padrão natural dela. */
+	function submitSort(event: Event) {
+		const form = (event.currentTarget as HTMLSelectElement).form;
+		const dir = form?.elements.namedItem('dir');
+		if (dir instanceof HTMLInputElement) dir.disabled = true;
+		form?.requestSubmit();
+	}
+
+	const nextDir = $derived(filters.dir === 'asc' ? 'desc' : 'asc');
 </script>
 
 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -41,7 +49,7 @@
 			{@const { icon: Icon, color } = VIEW_ICONS[view]}
 			<!-- eslint-disable svelte/no-navigation-without-resolve -- caminho vem de resolve(); a regra não suporta query string -->
 			<a
-				href={viewHref(view)}
+				href={hrefWith({ view })}
 				data-sveltekit-noscroll
 				aria-current={filters.view === view ? 'page' : undefined}
 				class={[
@@ -75,6 +83,7 @@
 		class="flex flex-wrap items-center gap-2"
 	>
 		{#if filters.view !== 'all'}<input type="hidden" name="view" value={filters.view} />{/if}
+		{#if filters.sort !== 'random'}<input type="hidden" name="dir" value={filters.dir} />{/if}
 
 		<label class="sr-only" for="filtro-genero">Gênero</label>
 		<select
@@ -93,13 +102,41 @@
 		<select
 			id="filtro-ordem"
 			name="sort"
-			onchange={submit}
+			onchange={submitSort}
 			class="rounded-full border border-white/10 bg-background px-4 py-2 text-sm text-white/80 outline-none focus-visible:border-neon-cyan"
 		>
 			{#each LIBRARY_SORTS as sort (sort)}
 				<option value={sort} selected={filters.sort === sort}>{SORT_LABELS[sort]}</option>
 			{/each}
 		</select>
+
+		<!-- eslint-disable svelte/no-navigation-without-resolve -- caminho vem de resolve(); a regra não suporta query string -->
+		{#if filters.sort === 'random'}
+			<a
+				href={hrefWith({})}
+				onclick={(event) => {
+					event.preventDefault();
+					invalidateAll();
+				}}
+				class="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 transition hover:border-white/25 hover:text-white"
+				title="Embaralhar de novo"
+			>
+				<ShuffleIcon class="size-4" aria-hidden="true" /> Embaralhar
+			</a>
+		{:else}
+			{@const DirIcon = filters.dir === 'asc' ? ArrowUpNarrowWideIcon : ArrowDownWideNarrowIcon}
+			<a
+				href={hrefWith({ dir: nextDir })}
+				data-sveltekit-noscroll
+				class="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 transition hover:border-white/25 hover:text-white"
+				title="Inverter ordem"
+			>
+				<DirIcon class="size-4" aria-hidden="true" />
+				{DIRECTION_LABELS[filters.sort][filters.dir]}
+				<span class="sr-only">(clique para inverter)</span>
+			</a>
+		{/if}
+		<!-- eslint-enable svelte/no-navigation-without-resolve -->
 
 		<!-- Sem JavaScript, o formulário precisa de um botão -->
 		<noscript><button class="rounded-full bg-white/10 px-4 py-2 text-sm">Aplicar</button></noscript>

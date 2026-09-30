@@ -65,6 +65,7 @@ O Super Eight se apoia no conceito de Tracking de Filmes, semelhante ao Letterbo
 - 3.4.1. Campos: `status` (`WANT_TO_WATCH` | `WATCHED`), `rating` (Int 1–10, opcional — nota atual do usuário), `isFavorite` (Boolean), `addedAt`, `updatedAt`.
 - 3.4.2. Chave Primária Composta: `@@id([userId, movieId])` — um filme aparece uma única vez na biblioteca de um usuário.
 - 3.4.3. Regra de negócio: registrar uma entrada no diário faz _upsert_ da `LibraryEntry` com status `WATCHED`.
+- 3.4.4. Regra de negócio: **só filmes assistidos (`WATCHED`) podem ter nota ou ser favoritos.** Garantida no banco por `CHECK` (`LibraryEntry_rating_favorite_require_watched_check`) e validada nas _actions_. Voltar um filme para `WANT_TO_WATCH` deve limpar nota e favorito.
 
 ## **3.5. Entidade: DiaryEntry (Diário)**
 
@@ -365,7 +366,7 @@ model CatalogEntry {
 - 6.1.2. `/login` e `/signup`: autenticação via Supabase.
 - 6.1.3. `/search`: busca orientada a URL (ex.: `/search?q=batman&page=2`); o `load` lê `url.searchParams`, garantindo links compartilháveis.
 - 6.1.4. `/movie/[id]`: detalhes do filme via SSR (SEO). Para o usuário logado, inclui também os controles da biblioteca, o diário com aquele filme e as reviews da comunidade.
-- 6.1.5. `/dashboard` (Protegida): **biblioteca do usuário em grade**, com filtros (status, favoritos, gênero) e ordenação (data de adição, nota, lançamento) refletidos na URL. Ao clicar num card, abre um painel/modal com informações técnicas e o diário do filme (com link para `/movie/[id]`).
+- 6.1.5. `/dashboard` (Protegida): carrossel com 8 filmes aleatórios da própria biblioteca, diário recente, métricas (assistidos, horas, nota média com histograma, quero ver), sessões por mês e gêneros; e a **biblioteca do usuário em grade**, com abas (todos, assistidos, quero ver, favoritos — os ícones das abas servem de legenda dos selos dos pôsteres), filtro de gênero e ordenação (lançamento — padrão, do mais antigo ao mais novo —, adicionados, nota, título, aleatório), cada uma com direção crescente/decrescente, tudo refletido na URL (`view`, `genre`, `sort`, `dir`). Cards: "título · ano" e "diretor · país · duração". Ao clicar num card, abre um painel/modal com informações técnicas e o diário do filme (com link para `/movie/[id]`).
 - 6.1.6. `/diary` (Protegida): diário completo em ordem cronológica.
 - 6.1.7. `/lists` (Protegida): listas personalizadas do usuário (menu **Listas**).
 - 6.1.8. `/list/[id]`: lista pública ou privada (conforme `isPublic`); se privada, apenas o dono acessa.

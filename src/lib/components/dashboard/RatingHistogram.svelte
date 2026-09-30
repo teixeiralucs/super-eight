@@ -26,13 +26,16 @@
 	<div class="mt-1.5 flex justify-between text-[10px] text-muted-foreground" aria-hidden="true">
 		<span>1</span><span>10</span>
 	</div>
-	<table class="sr-only">
-		<caption>Distribuição das suas notas</caption>
-		<thead><tr><th>Nota</th><th>Filmes</th></tr></thead>
-		<tbody>
-			{#each histogram as { rating, count } (rating)}
-				<tr><td>{rating}</td><td>{count}</td></tr>
-			{/each}
-		</tbody>
-	</table>
+	<!-- A <caption> escapa do sr-only aplicado na <table>; por isso o contêiner. -->
+	<div class="sr-only">
+		<table>
+			<caption>Distribuição das suas notas</caption>
+			<thead><tr><th>Nota</th><th>Filmes</th></tr></thead>
+			<tbody>
+				{#each histogram as { rating, count } (rating)}
+					<tr><td>{rating}</td><td>{count}</td></tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 </div>

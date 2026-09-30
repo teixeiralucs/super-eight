@@ -125,8 +125,6 @@ async function getCatalog(path: string, fetchFn?: typeof fetch) {
 
 export const getPopular = (fetchFn?: typeof fetch) => getCatalog('/movie/popular', fetchFn);
 export const getNowPlaying = (fetchFn?: typeof fetch) => getCatalog('/movie/now_playing', fetchFn);
-export const getTopRated = (fetchFn?: typeof fetch) => getCatalog('/movie/top_rated', fetchFn);
-
 /** Detalhes de um filme, com direção e país de origem (usado para popular o cache local `Movie`). */
 export function getMovieDetails(id: number, fetchFn?: typeof fetch): Promise<TMDbMovieDetails> {
 	return cached(`movie:${id}`, CATALOG_TTL_MS, async () => {

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { countryName, formatDuration, formatShortDate, movieMetaLine, yearOf } from './format';
+import {
+	countryName,
+	formatDuration,
+	formatShortDate,
+	movieMeta,
+	movieMetaText,
+	yearOf
+} from './format';
 
 describe('formatDuration', () => {
 	it('formata horas e minutos', () => {
@@ -18,19 +25,25 @@ describe('datas @db.Date', () => {
 	});
 });
 
-describe('movieMetaLine', () => {
-	it('monta "diretor, país, duração"', () => {
-		expect(
-			movieMetaLine({ directors: ['Denis Villeneuve'], countries: ['US'], runtime: 166 })
-		).toBe('Denis Villeneuve, Estados Unidos, 2h 46min');
+describe('movieMeta', () => {
+	it('separa diretor, país traduzido e duração', () => {
+		const meta = movieMeta({ directors: ['Denis Villeneuve'], countries: ['US'], runtime: 166 });
+		expect(meta).toEqual({
+			director: 'Denis Villeneuve',
+			country: 'Estados Unidos',
+			runtime: '2h 46min'
+		});
+		expect(movieMetaText(meta)).toBe('Denis Villeneuve · Estados Unidos · 2h 46min');
 	});
 
 	it('junta até dois diretores e omite partes ausentes', () => {
-		expect(movieMetaLine({ directors: ['A', 'B', 'C'], countries: [], runtime: null })).toBe(
-			'A & B'
-		);
-		expect(movieMetaLine({ directors: [], countries: ['BR'], runtime: 90 })).toBe(
-			'Brasil, 1h 30min'
+		expect(movieMeta({ directors: ['A', 'B', 'C'], countries: [], runtime: null })).toEqual({
+			director: 'A & B',
+			country: null,
+			runtime: null
+		});
+		expect(movieMetaText(movieMeta({ directors: [], countries: ['BR'], runtime: 90 }))).toBe(
+			'Brasil · 1h 30min'
 		);
 	});
 

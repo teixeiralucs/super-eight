@@ -7,7 +7,7 @@
 
 <section
 	aria-labelledby="generos"
-	class="flex flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6"
+	class="flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6"
 >
 	<h2 id="generos" class="font-display text-lg font-semibold">Seus gêneros</h2>
 	<p class="mt-1 text-sm text-muted-foreground">Entre os filmes que você assistiu</p>

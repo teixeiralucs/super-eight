@@ -4,12 +4,13 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
-	import { movieMetaLine } from '$lib/format';
+	import MovieMetaLine from '$lib/components/MovieMetaLine.svelte';
+	import { movieMeta, yearOf } from '$lib/format';
+	import type { MovieCard } from '$lib/library/types';
 	import { backdropSrcset, backdropUrl } from '$lib/tmdb/images';
-	import type { TMDbMovieDetails } from '$lib/tmdb/types';
 
-	// Sugestões aleatórias (filmes ainda não assistidos). O card inteiro leva ao filme.
-	let { movies }: { movies: TMDbMovieDetails[] } = $props();
+	// Filmes aleatórios da própria biblioteca (assistidos ou não). O card inteiro leva ao filme.
+	let { movies }: { movies: MovieCard[] } = $props();
 
 	const INTERVAL_MS = 6000;
 
@@ -93,16 +94,14 @@
 						>
 							{current.title}
 						</h2>
-						{#if current.year}
+						{#if yearOf(current.releaseDate)}
 							<span
 								class="shrink-0 font-display text-2xl font-light text-white/80 tabular-nums md:text-3xl"
-								>{current.year}</span
+								>{yearOf(current.releaseDate)}</span
 							>
 						{/if}
 					</div>
-					{#if movieMetaLine(current)}
-						<p class="mt-3 text-sm text-white/70">{movieMetaLine(current)}</p>
-					{/if}
+					<MovieMetaLine meta={movieMeta(current)} class="mt-3 text-sm text-white/65" />
 				</div>
 			{/key}
 		</a>

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { movieMetaLine, yearOf } from '$lib/format';
+	import MovieMetaLine from '$lib/components/MovieMetaLine.svelte';
+	import { movieMeta, yearOf } from '$lib/format';
 	import type { LibraryItem } from '$lib/library/types';
 	import { posterSrcset, posterUrl } from '$lib/tmdb/images';
 	import { VIEW_ICONS } from './library-icons';
@@ -8,13 +9,16 @@
 
 	let { item }: { item: LibraryItem } = $props();
 
-	// Selos só com ícone: as abas da barra de filtros funcionam como legenda.
+	// Um único selo de estado (as abas funcionam como legenda). Favorito implica assistido
+	// (regra de negócio), então o coração substitui o olho.
 	const status = $derived(
-		item.status === 'WATCHED'
-			? { ...VIEW_ICONS.watched, label: 'Assistido' }
-			: { ...VIEW_ICONS.watchlist, label: 'Quero ver' }
+		item.isFavorite
+			? { ...VIEW_ICONS.favorites, label: 'Favorito', fill: true }
+			: item.status === 'WATCHED'
+				? { ...VIEW_ICONS.watched, label: 'Assistido', fill: false }
+				: { ...VIEW_ICONS.watchlist, label: 'Quero ver', fill: false }
 	);
-	const meta = $derived(movieMetaLine(item.movie));
+	const meta = $derived(movieMeta(item.movie));
 </script>
 
 <a href={resolve('/movie/[id]', { id: String(item.movie.id) })} class="group block">
@@ -33,28 +37,17 @@
 		{/if}
 
 		<div class="absolute inset-x-2 top-2 flex items-start justify-between">
-			<!-- Estados (esquerda) -->
-			<div class="flex gap-1">
-				<span
-					class="grid size-7 place-items-center rounded-full bg-background/70 backdrop-blur-md"
-					title={status.label}
-				>
-					<status.icon class={['size-3.5', status.color]} aria-hidden="true" />
-					<span class="sr-only">{status.label}</span>
-				</span>
-				{#if item.isFavorite}
-					<span
-						class="grid size-7 place-items-center rounded-full bg-background/70 backdrop-blur-md"
-						title="Favorito"
-					>
-						<VIEW_ICONS.favorites.icon
-							class={['size-3.5 fill-current', VIEW_ICONS.favorites.color]}
-							aria-hidden="true"
-						/>
-						<span class="sr-only">Favorito</span>
-					</span>
-				{/if}
-			</div>
+			<!-- Estado (esquerda) -->
+			<span
+				class="grid size-7 place-items-center rounded-full bg-background/70 backdrop-blur-md"
+				title={status.label}
+			>
+				<status.icon
+					class={['size-3.5', status.color, status.fill && 'fill-current']}
+					aria-hidden="true"
+				/>
+				<span class="sr-only">{status.label}</span>
+			</span>
 
 			<!-- Contador de sessões (direita), só a partir da 2ª vez -->
 			{#if item.watchCount > 1}
@@ -83,7 +76,9 @@
 			{yearOf(item.movie.releaseDate) ?? '—'}
 		</p>
 	</div>
-	{#if meta}
-		<p class="mt-0.5 truncate text-xs text-muted-foreground" title={meta}>{meta}</p>
-	{/if}
+	<MovieMetaLine
+		{meta}
+		class="mt-0.5 text-xs text-muted-foreground"
+		directorClass="text-white/75"
+	/>
 </a>

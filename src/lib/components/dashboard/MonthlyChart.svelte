@@ -11,7 +11,7 @@
 
 <section
 	aria-labelledby="sessoes-mes"
-	class="flex flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6"
+	class="flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6"
 >
 	<div class="flex items-baseline justify-between gap-4">
 		<h2 id="sessoes-mes" class="font-display text-lg font-semibold">Sessões por mês</h2>
@@ -20,7 +20,11 @@
 		</p>
 	</div>
 
-	<div class="mt-8 flex h-48 items-end gap-2 border-b border-white/10 md:gap-3" aria-hidden="true">
+	<!-- Área do gráfico estica até a altura do card vizinho (gêneros) -->
+	<div
+		class="mt-8 flex min-h-48 flex-1 items-end gap-2 border-b border-white/10 md:gap-3"
+		aria-hidden="true"
+	>
 		{#each months as month (month.key)}
 			<div class="group relative flex h-full flex-1 flex-col justify-end">
 				<!-- Alvo de hover maior que a barra -->
@@ -50,13 +54,16 @@
 		{/each}
 	</div>
 
-	<table class="sr-only">
-		<caption>Sessões por mês nos últimos 12 meses</caption>
-		<thead><tr><th>Mês</th><th>Sessões</th></tr></thead>
-		<tbody>
-			{#each months as month (month.key)}
-				<tr><td>{month.label}</td><td>{month.sessions}</td></tr>
-			{/each}
-		</tbody>
-	</table>
+	<!-- A <caption> escapa do sr-only aplicado na <table>; por isso o contêiner. -->
+	<div class="sr-only">
+		<table>
+			<caption>Sessões por mês nos últimos 12 meses</caption>
+			<thead><tr><th>Mês</th><th>Sessões</th></tr></thead>
+			<tbody>
+				{#each months as month (month.key)}
+					<tr><td>{month.label}</td><td>{month.sessions}</td></tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
 </section>

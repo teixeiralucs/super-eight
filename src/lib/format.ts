@@ -36,17 +36,25 @@ export function countryName(code: string) {
 	}
 }
 
-/** Segunda linha dos cards: "Diretor, País, 2h 15min" (partes ausentes são omitidas). */
-export function movieMetaLine(movie: {
+export interface MovieMeta {
+	director: string | null;
+	country: string | null;
+	runtime: string | null;
+}
+
+/** Segunda linha dos cards: diretor, país e duração (partes ausentes ficam nulas). */
+export function movieMeta(movie: {
 	directors: string[];
 	countries: string[];
 	runtime: number | null;
-}) {
-	return [
-		movie.directors.slice(0, 2).join(' & ') || null,
-		movie.countries[0] ? countryName(movie.countries[0]) : null,
-		movie.runtime ? formatDuration(movie.runtime) : null
-	]
-		.filter(Boolean)
-		.join(', ');
+}): MovieMeta {
+	return {
+		director: movie.directors.slice(0, 2).join(' & ') || null,
+		country: movie.countries[0] ? countryName(movie.countries[0]) : null,
+		runtime: movie.runtime ? formatDuration(movie.runtime) : null
+	};
 }
+
+/** Versão em texto corrido ("Diretor · País · 2h 15min"), para `title` e afins. */
+export const movieMetaText = (meta: MovieMeta) =>
+	[meta.director, meta.country, meta.runtime].filter(Boolean).join(' · ');
