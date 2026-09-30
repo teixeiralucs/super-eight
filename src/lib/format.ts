@@ -25,16 +25,9 @@ export function formatDuration(minutes: number) {
 
 export const yearOf = (date: Date | null) => (date ? date.getUTCFullYear() : null);
 
-const regionNames = new Intl.DisplayNames('pt-BR', { type: 'region' });
-
-/** "US" → "Estados Unidos". Códigos inválidos voltam como estão. */
-export function countryName(code: string) {
-	try {
-		return regionNames.of(code) ?? code;
-	} catch {
-		return code;
-	}
-}
+/** Sigla curta do país para os cards ("US", "BR"); "GB" vira o mais reconhecível "UK". */
+export const countryCode = (code: string) =>
+	code.toUpperCase() === 'GB' ? 'UK' : code.toUpperCase();
 
 export interface MovieMeta {
 	director: string | null;
@@ -50,7 +43,7 @@ export function movieMeta(movie: {
 }): MovieMeta {
 	return {
 		director: movie.directors.slice(0, 2).join(' & ') || null,
-		country: movie.countries[0] ? countryName(movie.countries[0]) : null,
+		country: movie.countries[0] ? countryCode(movie.countries[0]) : null,
 		runtime: movie.runtime ? formatDuration(movie.runtime) : null
 	};
 }

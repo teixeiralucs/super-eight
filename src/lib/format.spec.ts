@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-	countryName,
+	countryCode,
 	formatDuration,
 	formatShortDate,
 	movieMeta,
@@ -30,10 +30,10 @@ describe('movieMeta', () => {
 		const meta = movieMeta({ directors: ['Denis Villeneuve'], countries: ['US'], runtime: 166 });
 		expect(meta).toEqual({
 			director: 'Denis Villeneuve',
-			country: 'Estados Unidos',
+			country: 'US',
 			runtime: '2h 46min'
 		});
-		expect(movieMetaText(meta)).toBe('Denis Villeneuve · Estados Unidos · 2h 46min');
+		expect(movieMetaText(meta)).toBe('Denis Villeneuve · US · 2h 46min');
 	});
 
 	it('junta até dois diretores e omite partes ausentes', () => {
@@ -43,11 +43,14 @@ describe('movieMeta', () => {
 			runtime: null
 		});
 		expect(movieMetaText(movieMeta({ directors: [], countries: ['BR'], runtime: 90 }))).toBe(
-			'Brasil · 1h 30min'
+			'BR · 1h 30min'
 		);
 	});
+});
 
-	it('não quebra com código de país inválido', () => {
-		expect(countryName('??')).toBe('??');
+describe('countryCode', () => {
+	it('usa a sigla e troca GB por UK', () => {
+		expect(countryCode('us')).toBe('US');
+		expect(countryCode('GB')).toBe('UK');
 	});
 });
