@@ -85,6 +85,7 @@
 							sizes="(min-width: 768px) 260px, (min-width: 640px) 220px, 58vw"
 							alt="Pôster de {movie.title}"
 							loading="lazy"
+							decoding="async"
 							class="size-full object-cover"
 						/>
 						{#if ranked}

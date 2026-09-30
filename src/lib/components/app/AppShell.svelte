@@ -29,7 +29,7 @@
 	<!-- Barra lateral flutuante (desktop) -->
 	<nav
 		aria-label="Principal"
-		class="fixed top-1/2 left-5 z-40 hidden -translate-y-1/2 flex-col gap-2 rounded-full border border-white/10 bg-white/[0.04] p-2 backdrop-blur-xl lg:flex"
+		class="fixed top-1/2 left-5 z-40 hidden -translate-y-1/2 flex-col gap-2 rounded-full border border-white/10 bg-card/95 p-2 lg:flex"
 	>
 		{#each APP_NAV as item (item.href)}
 			{@const Icon = item.icon}
@@ -69,7 +69,7 @@
 	</nav>
 
 	<!-- Topo -->
-	<header class="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">
+	<header class="sticky top-0 z-30 bg-background/95">
 		<div class="mx-auto flex h-18 max-w-[1600px] items-center gap-4 px-5 md:px-10">
 			<a href={resolve('/')} class="shrink-0" aria-label="Super Eight — início">
 				<Logo class="h-9 w-auto" />
@@ -142,7 +142,7 @@
 	<!-- Barra inferior (celular) -->
 	<nav
 		aria-label="Principal"
-		class="fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-full border border-white/10 bg-background/80 p-1.5 backdrop-blur-xl lg:hidden"
+		class="fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-full border border-white/10 bg-card/95 p-1.5 lg:hidden"
 	>
 		{#each APP_NAV as item (item.href)}
 			{@const Icon = item.icon}

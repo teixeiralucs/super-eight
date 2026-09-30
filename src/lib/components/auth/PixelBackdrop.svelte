@@ -2,6 +2,7 @@
 	import { fade } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { backdropUrl } from '$lib/tmdb/images';
+	import { trackVisibility } from '$lib/attachments/visibility';
 
 	/**
 	 * Painel de imagem com efeito de letreiro de LED: o backdrop em baixa resolução (w300)
@@ -15,10 +16,11 @@
 
 	const INTERVAL_MS = 7000;
 	let index = $state(0);
+	let onScreen = $state(true);
 	const current = $derived(movies[index]);
 
 	$effect(() => {
-		if (movies.length < 2 || prefersReducedMotion.current) return;
+		if (movies.length < 2 || !onScreen || prefersReducedMotion.current) return;
 		const timer = setTimeout(async () => {
 			const next = (index + 1) % movies.length;
 			const img = new Image();
@@ -30,7 +32,10 @@
 	});
 </script>
 
-<div class="relative isolate size-full overflow-hidden bg-ocean-night">
+<div
+	class="relative isolate size-full overflow-hidden bg-ocean-night"
+	{@attach trackVisibility((visible) => (onScreen = visible))}
+>
 	{#if current}
 		{#key current.id}
 			<img
@@ -51,7 +56,7 @@
 	{#if current}
 		{#key current.id}
 			<p
-				class="absolute bottom-5 left-5 flex items-center gap-2 rounded-full border border-white/10 bg-background/60 px-3 py-1.5 text-xs backdrop-blur-md"
+				class="absolute bottom-5 left-5 flex items-center gap-2 rounded-full border border-white/10 bg-background/85 px-3 py-1.5 text-xs"
 				in:fade={{ duration: prefersReducedMotion.current ? 0 : 600, delay: 400 }}
 			>
 				<span class="size-1.5 rounded-full bg-neon-pink shadow-[0_0_8px_var(--neon-pink)]"></span>

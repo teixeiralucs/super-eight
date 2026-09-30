@@ -7,6 +7,7 @@
 	import StarIcon from '@lucide/svelte/icons/star';
 	import { backdropSrcset, backdropUrl } from '$lib/tmdb/images';
 	import type { TMDbMovie } from '$lib/tmdb/types';
+	import { trackVisibility } from '$lib/attachments/visibility';
 
 	let { movies, signedIn }: { movies: TMDbMovie[]; signedIn: boolean } = $props();
 
@@ -14,6 +15,7 @@
 
 	let index = $state(0);
 	let paused = $state(false);
+	let onScreen = $state(true);
 	const current = $derived(movies[index]);
 
 	/** Só troca de slide depois que o próximo backdrop já baixou (evita tela escura em rede lenta). */
@@ -28,7 +30,7 @@
 	}
 
 	$effect(() => {
-		if (movies.length < 2 || paused || prefersReducedMotion.current) return;
+		if (movies.length < 2 || paused || !onScreen || prefersReducedMotion.current) return;
 		const timer = setTimeout(() => goTo((index + 1) % movies.length), INTERVAL_MS);
 		return () => clearTimeout(timer);
 	});
@@ -41,23 +43,20 @@
 	aria-label="Destaques"
 	onmouseenter={() => (paused = true)}
 	onmouseleave={() => (paused = false)}
+	{@attach trackVisibility((visible) => (onScreen = visible))}
 >
 	<!-- Backdrop em tela cheia -->
 	<div class="absolute inset-0 -z-10">
 		{#if current?.backdropPath}
 			{#key current.id}
+				<!-- Prévia: o w300 ampliado já fica suave enquanto o w1280 carrega (sem filter: blur, que é caro) -->
 				<div
-					class="absolute inset-0"
+					class="absolute inset-0 bg-cover bg-center"
+					style:background-image="url({backdropUrl(current.backdropPath, 'w300')})"
 					transition:fade={{ duration: prefersReducedMotion.current ? 0 : 1200 }}
 				>
-					<!-- Prévia leve e desfocada enquanto a versão grande carrega -->
 					<img
-						src={backdropUrl(current.backdropPath, 'w300')}
-						alt=""
-						aria-hidden="true"
-						class="absolute inset-0 size-full scale-110 object-cover blur-2xl"
-					/>
-					<img
+						decoding="async"
 						src={backdropUrl(current.backdropPath, 'w1280')}
 						srcset={backdropSrcset(current.backdropPath)}
 						sizes="100vw"
@@ -107,7 +106,7 @@
 				</a>
 				<a
 					href="#em-alta"
-					class="rounded-full border border-white/20 px-7 py-3 text-sm font-medium text-white/90 backdrop-blur-sm transition hover:border-white/40 hover:bg-white/5"
+					class="rounded-full border border-white/20 bg-black/20 px-7 py-3 text-sm font-medium text-white/90 transition hover:border-white/40 hover:bg-white/5"
 				>
 					Explorar filmes
 				</a>

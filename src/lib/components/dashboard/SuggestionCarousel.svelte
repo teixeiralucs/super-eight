@@ -9,6 +9,7 @@
 	import { movieMeta, yearOf } from '$lib/format';
 	import type { MovieCard } from '$lib/library/types';
 	import { backdropSrcset, backdropUrl } from '$lib/tmdb/images';
+	import { trackVisibility } from '$lib/attachments/visibility';
 
 	// Filmes aleatórios da própria biblioteca (assistidos ou não). O card inteiro leva ao filme.
 	let { movies }: { movies: MovieCard[] } = $props();
@@ -17,6 +18,7 @@
 
 	let index = $state(0);
 	let paused = $state(false);
+	let onScreen = $state(true);
 	const current = $derived(movies[index]);
 	const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -33,7 +35,7 @@
 	}
 
 	$effect(() => {
-		if (movies.length < 2 || paused || prefersReducedMotion.current) return;
+		if (movies.length < 2 || paused || !onScreen || prefersReducedMotion.current) return;
 		const timer = setTimeout(() => goTo(index + 1), INTERVAL_MS);
 		return () => clearTimeout(timer);
 	});
@@ -47,21 +49,19 @@
 	onmouseleave={() => (paused = false)}
 	onfocusin={() => (paused = true)}
 	onfocusout={() => (paused = false)}
+	{@attach trackVisibility((visible) => (onScreen = visible))}
 >
 	{#if current}
 		<!-- Fundo -->
 		{#key current.id}
+			<!-- Prévia: w300 ampliado (sem filter: blur, que é caro) enquanto o w1280 carrega -->
 			<div
-				class="absolute inset-0 -z-10"
+				class="absolute inset-0 -z-10 bg-cover bg-center"
+				style:background-image="url({backdropUrl(current.backdropPath, 'w300')})"
 				transition:fade={{ duration: prefersReducedMotion.current ? 0 : 900 }}
 			>
 				<img
-					src={backdropUrl(current.backdropPath, 'w300')}
-					alt=""
-					aria-hidden="true"
-					class="absolute inset-0 size-full scale-110 object-cover blur-2xl"
-				/>
-				<img
+					decoding="async"
 					src={backdropUrl(current.backdropPath, 'w1280')}
 					srcset={backdropSrcset(current.backdropPath)}
 					sizes="(min-width: 1280px) 66vw, 100vw"
@@ -113,7 +113,7 @@
 			<button
 				type="button"
 				onclick={() => goTo(index - 1)}
-				class="grid size-9 place-items-center rounded-full border border-white/15 bg-background/40 backdrop-blur-md transition hover:border-white/40"
+				class="grid size-9 place-items-center rounded-full border border-white/15 bg-background/60 transition hover:border-white/40"
 				aria-label="Sugestão anterior"
 			>
 				<ChevronLeftIcon class="size-4" />
@@ -121,7 +121,7 @@
 			<button
 				type="button"
 				onclick={() => goTo(index + 1)}
-				class="grid size-9 place-items-center rounded-full border border-white/15 bg-background/40 backdrop-blur-md transition hover:border-white/40"
+				class="grid size-9 place-items-center rounded-full border border-white/15 bg-background/60 transition hover:border-white/40"
 				aria-label="Próxima sugestão"
 			>
 				<ChevronRightIcon class="size-4" />

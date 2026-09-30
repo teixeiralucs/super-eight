@@ -9,7 +9,6 @@
 	import StarIcon from '@lucide/svelte/icons/star';
 	import XIcon from '@lucide/svelte/icons/x';
 	import Logo from '$lib/components/brand/Logo.svelte';
-	import { dominantColor, FALLBACK_TINT } from '$lib/color/dominant';
 	import { formatDuration, formatLongDate } from '$lib/format';
 	import {
 		DETAIL_TABS,
@@ -18,10 +17,11 @@
 		type MovieDetailData,
 		type MovieUserData
 	} from '$lib/movie/types';
-	import { backdropUrl, posterUrl } from '$lib/tmdb/images';
+	import { backdropUrl } from '$lib/tmdb/images';
 	import DiaryPanel from './DiaryPanel.svelte';
 	import LibraryControls from './LibraryControls.svelte';
-	import TintedBackdrop from './TintedBackdrop.svelte';
+	import MovieBackdrop from './MovieBackdrop.svelte';
+	import TrailerModal from './TrailerModal.svelte';
 
 	/**
 	 * Detalhes do filme (referência "Joker"). Usado como página (/movie/[id]) e como painel
@@ -38,22 +38,10 @@
 	let tab = $state<DetailTab>('about');
 	const tabs = $derived(DETAIL_TABS.filter((t) => t !== 'diary' || data.signedIn));
 
-	// Backdrop exibido (a galeria troca) e cor do filme.
+	// Backdrop exibido (a galeria troca).
 	let backdrop = $derived(movie.backdropPath);
-	let tint = $state(FALLBACK_TINT);
-	$effect(() => {
-		const poster = posterUrl(movie.posterPath, 'w185');
-		if (!poster) return;
-		let cancelled = false;
-		dominantColor(poster)
-			.then((color) => !cancelled && (tint = color))
-			.catch(() => {});
-		return () => {
-			cancelled = true;
-		};
-	});
 
-	let playing = $state(false);
+	let trailerOpen = $state(false);
 	let expanded = $state(false);
 	let dateInput = $state<HTMLInputElement>();
 
@@ -108,7 +96,7 @@
 </script>
 
 <article class="relative isolate min-h-svh text-foreground">
-	<TintedBackdrop path={backdrop} {tint} />
+	<MovieBackdrop path={backdrop} />
 
 	<div class="grid min-h-svh grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px]">
 		<!-- Coluna principal -->
@@ -136,7 +124,7 @@
 					<button
 						type="button"
 						onclick={onClose}
-						class="grid size-10 place-items-center rounded-full border border-white/15 bg-background/40 backdrop-blur-md transition hover:border-white/40"
+						class="grid size-10 place-items-center rounded-full border border-white/15 bg-background/60 transition hover:border-white/40"
 						aria-label="Fechar detalhes"
 					>
 						<XIcon class="size-4" />
@@ -258,39 +246,6 @@
 							{:else}
 								<p class="text-white/50">Elenco não informado.</p>
 							{/if}
-						{:else if tab === 'trailer'}
-							{#if movie.trailer}
-								<div class="aspect-video overflow-hidden rounded-2xl bg-black ring-1 ring-white/10">
-									{#if playing}
-										<iframe
-											src="https://www.youtube-nocookie.com/embed/{movie.trailer
-												.key}?autoplay=1&rel=0"
-											title={movie.trailer.name}
-											allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
-											class="size-full"
-										></iframe>
-									{:else}
-										<button
-											type="button"
-											onclick={() => (playing = true)}
-											class="group relative size-full"
-											aria-label="Assistir trailer: {movie.trailer.name}"
-										>
-											<img
-												src="https://i.ytimg.com/vi/{movie.trailer.key}/hqdefault.jpg"
-												alt=""
-												class="size-full object-cover opacity-80 transition group-hover:opacity-100"
-											/>
-											<span
-												class="absolute inset-0 m-auto grid size-16 place-items-center rounded-full bg-white/90 text-background transition group-hover:scale-105"
-												><PlayIcon class="ml-1 size-6 fill-current" /></span
-											>
-										</button>
-									{/if}
-								</div>
-							{:else}
-								<p class="text-white/50">Nenhum trailer disponível.</p>
-							{/if}
 						{:else if tab === 'gallery'}
 							{#if movie.gallery.length}
 								<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -331,7 +286,7 @@
 
 		<!-- Coluna lateral de vidro -->
 		<aside
-			class="flex flex-col gap-8 border-white/10 bg-background/30 px-5 py-8 backdrop-blur-xl md:px-10 lg:border-l lg:px-8 lg:pt-24"
+			class="flex flex-col gap-8 border-white/10 bg-background/70 px-5 py-8 md:px-10 lg:border-l lg:px-8 lg:pt-24"
 			aria-label="Informações e sua biblioteca"
 		>
 			<dl class="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-1">
@@ -366,10 +321,8 @@
 			{#if movie.trailer}
 				<button
 					type="button"
-					onclick={() => {
-						tab = 'trailer';
-						playing = true;
-					}}
+					onclick={() => (trailerOpen = true)}
+					aria-label="Ver trailer: {movie.trailer.name}"
 					class="group relative mt-auto aspect-video overflow-hidden rounded-xl ring-1 ring-white/10"
 				>
 					<img
@@ -391,3 +344,7 @@
 		</aside>
 	</div>
 </article>
+
+{#if trailerOpen && movie.trailer}
+	<TrailerModal trailer={movie.trailer} onClose={() => (trailerOpen = false)} />
+{/if}

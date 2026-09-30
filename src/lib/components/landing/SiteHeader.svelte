@@ -13,7 +13,7 @@
 <header
 	class={[
 		'fixed inset-x-0 top-0 z-50 transition-colors duration-500',
-		scrolled ? 'bg-background/70 backdrop-blur-xl' : 'bg-transparent'
+		scrolled ? 'bg-background/90' : 'bg-transparent'
 	]}
 >
 	<div class="mx-auto flex h-18 max-w-[1600px] items-center justify-between gap-4 px-5 md:px-10">
@@ -23,7 +23,7 @@
 
 		<nav
 			aria-label="Principal"
-			class="hidden items-center gap-1 rounded-full border border-white/10 bg-white/5 p-1 text-sm backdrop-blur-md lg:flex"
+			class="hidden items-center gap-1 rounded-full border border-white/10 bg-black/30 p-1 text-sm lg:flex"
 		>
 			<a href="#em-alta" class="rounded-full px-4 py-1.5 text-white/80 transition hover:text-white"
 				>Em alta</a

@@ -8,11 +8,13 @@
 
 <section class="relative isolate overflow-hidden py-28 md:py-40">
 	{#if backdropPath}
+		<!-- w300 ampliado já dá o aspecto suave; evita filter: blur em tela cheia -->
 		<img
-			src={backdropUrl(backdropPath, 'w1280')}
+			src={backdropUrl(backdropPath, 'w300')}
 			alt=""
 			loading="lazy"
-			class="absolute inset-0 -z-10 size-full scale-110 object-cover opacity-40 blur-2xl"
+			decoding="async"
+			class="absolute inset-0 -z-10 size-full object-cover opacity-35"
 		/>
 	{/if}
 	<div

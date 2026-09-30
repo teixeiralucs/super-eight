@@ -48,7 +48,7 @@
 					: { ...VIEW_ICONS.watchlist, label: 'Quero ver', fill: false }
 	);
 	const meta = $derived(movieMeta(movie));
-	const badge = 'grid size-7 place-items-center rounded-full bg-background/70 backdrop-blur-md';
+	const badge = 'grid size-7 place-items-center rounded-full bg-background/80';
 </script>
 
 <article class="group relative">
@@ -67,6 +67,7 @@
 					sizes="(min-width: 1280px) 16vw, (min-width: 768px) 22vw, 45vw"
 					alt="Pôster de {movie.title}"
 					loading="lazy"
+					decoding="async"
 					class="size-full object-cover"
 				/>
 			{/if}
@@ -145,7 +146,7 @@
 
 		{#if current && current.watchCount > 1}
 			<span
-				class="pointer-events-auto grid h-7 min-w-7 place-items-center rounded-full bg-background/70 px-2 text-xs font-medium tabular-nums backdrop-blur-md"
+				class="pointer-events-auto grid h-7 min-w-7 place-items-center rounded-full bg-background/80 px-2 text-xs font-medium tabular-nums"
 				title="Assistido {current.watchCount} vezes"
 			>
 				<span aria-hidden="true">{current.watchCount}×</span>

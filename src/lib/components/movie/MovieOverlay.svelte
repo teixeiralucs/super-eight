@@ -21,7 +21,12 @@
 	});
 </script>
 
-<svelte:window onkeydown={(event) => event.key === 'Escape' && close()} />
+<svelte:window
+	onkeydown={(event) => {
+		// Com o trailer aberto, o Esc fecha só o trailer.
+		if (event.key === 'Escape' && !document.querySelector('[data-nested-dialog]')) close();
+	}}
+/>
 
 <div
 	bind:this={dialog}

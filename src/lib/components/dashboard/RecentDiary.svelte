@@ -12,7 +12,7 @@
 
 <section
 	aria-labelledby="diario-recente"
-	class="flex flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur-xl"
+	class="flex flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6"
 >
 	<div class="flex items-center justify-between">
 		<h2 id="diario-recente" class="font-display text-lg font-semibold">Diário recente</h2>

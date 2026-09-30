@@ -21,13 +21,12 @@ export interface MovieDetailData {
 	signedIn: boolean;
 }
 
-export const DETAIL_TABS = ['about', 'cast', 'trailer', 'gallery', 'diary'] as const;
+export const DETAIL_TABS = ['about', 'cast', 'gallery', 'diary'] as const;
 export type DetailTab = (typeof DETAIL_TABS)[number];
 
 export const TAB_LABELS: Record<DetailTab, string> = {
 	about: 'Sobre',
 	cast: 'Elenco',
-	trailer: 'Trailer',
 	gallery: 'Galeria',
 	diary: 'Diário'
 };
