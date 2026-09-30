@@ -3,8 +3,9 @@ import { prisma } from '$lib/server/db';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
-	// O hook já redireciona visitantes; a checagem aqui é para o TypeScript e defesa em profundidade.
-	if (!locals.user) error(401);
+	// Rotas privadas do grupo já foram barradas pelo hook (authGuard). As públicas
+	// (ex.: /search) chegam aqui sem usuário e usam o layout em modo visitante.
+	if (!locals.user) return { profile: null };
 
 	const profile = await prisma.user.findUnique({
 		where: { id: locals.user.id },

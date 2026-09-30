@@ -2,7 +2,8 @@
 	import DevTools from '$lib/components/dashboard/DevTools.svelte';
 	import EmptyLibrary from '$lib/components/dashboard/EmptyLibrary.svelte';
 	import GenreBars from '$lib/components/dashboard/GenreBars.svelte';
-	import LibraryPosterCard from '$lib/components/dashboard/LibraryPosterCard.svelte';
+	import MoviePosterCard from '$lib/components/MoviePosterCard.svelte';
+	import { posterFromCard, stateFromItem } from '$lib/library/poster';
 	import LibraryToolbar from '$lib/components/dashboard/LibraryToolbar.svelte';
 	import MonthlyChart from '$lib/components/dashboard/MonthlyChart.svelte';
 	import RatingHistogram from '$lib/components/dashboard/RatingHistogram.svelte';
@@ -43,7 +44,7 @@
 			<h1
 				class="mt-3 font-display text-[clamp(2.5rem,5vw,4.5rem)] leading-none font-bold tracking-[-0.04em]"
 			>
-				Olá, {data.profile.name?.split(' ')[0] ?? `@${data.profile.username}`}
+				Olá, {data.profile?.name?.split(' ')[0] ?? `@${data.profile?.username}`}
 				<span class="font-serif font-normal tracking-normal text-white/40 italic">.</span>
 			</h1>
 		</div>
@@ -125,7 +126,9 @@
 					class="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 md:gap-x-6 xl:grid-cols-6"
 				>
 					{#each data.library as item (item.movie.id)}
-						<li><LibraryPosterCard {item} /></li>
+						<li>
+							<MoviePosterCard movie={posterFromCard(item.movie)} library={stateFromItem(item)} />
+						</li>
 					{/each}
 				</ul>
 			{:else}

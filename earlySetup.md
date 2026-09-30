@@ -343,7 +343,7 @@ model CatalogEntry {
 
 ## **5.2. Operações CRUD via Form Actions (Mutações)**
 
-- _Diretiva: interações da UI **não** usam endpoints de API (`+server.ts`); todas as submissões usam `export const actions` em `+page.server.ts`. Exceções permitidas: callback de autenticação (5.1.4) e endpoint do cron (4.4.3)._
+- _Diretiva: interações da UI **não** usam endpoints de API (`+server.ts`); todas as submissões usam `export const actions` em `+page.server.ts`. Exceções permitidas: callback de autenticação (5.1.4), endpoint do cron (4.4.3) e endpoints **somente leitura** de paginação (ex.: `GET /api/search`, usado pela rolagem infinita)._
 - 5.2.1. Identidade: o `userId` **nunca** vem de campos do formulário (_hidden inputs_); é sempre extraído de `event.locals.user`.
 - 5.2.2. Biblioteca: actions `setStatus`, `rate` (1–10), `toggleFavorite` e `removeFromLibrary`.
 - 5.2.3. Diário: actions `logWatch` (cria `DiaryEntry` e faz _upsert_ da `LibraryEntry` como `WATCHED`, atualizando a nota atual se informada), `updateDiaryEntry` e `deleteDiaryEntry`.
@@ -364,7 +364,7 @@ model CatalogEntry {
 
 - 6.1.1. `/` (Pública): Landing Page com os catálogos Populares e Em Cartaz.
 - 6.1.2. `/login` e `/signup`: autenticação via Supabase.
-- 6.1.3. `/search`: busca orientada a URL (ex.: `/search?q=batman&page=2`); o `load` lê `url.searchParams`, garantindo links compartilháveis.
+- 6.1.3. `/search` (pública, dentro do layout da área logada): busca orientada a URL (`/search?q=batman`), com busca enquanto digita (debounce) e link compartilhável. Sem termo, mostra os filmes em alta. O `load` entrega a 1ª página; as seguintes vêm de `GET /api/search?q=&page=` via rolagem infinita. Mesmo card da biblioteca; no canto superior esquerdo, o botão **+** adiciona como "Quero ver" (action `?/add`); filmes já na biblioteca mostram o estado; visitantes são levados ao login com `next`.
 - 6.1.4. `/movie/[id]`: detalhes do filme via SSR (SEO). Para o usuário logado, inclui também os controles da biblioteca, o diário com aquele filme e as reviews da comunidade.
 - 6.1.5. `/dashboard` (Protegida): carrossel com 8 filmes aleatórios da própria biblioteca, diário recente, métricas (assistidos, horas, nota média com histograma, quero ver), sessões por mês e gêneros; e a **biblioteca do usuário em grade**, com abas (todos, assistidos, quero ver, favoritos — os ícones das abas servem de legenda dos selos dos pôsteres), filtro de gênero e ordenação (lançamento — padrão, do mais antigo ao mais novo —, adicionados, nota, título, aleatório), cada uma com direção crescente/decrescente, tudo refletido na URL (`view`, `genre`, `sort`, `dir`). Cards: "título · ano" e "diretor · país · duração". Ao clicar num card, abre um painel/modal com informações técnicas e o diário do filme (com link para `/movie/[id]`).
 - 6.1.6. `/diary` (Protegida): diário completo em ordem cronológica.

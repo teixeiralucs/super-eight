@@ -125,6 +125,41 @@ async function getCatalog(path: string, fetchFn?: typeof fetch) {
 
 export const getPopular = (fetchFn?: typeof fetch) => getCatalog('/movie/popular', fetchFn);
 export const getNowPlaying = (fetchFn?: typeof fetch) => getCatalog('/movie/now_playing', fetchFn);
+
+/** TMDb não serve além da página 500. */
+export const MAX_PAGE = 500;
+const SEARCH_TTL_MS = 10 * 60 * 1000;
+
+export interface MoviePage {
+	results: TMDbMovie[];
+	page: number;
+	totalPages: number;
+}
+
+/**
+ * Uma página de resultados: busca por texto (`/search/movie`) ou, sem termo, os filmes em alta.
+ * Usada pela rolagem infinita da busca (earlySetup.md §4.2.1).
+ */
+export function getMoviePage(query: string, page: number, fetchFn?: typeof fetch) {
+	const term = query.trim();
+	const safePage = Math.min(Math.max(1, Math.floor(page) || 1), MAX_PAGE);
+	const [path, params] = term
+		? ['/search/movie', { query: term, include_adult: 'false', page: safePage }]
+		: ['/movie/popular', { region: REGION, page: safePage }];
+
+	return cached(`page:${path}:${term.toLowerCase()}:${safePage}`, SEARCH_TTL_MS, async () => {
+		const [raw, genreNames] = await Promise.all([
+			tmdbFetch<RawPage<RawMovie>>(path, params, fetchFn),
+			getGenreNames(fetchFn)
+		]);
+		return {
+			results: raw.results.filter(isShowcaseable).map((movie) => toMovie(movie, genreNames)),
+			page: raw.page,
+			totalPages: Math.min(raw.total_pages, MAX_PAGE)
+		} satisfies MoviePage;
+	});
+}
+
 /** Detalhes de um filme, com direção e país de origem (usado para popular o cache local `Movie`). */
 export function getMovieDetails(id: number, fetchFn?: typeof fetch): Promise<TMDbMovieDetails> {
 	return cached(`movie:${id}`, CATALOG_TTL_MS, async () => {
