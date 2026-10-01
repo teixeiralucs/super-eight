@@ -67,6 +67,12 @@ O Super Eight se apoia no conceito de Tracking de Filmes, semelhante ao Letterbo
 - 3.4.3. Regra de negócio: registrar uma entrada no diário faz _upsert_ da `LibraryEntry` com status `WATCHED`.
 - 3.4.4. Regra de negócio: **só filmes assistidos (`WATCHED`) podem ter nota ou ser favoritos.** Garantida no banco por `CHECK` (`LibraryEntry_rating_favorite_require_watched_check`) e validada nas _actions_. Voltar um filme para `WANT_TO_WATCH` deve limpar nota e favorito.
 
+## **3.4-A. Entidade: MovieArtwork ("DNA" visual do filme)**
+
+- _Objetivo: guardar o pôster e/ou o fundo que o usuário escolheu na galeria do filme (imagens do TMDb em qualquer idioma)._
+- 3.4-A.1. Campos: `posterPath`, `backdropPath` (opcionais; nulo = imagem padrão do TMDb), `updatedAt`. Chave composta `@@id([userId, movieId])`; independe de o filme estar na biblioteca.
+- 3.4-A.2. Regra: toda tela da área logada (dashboard, busca, listas) aplica as escolhas do usuário antes de exibir o filme (`withArtwork` em `$lib/server/artwork`). A action valida que a imagem pertence ao filme; restaurar as duas imagens apaga a linha.
+
 ## **3.5. Entidade: DiaryEntry (Diário)**
 
 - _Objetivo: registrar **cada sessão** em que o usuário assistiu um filme (permite rewatches)._
@@ -173,6 +179,19 @@ model LibraryEntry {
 
   @@id([userId, movieId])
   @@index([userId, status])
+}
+
+model MovieArtwork {
+  userId       String   @db.Uuid
+  movieId      Int
+  posterPath   String?
+  backdropPath String?
+  updatedAt    DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie Movie @relation(fields: [movieId], references: [id])
+
+  @@id([userId, movieId])
 }
 
 model DiaryEntry {
@@ -365,7 +384,7 @@ model CatalogEntry {
 - 6.1.1. `/` (Pública): Landing Page com os catálogos Populares e Em Cartaz.
 - 6.1.2. `/login` e `/signup`: autenticação via Supabase.
 - 6.1.3. `/search` (pública, dentro do layout da área logada): busca orientada a URL (`/search?q=batman`), com busca enquanto digita (debounce) e link compartilhável. Sem termo, mostra os filmes em alta. O `load` entrega a 1ª página; as seguintes vêm de `GET /api/search?q=&page=` via rolagem infinita. Mesmo card da biblioteca; no canto superior esquerdo, o botão **+** adiciona como "Quero ver" (action `?/add`); filmes já na biblioteca mostram o estado; visitantes são levados ao login com `next`.
-- 6.1.4. `/movie/[id]`: detalhes do filme via SSR (SEO), layout inspirado na referência "Joker": backdrop em tela cheia com duotone na cor dominante do pôster (calculada no navegador), título grande, abas (Sobre, Elenco, Trailer, Galeria — que troca o fundo —, Diário) e coluna lateral com estreia, direção, roteiro, música, gênero e país, os controles da biblioteca e o trailer. Actions: `status`, `remove`, `rate`, `favorite`, `logSession`, `deleteSession` (nota/favorito só para assistidos, §3.4.4). Ao clicar num card em qualquer tela, abre **por cima** da página atual via _shallow routing_ (`pushState` + `preloadData`); a URL muda para `/movie/[id]`, Esc/voltar fecha, e o link direto abre a página completa. Reviews da comunidade entram na Fase 3.
+- 6.1.4. `/movie/[id]`: detalhes do filme via SSR (SEO), layout inspirado na referência "Joker": backdrop em tela cheia nas cores originais (fixo no tamanho da tela), título grande e três abas. **Sobre** (sinopse completa; no desktop cabe numa tela só); **Elenco** (Direção, Roteiro e Elenco com fotos, em carrosséis horizontais); **Galeria** (fundos e pôsteres de todos os idiomas, carregados sob demanda por `GET /api/movie/[id]/images`; escolher uma imagem salva o DNA do filme, §3.4-A). Fora do Sobre, a linha de dados e a frase do filme somem com animação; na Galeria o título sobe para o topo. Coluna lateral: estreia, país, gênero, estúdio, música, os controles da biblioteca (um botão com o estado atual que alterna Quero ver ↔ Assistido; nota em 5 estrelas com meia estrela = 1 ponto; favorito) e o trailer. O diário abre num pop-up ao lado do botão "Registrar sessão" (painel inferior no celular), com data em dd/mm/aaaa. Actions: `status`, `remove`, `rate`, `favorite`, `logSession`, `deleteSession`, `artwork` (nota/favorito só para assistidos, §3.4.4). Ao clicar num card em qualquer tela, abre **por cima** da página atual via _shallow routing_ (`pushState` + `preloadData`); a URL muda para `/movie/[id]`, Esc/voltar fecha, e o link direto abre a página completa. Depois de cada action o painel atualiza a cópia dos dados guardada no histórico (`replaceState`) e recarrega a página de baixo com `refreshAll()` — **não** usar `invalidateAll()`, que zera `page.state` e fecha o painel. Reviews da comunidade entram na Fase 3.
 - 6.1.5. `/dashboard` (Protegida): carrossel com 8 filmes aleatórios da própria biblioteca, diário recente, métricas (assistidos, horas, nota média com histograma, quero ver), sessões por mês e gêneros; e a **biblioteca do usuário em grade**, com abas (todos, assistidos, quero ver, favoritos — os ícones das abas servem de legenda dos selos dos pôsteres), filtro de gênero e ordenação (lançamento — padrão, do mais antigo ao mais novo —, adicionados, nota, título, aleatório), cada uma com direção crescente/decrescente, tudo refletido na URL (`view`, `genre`, `sort`, `dir`). Cards: "título · ano" e "diretor · país · duração". Ao clicar num card, abre um painel/modal com informações técnicas e o diário do filme (com link para `/movie/[id]`).
 - 6.1.6. `/diary` (Protegida): diário completo em ordem cronológica.
 - 6.1.7. `/lists` (Protegida): listas personalizadas do usuário (menu **Listas**).

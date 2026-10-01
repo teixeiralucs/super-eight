@@ -1,5 +1,13 @@
 import { TMDB_READ_ACCESS_TOKEN } from '$env/static/private';
-import type { TMDbMovie, TMDbMovieDetails, TMDbMovieFull, Trailer } from '$lib/tmdb/types';
+import type {
+	CrewMember,
+	MovieImage,
+	MovieImages,
+	TMDbMovie,
+	TMDbMovieDetails,
+	TMDbMovieFull,
+	Trailer
+} from '$lib/tmdb/types';
 
 const API_BASE = 'https://api.themoviedb.org/3';
 const LANGUAGE = 'pt-BR';
@@ -41,9 +49,17 @@ interface RawMovieDetails extends Omit<RawMovie, 'genre_ids'> {
 	origin_country?: string[];
 	production_countries?: { iso_3166_1: string }[];
 	credits?: {
-		crew: { job: string; name: string; department?: string }[];
+		crew: RawCrewMember[];
 		cast?: RawCastMember[];
 	};
+}
+
+interface RawCrewMember {
+	id?: number;
+	job: string;
+	name: string;
+	department?: string;
+	profile_path?: string | null;
 }
 
 interface RawCastMember {
@@ -67,7 +83,18 @@ interface RawMovieFull extends RawMovieDetails {
 	tagline: string;
 	vote_count: number;
 	videos?: { results: RawVideo[] };
-	images?: { backdrops: { file_path: string; iso_639_1: string | null }[] };
+	production_companies?: { name: string }[];
+}
+
+interface RawImage {
+	file_path: string;
+	iso_639_1: string | null;
+	vote_average: number;
+}
+
+interface RawImages {
+	backdrops: RawImage[];
+	posters: RawImage[];
 }
 
 export class TMDbError extends Error {
@@ -96,12 +123,16 @@ function cached<T>(key: string, ttlMs: number, load: () => Promise<T>): Promise<
 
 async function tmdbFetch<T>(
 	path: string,
-	params: Record<string, string | number> = {},
+	/** `language: null` remove o idioma padrão (ex.: imagens de todos os idiomas). */
+	params: Record<string, string | number | null> = {},
 	fetchFn: typeof fetch = fetch
 ): Promise<T> {
 	const url = new URL(`${API_BASE}${path}`);
 	url.searchParams.set('language', LANGUAGE);
-	for (const [key, value] of Object.entries(params)) url.searchParams.set(key, String(value));
+	for (const [key, value] of Object.entries(params)) {
+		if (value === null) url.searchParams.delete(key);
+		else url.searchParams.set(key, String(value));
+	}
 
 	const response = await fetchFn(url, {
 		headers: { Authorization: `Bearer ${TMDB_READ_ACCESS_TOKEN}`, Accept: 'application/json' }
@@ -231,35 +262,57 @@ export function pickTrailer(videos: RawVideo[]): Trailer | null {
 	return best ? { key: best.key, name: best.name } : null;
 }
 
+/** Pessoas da equipe com foto, sem repetir (a mesma pessoa pode ter vários créditos). */
+function crewPeople(crew: RawCrewMember[], jobs: Record<string, string>, limit: number) {
+	const people = new Map<number, CrewMember>();
+	for (const member of crew) {
+		const role = jobs[member.job];
+		if (!role || member.id === undefined) continue;
+		const known = people.get(member.id);
+		if (known) {
+			if (!known.job.includes(role)) known.job += `, ${role}`;
+		} else {
+			people.set(member.id, {
+				id: member.id,
+				name: member.name,
+				job: role,
+				profilePath: member.profile_path ?? null
+			});
+		}
+	}
+	return [...people.values()].slice(0, limit);
+}
+
+const WRITING_JOBS: Record<string, string> = {
+	Screenplay: 'Roteiro',
+	Writer: 'Roteiro',
+	Story: 'História',
+	Novel: 'Livro',
+	Characters: 'Personagens'
+};
+
 export function toMovieFull(raw: RawMovieFull): TMDbMovieFull {
 	const crew = raw.credits?.crew ?? [];
 	return {
 		...toMovieDetails(raw),
 		tagline: raw.tagline || null,
 		voteCount: raw.vote_count,
-		writers: unique(
-			crew
-				.filter((member) => ['Screenplay', 'Writer', 'Novel', 'Story'].includes(member.job))
-				.map((member) => member.name)
-		).slice(0, 3),
+		directing: crewPeople(crew, { Director: 'Direção' }, 4),
+		writing: crewPeople(crew, WRITING_JOBS, 6),
 		composers: unique(
 			crew.filter((member) => member.job === 'Original Music Composer').map((member) => member.name)
 		),
+		studios: (raw.production_companies ?? []).slice(0, 3).map((company) => company.name),
 		cast: [...(raw.credits?.cast ?? [])]
 			.sort((a, b) => a.order - b.order)
-			.slice(0, 12)
+			.slice(0, 24)
 			.map((member) => ({
 				id: member.id,
 				name: member.name,
 				character: member.character,
 				profilePath: member.profile_path
 			})),
-		trailer: pickTrailer(raw.videos?.results ?? []),
-		// Backdrops sem texto (iso_639_1 nulo) ficam melhores como imagem aberta.
-		gallery: (raw.images?.backdrops ?? [])
-			.filter((image) => image.iso_639_1 === null)
-			.slice(0, 12)
-			.map((image) => image.file_path)
+		trailer: pickTrailer(raw.videos?.results ?? [])
 	};
 }
 
@@ -269,12 +322,28 @@ export function getMovieFull(id: number, fetchFn?: typeof fetch): Promise<TMDbMo
 			await tmdbFetch<RawMovieFull>(
 				`/movie/${id}`,
 				{
-					append_to_response: 'credits,videos,images',
-					include_video_language: 'pt,en,null',
-					include_image_language: 'null,en,pt'
+					append_to_response: 'credits,videos',
+					include_video_language: 'pt,en,null'
 				},
 				fetchFn
 			)
 		)
 	);
+}
+
+const MAX_IMAGES = 60;
+
+/** Melhores primeiro (votos do TMDb); `language` nulo = imagem sem texto. */
+const toImages = (images: RawImage[]): MovieImage[] =>
+	[...images]
+		.sort((a, b) => b.vote_average - a.vote_average)
+		.slice(0, MAX_IMAGES)
+		.map((image) => ({ path: image.file_path, language: image.iso_639_1 }));
+
+/** Pôsteres e fundos em todos os idiomas — para a galeria e a personalização do filme. */
+export function getMovieImages(id: number, fetchFn?: typeof fetch): Promise<MovieImages> {
+	return cached(`movie-images:${id}`, CATALOG_TTL_MS, async () => {
+		const raw = await tmdbFetch<RawImages>(`/movie/${id}/images`, { language: null }, fetchFn);
+		return { backdrops: toImages(raw.backdrops), posters: toImages(raw.posters) };
+	});
 }

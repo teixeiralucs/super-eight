@@ -118,7 +118,7 @@ describe('pickTrailer', () => {
 });
 
 describe('toMovieFull', () => {
-	it('extrai roteiro, música, elenco ordenado e galeria sem texto', () => {
+	it('extrai equipe com foto, música, estúdios e elenco ordenado', () => {
 		const movie = toMovieFull({
 			...raw,
 			runtime: 120,
@@ -127,9 +127,9 @@ describe('toMovieFull', () => {
 			vote_count: 10,
 			credits: {
 				crew: [
-					{ job: 'Director', name: 'D' },
-					{ job: 'Screenplay', name: 'W1' },
-					{ job: 'Writer', name: 'W1' },
+					{ id: 10, job: 'Director', name: 'D', profile_path: '/d.jpg' },
+					{ id: 11, job: 'Screenplay', name: 'W1' },
+					{ id: 11, job: 'Story', name: 'W1' },
 					{ job: 'Original Music Composer', name: 'M' },
 					{ job: 'Music Editor', name: 'X' }
 				],
@@ -138,19 +138,17 @@ describe('toMovieFull', () => {
 					{ id: 1, name: 'A', character: 'a', profile_path: '/a.jpg', order: 0 }
 				]
 			},
-			images: {
-				backdrops: [
-					{ file_path: '/texto.jpg', iso_639_1: 'en' },
-					{ file_path: '/limpo.jpg', iso_639_1: null }
-				]
-			}
+			production_companies: [{ name: 'S1' }, { name: 'S2' }]
 		});
 
 		expect(movie.tagline).toBeNull();
-		expect(movie.writers).toEqual(['W1']);
+		expect(movie.directing).toEqual([{ id: 10, name: 'D', job: 'Direção', profilePath: '/d.jpg' }]);
+		expect(movie.writing).toEqual([
+			{ id: 11, name: 'W1', job: 'Roteiro, História', profilePath: null }
+		]);
+		expect(movie.studios).toEqual(['S1', 'S2']);
 		expect(movie.composers).toEqual(['M']);
 		expect(movie.cast.map((c) => c.name)).toEqual(['A', 'B']);
-		expect(movie.gallery).toEqual(['/limpo.jpg']);
 		expect(movie.trailer).toBeNull();
 	});
 });

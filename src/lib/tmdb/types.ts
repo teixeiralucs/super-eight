@@ -21,6 +21,25 @@ export interface CastMember {
 	profilePath: string | null;
 }
 
+export interface CrewMember {
+	id: number;
+	name: string;
+	/** Função já traduzida (ex.: "Roteiro, História"). */
+	job: string;
+	profilePath: string | null;
+}
+
+export interface MovieImage {
+	path: string;
+	/** ISO 639-1 do texto na imagem; `null` = sem texto. */
+	language: string | null;
+}
+
+export interface MovieImages {
+	backdrops: MovieImage[];
+	posters: MovieImage[];
+}
+
 export interface Trailer {
 	/** ID do vídeo no YouTube. */
 	key: string;
@@ -31,12 +50,13 @@ export interface Trailer {
 export interface TMDbMovieFull extends TMDbMovieDetails {
 	tagline: string | null;
 	posterPath: string | null;
-	writers: string[];
+	directing: CrewMember[];
+	writing: CrewMember[];
 	composers: string[];
+	/** Produtoras (até 3). */
+	studios: string[];
 	cast: CastMember[];
 	trailer: Trailer | null;
-	/** Caminhos de backdrops sem texto, para a galeria. */
-	gallery: string[];
 	voteCount: number;
 }
 

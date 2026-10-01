@@ -1,5 +1,7 @@
 import { prisma } from '$lib/server/db';
+import { getArtworks, withArtwork } from '$lib/server/artwork';
 import { getMovieDetails, getMoviePage } from '$lib/server/tmdb';
+import type { Artwork } from '$lib/movie/types';
 import type { LibraryState, SearchItem } from '$lib/library/types';
 
 export interface SearchPage {
@@ -21,24 +23,28 @@ export async function searchPage(
 	const result = await getMoviePage(query, page, fetchFn);
 	const ids = result.results.map((movie) => movie.id);
 
-	const [details, library] = await Promise.all([
+	const [details, library, artworks] = await Promise.all([
 		Promise.all(ids.map((id) => getMovieDetails(id, fetchFn).catch(() => null))),
-		userId ? getLibraryStates(userId, ids) : new Map<number, LibraryState>()
+		userId ? getLibraryStates(userId, ids) : new Map<number, LibraryState>(),
+		userId ? getArtworks(userId, ids) : new Map<number, Artwork>()
 	]);
 
 	return {
 		page: result.page,
 		totalPages: result.totalPages,
 		items: result.results.map((movie, i) => ({
-			movie: {
-				id: movie.id,
-				title: movie.title,
-				posterPath: movie.posterPath,
-				year: movie.year,
-				directors: details[i]?.directors ?? [],
-				countries: details[i]?.countries ?? [],
-				runtime: details[i]?.runtime ?? null
-			},
+			movie: withArtwork(
+				{
+					id: movie.id,
+					title: movie.title,
+					posterPath: movie.posterPath,
+					year: movie.year,
+					directors: details[i]?.directors ?? [],
+					countries: details[i]?.countries ?? [],
+					runtime: details[i]?.runtime ?? null
+				},
+				artworks
+			),
 			library: library.get(movie.id) ?? null
 		}))
 	};

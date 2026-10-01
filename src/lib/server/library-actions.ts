@@ -14,7 +14,7 @@ export class LibraryRuleError extends Error {
 
 /** Estado do usuário com um filme: biblioteca + todas as sessões do diário. */
 export async function getMovieUserData(userId: string, movieId: number): Promise<MovieUserData> {
-	const [entry, sessions] = await Promise.all([
+	const [entry, sessions, artwork] = await Promise.all([
 		prisma.libraryEntry.findUnique({
 			where: { userId_movieId: { userId, movieId } },
 			select: { status: true, rating: true, isFavorite: true }
@@ -23,11 +23,15 @@ export async function getMovieUserData(userId: string, movieId: number): Promise
 			where: { userId, movieId },
 			orderBy: [{ watchedAt: 'desc' }, { createdAt: 'desc' }],
 			select: { id: true, watchedAt: true, rating: true, isRewatch: true, note: true }
+		}),
+		prisma.movieArtwork.findUnique({
+			where: { userId_movieId: { userId, movieId } },
+			select: { posterPath: true, backdropPath: true }
 		})
 	]);
 
 	const library: LibraryState | null = entry ? { ...entry, watchCount: sessions.length } : null;
-	return { library, sessions: sessions satisfies DiarySessionRow[] };
+	return { library, sessions: sessions satisfies DiarySessionRow[], artwork };
 }
 
 const key = (userId: string, movieId: number) => ({ userId_movieId: { userId, movieId } });

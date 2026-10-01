@@ -3,6 +3,7 @@ import type { Prisma } from '$lib/server/generated/prisma/client';
 import type { LibraryFilters } from '$lib/library/filters';
 import { shuffle } from '$lib/library/shuffle';
 import { computeStats } from '$lib/library/stats';
+import { getArtworks, withArtwork } from '$lib/server/artwork';
 
 const movieCard = {
 	id: true,
@@ -45,7 +46,7 @@ export async function getLibraryGrid(userId: string, filters: LibraryFilters) {
 	if (filters.view === 'favorites') where.isFavorite = true;
 	if (filters.genre) where.movie = { genres: { has: filters.genre } };
 
-	const [entries, sessions] = await Promise.all([
+	const [entries, sessions, artworks] = await Promise.all([
 		prisma.libraryEntry.findMany({
 			where,
 			orderBy: orderBy(filters),
@@ -56,12 +57,14 @@ export async function getLibraryGrid(userId: string, filters: LibraryFilters) {
 				movie: { select: movieCard }
 			}
 		}),
-		prisma.diaryEntry.groupBy({ by: ['movieId'], where: { userId }, _count: { _all: true } })
+		prisma.diaryEntry.groupBy({ by: ['movieId'], where: { userId }, _count: { _all: true } }),
+		getArtworks(userId)
 	]);
 
 	const watchCounts = new Map(sessions.map((row) => [row.movieId, row._count._all]));
 	const items = entries.map((entry) => ({
 		...entry,
+		movie: withArtwork(entry.movie, artworks),
 		watchCount: watchCounts.get(entry.movie.id) ?? 0
 	}));
 	return filters.sort === 'random' ? shuffle(items) : items;
@@ -69,18 +72,24 @@ export async function getLibraryGrid(userId: string, filters: LibraryFilters) {
 
 /** Filmes aleatórios da própria biblioteca (assistidos ou não) para o carrossel. */
 export async function getLibrarySuggestions(userId: string, count = 8) {
-	const entries = await prisma.libraryEntry.findMany({
-		where: { userId, movie: { backdropPath: { not: null } } },
-		select: { status: true, movie: { select: movieCard } }
-	});
+	const [entries, artworks] = await Promise.all([
+		prisma.libraryEntry.findMany({
+			where: { userId, movie: { backdropPath: { not: null } } },
+			select: { status: true, movie: { select: movieCard } }
+		}),
+		getArtworks(userId)
+	]);
 	return shuffle(entries)
 		.slice(0, count)
-		.map((entry) => ({ ...entry.movie, watched: entry.status === 'WATCHED' }));
+		.map((entry) => ({
+			...withArtwork(entry.movie, artworks),
+			watched: entry.status === 'WATCHED'
+		}));
 }
 
 /** Métricas, diário recente e gêneros disponíveis para o filtro. */
 export async function getDashboardOverview(userId: string) {
-	const [library, diary, recentDiary] = await Promise.all([
+	const [library, diary, recentDiary, artworks] = await Promise.all([
 		prisma.libraryEntry.findMany({
 			where: { userId },
 			select: { status: true, rating: true, isFavorite: true, movie: { select: { genres: true } } }
@@ -100,7 +109,8 @@ export async function getDashboardOverview(userId: string) {
 				isRewatch: true,
 				movie: { select: movieCard }
 			}
-		})
+		}),
+		getArtworks(userId)
 	]);
 
 	const stats = computeStats(
@@ -112,5 +122,13 @@ export async function getDashboardOverview(userId: string) {
 		a.localeCompare(b, 'pt-BR')
 	);
 
-	return { stats, recentDiary, genres, isEmpty: library.length === 0 };
+	return {
+		stats,
+		recentDiary: recentDiary.map((entry) => ({
+			...entry,
+			movie: withArtwork(entry.movie, artworks)
+		})),
+		genres,
+		isEmpty: library.length === 0
+	};
 }

@@ -51,3 +51,9 @@ export function movieMeta(movie: {
 /** Versão em texto corrido ("Diretor · País · 2h 15min"), para `title` e afins. */
 export const movieMetaText = (meta: MovieMeta) =>
 	[meta.director, meta.country, meta.runtime].filter(Boolean).join(' · ');
+
+/** Hoje (ou `offsetDays` atrás) no fuso do navegador, em ISO (YYYY-MM-DD). */
+export function todayIso(offsetDays = 0) {
+	const now = new Date(Date.now() - offsetDays * 86_400_000);
+	return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
+}

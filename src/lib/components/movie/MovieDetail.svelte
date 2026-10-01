@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { SubmitFunction } from '@sveltejs/kit';
-	import { invalidateAll } from '$app/navigation';
+	import { refreshAll, replaceState } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { tick } from 'svelte';
+	import { page } from '$app/state';
 	import { fade } from 'svelte/transition';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import PlayIcon from '@lucide/svelte/icons/play';
@@ -17,10 +17,10 @@
 		type MovieDetailData,
 		type MovieUserData
 	} from '$lib/movie/types';
-	import { backdropUrl } from '$lib/tmdb/images';
-	import DiaryPanel from './DiaryPanel.svelte';
+	import GalleryPanel from './GalleryPanel.svelte';
 	import LibraryControls from './LibraryControls.svelte';
 	import MovieBackdrop from './MovieBackdrop.svelte';
+	import PersonCard from './PersonCard.svelte';
 	import TrailerModal from './TrailerModal.svelte';
 
 	/**
@@ -36,23 +36,27 @@
 	let message = $state<string | null>(null);
 
 	let tab = $state<DetailTab>('about');
-	const tabs = $derived(DETAIL_TABS.filter((t) => t !== 'diary' || data.signedIn));
+	// Fora do "Sobre" a tela fica mais leve: some a linha de dados e a frase do filme.
+	const compact = $derived(tab !== 'about');
 
-	// Backdrop exibido (a galeria troca).
-	let backdrop = $derived(movie.backdropPath);
+	// Fundo: o escolhido pelo usuário (DNA do filme) ou o padrão; sem login, a galeria só faz prévia.
+	let backdrop = $derived(userData?.artwork?.backdropPath ?? movie.backdropPath);
 
 	let trailerOpen = $state(false);
-	let expanded = $state(false);
-	let dateInput = $state<HTMLInputElement>();
 
-	const submit: SubmitFunction = ({ formElement }) => {
+	const submit: SubmitFunction = () => {
 		message = null;
 		return async ({ result }) => {
 			if (result.type === 'success' && result.data?.userData) {
 				userData = result.data.userData as MovieUserData;
-				if (formElement.getAttribute('action')?.endsWith('?/logSession')) formElement.reset();
-				// Atualiza a página por baixo (ex.: grade do dashboard).
-				invalidateAll();
+				// No painel sobreposto, o histórico guarda uma cópia dos dados do filme: atualiza
+				// a cópia para que voltar/avançar não reabra uma versão antiga.
+				if (page.state.movie) {
+					replaceState('', { movie: { ...page.state.movie, userData } });
+				}
+				// Atualiza a página por baixo (ex.: grade do dashboard) sem zerar `page.state`
+				// — `invalidateAll()` zera e fechava o painel no meio da ação.
+				void refreshAll();
 			} else if (result.type === 'failure') {
 				message = (result.data?.message as string) ?? 'Não foi possível salvar.';
 			} else if (result.type === 'error') {
@@ -60,12 +64,6 @@
 			}
 		};
 	};
-
-	async function openDiary() {
-		tab = 'diary';
-		await tick();
-		dateInput?.focus();
-	}
 
 	const regionNames = new Intl.DisplayNames('pt-BR', { type: 'region' });
 	const country = (code: string) => {
@@ -76,38 +74,49 @@
 		}
 	};
 
+	// Direção e roteiro aparecem com foto na aba Elenco.
 	const facts = $derived(
 		[
 			{
 				label: 'Estreia',
 				value: movie.releaseDate ? formatLongDate(new Date(`${movie.releaseDate}T00:00:00Z`)) : null
 			},
-			{ label: 'Direção', value: movie.directors.join(', ') || null },
-			{ label: 'Roteiro', value: movie.writers.join(', ') || null },
-			{ label: 'Música', value: movie.composers.join(', ') || null },
-			{ label: 'Gênero', value: movie.genres.join(', ') || null },
-			{ label: 'País', value: movie.countries.map(country).join(', ') || null }
+			{ label: 'País', value: movie.countries.map(country).join(', ') || null },
+			{ label: 'Gênero', value: movie.genres.join(', ') || null, wide: true },
+			{ label: 'Estúdio', value: movie.studios.join(', ') || null, wide: true },
+			{ label: 'Música', value: movie.composers.join(', ') || null, wide: true }
 		].filter((fact) => fact.value)
+	);
+
+	const crew = $derived(
+		[
+			{ label: 'Direção', people: movie.directing },
+			{ label: 'Roteiro', people: movie.writing }
+		].filter((group) => group.people.length)
 	);
 
 	const loginHref = $derived(
 		`${resolve('/login')}?next=${encodeURIComponent(`/movie/${movie.id}`)}`
 	);
+
+	const sectionLabel = 'mb-3 text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase';
 </script>
 
-<article class="relative isolate min-h-svh text-foreground">
+<article class="relative isolate text-foreground lg:h-svh">
 	<MovieBackdrop path={backdrop} />
 
-	<div class="grid min-h-svh grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px]">
+	<div class="grid min-h-svh grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_360px]">
 		<!-- Coluna principal -->
-		<div class="relative flex flex-col px-5 pt-5 pb-10 md:px-10 lg:pl-24">
+		<div
+			class="relative flex min-w-0 flex-col px-5 pt-5 pb-8 md:px-10 lg:min-h-0 lg:overflow-y-auto lg:pl-24"
+		>
 			<!-- Linha vertical com pontos (indicador de aba, como na referência) -->
 			<div
 				class="absolute top-28 bottom-10 left-10 hidden w-px bg-white/15 lg:block"
 				aria-hidden="true"
 			>
 				<div class="absolute top-1/2 left-1/2 flex -translate-1/2 flex-col gap-3">
-					{#each tabs as t (t)}
+					{#each DETAIL_TABS as t (t)}
 						<span
 							class={[
 								'block size-1.5 rounded-full transition',
@@ -145,7 +154,7 @@
 					aria-label="Seções do filme"
 					class="-mx-1 flex max-w-full min-w-0 gap-1 overflow-x-auto px-1"
 				>
-					{#each tabs as t (t)}
+					{#each DETAIL_TABS as t (t)}
 						<button
 							type="button"
 							role="tab"
@@ -162,36 +171,59 @@
 				</div>
 			</header>
 
+			<!-- Espaço flexível: na galeria encolhe e o título sobe para o topo -->
+			<div
+				class="min-h-8 shrink-0 transition-[flex-grow] duration-500 ease-out"
+				style:flex-grow={tab === 'gallery' ? 0 : 1}
+			></div>
+
 			<!-- Título -->
-			<div class="mt-auto pt-24">
-				<p class="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/70">
-					{#if movie.year}<span class="tabular-nums">{movie.year}</span>{/if}
-					{#if movie.runtime}<span aria-hidden="true" class="text-white/30">|</span><span
-							>{formatDuration(movie.runtime)}</span
-						>{/if}
-					{#if movie.genres.length}<span aria-hidden="true" class="text-white/30">|</span><span
-							>{movie.genres.slice(0, 3).join(', ')}</span
-						>{/if}
-					{#if movie.voteAverage}
-						<span aria-hidden="true" class="text-white/30">|</span>
-						<span class="inline-flex items-center gap-1" title="{movie.voteCount} votos no TMDb">
-							<StarIcon class="size-3.5 fill-neon-peach text-neon-peach" aria-hidden="true" />
-							{movie.voteAverage.toFixed(1)}
-							<span class="text-white/40">TMDb</span>
-						</span>
-					{/if}
-				</p>
+			<div>
+				<div class={['collapsible', compact && 'is-collapsed']}>
+					<div class="min-h-0 overflow-hidden">
+						<p
+							class="flex flex-wrap items-center gap-x-3 gap-y-1 pb-4 text-sm text-white/70"
+							aria-hidden={compact}
+						>
+							{#if movie.year}<span class="tabular-nums">{movie.year}</span>{/if}
+							{#if movie.runtime}<span aria-hidden="true" class="text-white/30">|</span><span
+									>{formatDuration(movie.runtime)}</span
+								>{/if}
+							{#if movie.genres.length}<span aria-hidden="true" class="text-white/30">|</span><span
+									>{movie.genres.slice(0, 3).join(', ')}</span
+								>{/if}
+							{#if movie.voteAverage}
+								<span aria-hidden="true" class="text-white/30">|</span>
+								<span
+									class="inline-flex items-center gap-1"
+									title="{movie.voteCount} votos no TMDb"
+								>
+									<StarIcon class="size-3.5 fill-neon-peach text-neon-peach" aria-hidden="true" />
+									{movie.voteAverage.toFixed(1)}
+									<span class="text-white/40">TMDb</span>
+								</span>
+							{/if}
+						</p>
+					</div>
+				</div>
 				<h1
-					class="mt-4 max-w-5xl font-display text-[clamp(2.75rem,7vw,7rem)] leading-[0.9] font-bold tracking-[-0.045em] text-balance"
+					class={[
+						'max-w-5xl font-display leading-[0.9] font-bold tracking-[-0.045em] text-balance transition-[font-size] duration-500 ease-out',
+						compact ? 'text-[clamp(2.25rem,4.5vw,4.25rem)]' : 'text-[clamp(2.75rem,7vw,7rem)]'
+					]}
 				>
 					{movie.title}
 				</h1>
-				{#if movie.originalTitle && movie.originalTitle !== movie.title}
-					<p class="mt-3 text-sm text-white/50">{movie.originalTitle}</p>
-				{/if}
-				{#if movie.tagline}
-					<p class="mt-5 font-serif text-2xl text-white/80 italic">{movie.tagline}</p>
-				{/if}
+				<div class={['collapsible', compact && 'is-collapsed']}>
+					<div class="min-h-0 overflow-hidden" aria-hidden={compact}>
+						{#if movie.originalTitle && movie.originalTitle !== movie.title}
+							<p class="pt-3 text-sm text-white/50">{movie.originalTitle}</p>
+						{/if}
+						{#if movie.tagline}
+							<p class="pt-4 font-serif text-2xl text-white/80 italic">{movie.tagline}</p>
+						{/if}
+					</div>
+				</div>
 			</div>
 
 			<!-- Conteúdo da aba -->
@@ -199,99 +231,84 @@
 				id="painel-{tab}"
 				role="tabpanel"
 				aria-labelledby="tab-{tab}"
-				class="mt-8 min-h-56 max-w-3xl"
+				class={[
+					'mt-6 min-w-0',
+					tab === 'about' && 'max-w-3xl',
+					tab === 'gallery' && 'lg:min-h-0 lg:flex-1'
+				]}
 			>
 				{#key tab}
-					<div in:fade={{ duration: 250 }}>
+					<div in:fade={{ duration: 250 }} class="h-full">
 						{#if tab === 'about'}
 							{#if movie.overview}
-								<p class={['text-base leading-relaxed text-white/80', !expanded && 'line-clamp-4']}>
-									{movie.overview}
-								</p>
-								{#if movie.overview.length > 320}
-									<button
-										type="button"
-										onclick={() => (expanded = !expanded)}
-										class="mt-4 inline-flex items-center gap-3 text-xs font-semibold tracking-[0.2em] uppercase"
-									>
-										{expanded ? 'Ler menos' : 'Ler mais'}
-										<span class="h-px w-12 bg-white/60" aria-hidden="true"></span>
-									</button>
-								{/if}
+								<p class="text-base leading-relaxed text-white/80">{movie.overview}</p>
 							{:else}
 								<p class="text-white/50">Sem sinopse em português por enquanto.</p>
 							{/if}
 						{:else if tab === 'cast'}
-							{#if movie.cast.length}
-								<ul class="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
-									{#each movie.cast as person (person.id)}
-										<li class="w-28 shrink-0">
-											<div
-												class="aspect-[2/3] overflow-hidden rounded-xl bg-white/5 ring-1 ring-white/10"
-											>
-												{#if person.profilePath}
-													<img
-														src="https://image.tmdb.org/t/p/w185{person.profilePath}"
-														alt=""
-														loading="lazy"
-														class="size-full object-cover"
-													/>
-												{/if}
-											</div>
-											<p class="mt-2 truncate text-sm font-medium">{person.name}</p>
-											<p class="truncate text-xs text-white/55">{person.character}</p>
-										</li>
-									{/each}
-								</ul>
-							{:else}
-								<p class="text-white/50">Elenco não informado.</p>
-							{/if}
-						{:else if tab === 'gallery'}
-							{#if movie.gallery.length}
-								<ul class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-									{#each movie.gallery as path (path)}
-										<li>
-											<button
-												type="button"
-												onclick={() => (backdrop = path)}
-												aria-pressed={backdrop === path}
-												aria-label="Usar esta imagem como fundo"
-												class={[
-													'block aspect-video w-full overflow-hidden rounded-xl ring-1 transition',
-													backdrop === path
-														? 'ring-2 ring-white'
-														: 'ring-white/10 hover:ring-white/40'
-												]}
-											>
-												<img
-													src={backdropUrl(path, 'w300')}
-													alt=""
-													loading="lazy"
-													class="size-full object-cover"
+							<div class="space-y-6">
+								{#if crew.length}
+									<div class="-mx-1 flex gap-10 overflow-x-auto px-1">
+										{#each crew as group (group.label)}
+											<section class="shrink-0">
+												<h2 class={sectionLabel}>{group.label}</h2>
+												<ul class="flex gap-4">
+													{#each group.people as person (person.id)}
+														<PersonCard
+															name={person.name}
+															role={person.job}
+															profilePath={person.profilePath}
+														/>
+													{/each}
+												</ul>
+											</section>
+										{/each}
+									</div>
+								{/if}
+								<section>
+									<h2 class={sectionLabel}>Elenco</h2>
+									{#if movie.cast.length}
+										<ul class="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
+											{#each movie.cast as person (person.id)}
+												<PersonCard
+													name={person.name}
+													role={person.character}
+													profilePath={person.profilePath}
 												/>
-											</button>
-										</li>
-									{/each}
-								</ul>
-							{:else}
-								<p class="text-white/50">Sem imagens disponíveis.</p>
-							{/if}
-						{:else if tab === 'diary' && userData}
-							<DiaryPanel movieId={movie.id} sessions={userData.sessions} {submit} bind:dateInput />
+											{/each}
+										</ul>
+									{:else}
+										<p class="text-white/50">Elenco não informado.</p>
+									{/if}
+								</section>
+							</div>
+						{:else if tab === 'gallery'}
+							<GalleryPanel
+								movieId={movie.id}
+								signedIn={data.signedIn}
+								artwork={userData?.artwork ?? null}
+								defaults={{ posterPath: movie.posterPath, backdropPath: movie.backdropPath }}
+								preview={backdrop}
+								onpreview={(path) => (backdrop = path)}
+								{submit}
+							/>
 						{/if}
 					</div>
 				{/key}
 			</div>
+			{#if message && tab === 'gallery'}
+				<p role="alert" class="mt-3 text-xs text-destructive">{message}</p>
+			{/if}
 		</div>
 
-		<!-- Coluna lateral de vidro -->
+		<!-- Coluna lateral -->
 		<aside
-			class="flex flex-col gap-8 border-white/10 bg-background/70 px-5 py-8 md:px-10 lg:border-l lg:px-8 lg:pt-24"
+			class="flex flex-col gap-7 border-white/10 bg-background/70 px-5 py-8 md:px-10 lg:min-h-0 lg:overflow-y-auto lg:border-l lg:px-8 lg:pt-20"
 			aria-label="Informações e sua biblioteca"
 		>
-			<dl class="grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-1">
+			<dl class="grid grid-cols-2 gap-x-6 gap-y-4">
 				{#each facts as fact (fact.label)}
-					<div>
+					<div class={[fact.wide && 'col-span-2']}>
 						<dt class="text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase">
 							{fact.label}
 						</dt>
@@ -300,10 +317,10 @@
 				{/each}
 			</dl>
 
-			<div class="border-t border-white/10 pt-8">
+			<div class="border-t border-white/10 pt-7">
 				{#if data.signedIn && userData}
-					<LibraryControls movieId={movie.id} {userData} {submit} onLogSession={openDiary} />
-					{#if message}
+					<LibraryControls movieId={movie.id} {userData} {submit} />
+					{#if message && tab !== 'gallery'}
 						<p role="alert" class="mt-4 text-center text-xs text-destructive">{message}</p>
 					{/if}
 				{:else}
@@ -323,7 +340,7 @@
 					type="button"
 					onclick={() => (trailerOpen = true)}
 					aria-label="Ver trailer: {movie.trailer.name}"
-					class="group relative mt-auto aspect-video overflow-hidden rounded-xl ring-1 ring-white/10"
+					class="group relative mt-auto aspect-video shrink-0 overflow-hidden rounded-xl ring-1 ring-white/10"
 				>
 					<img
 						src="https://i.ytimg.com/vi/{movie.trailer.key}/mqdefault.jpg"
@@ -348,3 +365,26 @@
 {#if trailerOpen && movie.trailer}
 	<TrailerModal trailer={movie.trailer} onClose={() => (trailerOpen = false)} />
 {/if}
+
+<style>
+	/* Some/aparece animando a altura (0fr ↔ 1fr), sem medir nada em JS. */
+	.collapsible {
+		display: grid;
+		grid-template-rows: 1fr;
+		transition:
+			grid-template-rows 500ms ease-out,
+			opacity 300ms ease-out;
+	}
+
+	.collapsible.is-collapsed {
+		grid-template-rows: 0fr;
+		opacity: 0;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.collapsible,
+		h1 {
+			transition: none;
+		}
+	}
+</style>

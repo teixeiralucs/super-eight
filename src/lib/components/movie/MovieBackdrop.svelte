@@ -3,11 +3,14 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { backdropSrcset, backdropUrl } from '$lib/tmdb/images';
 
-	/** Fundo em tela cheia nas cores originais, com vinhetas para leitura do texto. */
+	/**
+	 * Fundo em tela cheia nas cores originais, com vinhetas para leitura do texto.
+	 * Fixo no tamanho da tela: não "dá zoom" quando o conteúdo da aba fica mais alto.
+	 */
 	let { path }: { path: string | null } = $props();
 </script>
 
-<div class="absolute inset-0 -z-10 overflow-hidden bg-background" aria-hidden="true">
+<div class="fixed inset-0 -z-10 overflow-hidden bg-background" aria-hidden="true">
 	{#if path}
 		{#key path}
 			<!-- w300 ampliado já fica suave enquanto o w1280 carrega (sem filter: blur, que é caro) -->

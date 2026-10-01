@@ -44,6 +44,18 @@ export const sessionSchema = (now = new Date()) =>
 			.transform((value) => value || null)
 	});
 
+/** Caminho de imagem do TMDb (ex.: "/abc123.jpg"); vazio = restaurar o padrão. */
+export const artworkSchema = z.object({
+	kind: z.enum(['poster', 'backdrop'], { error: 'Tipo de imagem inválido.' }),
+	path: z.preprocess(
+		(value) => (value === '' ? null : value),
+		z
+			.string()
+			.regex(/^\/[\w-]+\.(jpg|jpeg|png|webp|svg)$/, { error: 'Imagem inválida.' })
+			.nullable()
+	)
+});
+
 export const deleteSessionSchema = z.object({ sessionId: z.uuid({ error: 'Sessão inválida.' }) });
 
 export type SessionInput = z.infer<ReturnType<typeof sessionSchema>>;

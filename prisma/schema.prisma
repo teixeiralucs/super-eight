@@ -28,6 +28,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   library     LibraryEntry[]
+  artworks    MovieArtwork[]
   diary       DiaryEntry[]
   lists       List[]
   reviews     Review[]
@@ -55,6 +56,7 @@ model Movie {
   updatedAt     DateTime  @updatedAt
 
   libraryEntries LibraryEntry[]
+  artworks       MovieArtwork[]
   diaryEntries   DiaryEntry[]
   listItems      ListMovie[]
   reviews        Review[]
@@ -75,6 +77,21 @@ model LibraryEntry {
 
   @@id([userId, movieId])
   @@index([userId, status])
+}
+
+/// "DNA" visual do filme para um usuário: pôster/fundo escolhidos na galeria (qualquer idioma).
+/// Vale em toda a área logada (dashboard, busca, listas). Nulo = imagem padrão do TMDb.
+model MovieArtwork {
+  userId       String   @db.Uuid
+  movieId      Int
+  posterPath   String?
+  backdropPath String?
+  updatedAt    DateTime @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie Movie @relation(fields: [movieId], references: [id])
+
+  @@id([userId, movieId])
 }
 
 model DiaryEntry {

@@ -1,6 +1,13 @@
 import { error, fail, type RequestEvent } from '@sveltejs/kit';
 import { z } from 'zod';
-import { deleteSessionSchema, rateSchema, sessionSchema, statusSchema } from '$lib/schemas/library';
+import {
+	artworkSchema,
+	deleteSessionSchema,
+	rateSchema,
+	sessionSchema,
+	statusSchema
+} from '$lib/schemas/library';
+import { setArtwork } from '$lib/server/artwork';
 import {
 	deleteSession,
 	getMovieUserData,
@@ -77,5 +84,8 @@ export const actions: Actions = {
 	),
 	deleteSession: action(deleteSessionSchema, (userId, _movieId, { sessionId }) =>
 		deleteSession(userId, sessionId)
+	),
+	artwork: action(artworkSchema, (userId, movieId, { kind, path }, { fetch }) =>
+		setArtwork(userId, movieId, kind, path, fetch)
 	)
 };
