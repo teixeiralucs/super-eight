@@ -3,6 +3,8 @@
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
+	import ImageLightbox from './ImageLightbox.svelte';
 	import { backdropUrl } from '$lib/tmdb/images';
 	import type { MovieImage, MovieImages } from '$lib/tmdb/types';
 	import type { Artwork, ArtworkKind } from '$lib/movie/types';
@@ -37,6 +39,8 @@
 	let kind = $state<ArtworkKind>('backdrop');
 	let language = $state<string>('all');
 	let pending = $state<string | null>(null);
+	/** Posição (em `visible`) da imagem ampliada; nulo = visualizador fechado. */
+	let zoomed = $state<number | null>(null);
 
 	$effect(() => {
 		const controller = new AbortController();
@@ -177,9 +181,9 @@
 							: 'grid-cols-2 xl:grid-cols-3'
 					]}
 				>
-					{#each visible as image (image.path)}
+					{#each visible as image, i (image.path)}
 						{@const selected = (pending ?? current) === image.path}
-						<li class="relative">
+						<li class="group relative">
 							<button
 								type={signedIn ? 'submit' : 'button'}
 								name={signedIn ? 'path' : undefined}
@@ -206,6 +210,15 @@
 									class="size-full object-cover"
 								/>
 							</button>
+							<!-- Ampliar (não escolhe: só abre o visualizador) -->
+							<button
+								type="button"
+								onclick={() => (zoomed = i)}
+								aria-label={m.gallery_zoom()}
+								class="absolute top-2 left-2 grid size-7 place-items-center rounded-full bg-background/80 text-white/85 transition hover:bg-white hover:text-background focus-visible:opacity-100 md:opacity-0 md:group-hover:opacity-100"
+							>
+								<ZoomInIcon class="size-3.5" aria-hidden="true" />
+							</button>
 							{#if selected}
 								<span
 									class="pointer-events-none absolute top-2 right-2 grid size-6 place-items-center rounded-full bg-neon-pink text-background"
@@ -225,3 +238,18 @@
 		{/if}
 	</div>
 </div>
+
+{#if zoomed !== null && visible[zoomed]}
+	<ImageLightbox
+		images={visible}
+		bind:index={zoomed}
+		{kind}
+		selectedPath={pending ?? current}
+		{signedIn}
+		{movieId}
+		submit={submitArtwork}
+		{languageLabel}
+		{onpreview}
+		onClose={() => (zoomed = null)}
+	/>
+{/if}

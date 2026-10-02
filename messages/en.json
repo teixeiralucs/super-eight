@@ -491,5 +491,16 @@
 	"confirm_delete_comment_title": "Delete this comment?",
 	"confirm_delete_list_title": "Delete the list “{title}”?",
 	"confirm_delete_list_text": "The movies stay in your library.",
-	"confirm_remove_from_list_title": "Remove {title} from the list?"
+	"confirm_remove_from_list_title": "Remove {title} from the list?",
+	"gallery_zoom": "Enlarge image",
+	"lightbox_label": "Image viewer",
+	"lightbox_prev": "Previous image",
+	"lightbox_next": "Next image",
+	"lightbox_close": "Close viewer",
+	"lightbox_counter": "{current} of {total}",
+	"lightbox_in_use": "In use",
+	"lightbox_use_backdrop": "Use this backdrop",
+	"lightbox_use_poster": "Use this poster",
+	"lightbox_preview_backdrop": "Preview as backdrop",
+	"lightbox_keys_hint": "← → to browse · Esc to close"
 }

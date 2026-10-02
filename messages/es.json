@@ -491,5 +491,16 @@
 	"confirm_delete_comment_title": "¿Borrar este comentario?",
 	"confirm_delete_list_title": "¿Borrar la lista “{title}”?",
 	"confirm_delete_list_text": "Las películas siguen en tu biblioteca.",
-	"confirm_remove_from_list_title": "¿Quitar {title} de la lista?"
+	"confirm_remove_from_list_title": "¿Quitar {title} de la lista?",
+	"gallery_zoom": "Ampliar imagen",
+	"lightbox_label": "Visor de imagen",
+	"lightbox_prev": "Imagen anterior",
+	"lightbox_next": "Siguiente imagen",
+	"lightbox_close": "Cerrar visor",
+	"lightbox_counter": "{current} de {total}",
+	"lightbox_in_use": "En uso",
+	"lightbox_use_backdrop": "Usar este fondo",
+	"lightbox_use_poster": "Usar este póster",
+	"lightbox_preview_backdrop": "Ver como fondo",
+	"lightbox_keys_hint": "← → para navegar · Esc para cerrar"
 }
