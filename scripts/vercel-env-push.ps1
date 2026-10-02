@@ -8,6 +8,16 @@
 
 $ErrorActionPreference = 'Stop'
 
+# Usa o Node 24 do fnm direto (o CLI da Vercel não aceita Node 26, e alguns terminais
+# deste PC não acham o `vercel` no PATH). Sem fnm, cai no `vercel` do PATH.
+$node24 = Join-Path $env:APPDATA 'fnm
+ode-versions24.21.0\installation'
+$vc = Join-Path $node24 'node_modulesercel\distc.js'
+function Invoke-Vercel {
+	if (Test-Path $vc) { & (Join-Path $node24 'node.exe') $vc @args }
+	else { & vercel @args }
+}
+
 $public = @('PUBLIC_SUPABASE_URL', 'PUBLIC_SUPABASE_ANON_KEY')
 $secret = @('DATABASE_URL', 'TMDB_READ_ACCESS_TOKEN', 'CRON_SECRET')
 $targets = @('production', 'preview')
@@ -33,10 +43,10 @@ if ($missing) { throw "Sem valor no .env: $($missing -join ', ')" }
 foreach ($name in $public + $secret) {
 	$kind = if ($secret -contains $name) { '--sensitive' } else { '--no-sensitive' }
 	foreach ($target in $targets) {
-		vercel env add $name $target --value $values[$name] --force $kind --yes *> $null
+		Invoke-Vercel env add $name $target --value $values[$name] --force $kind --yes *> $null
 		if ($LASTEXITCODE -ne 0) { throw "Falhou ao enviar $name ($target)." }
 		Write-Host "ok  $name  ($target)"
 	}
 }
 Write-Host ''
-Write-Host 'Pronto. Confira os nomes (sem valores) com: vercel env ls'
+Write-Host 'Pronto. As variaveis foram enviadas (nenhum valor foi exibido).'
