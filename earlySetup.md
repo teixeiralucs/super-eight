@@ -433,7 +433,9 @@ model CatalogEntry {
 
 - 6.4.1. Loading States: usar `navigating` de `$app/state` para indicadores globais de carregamento e Skeletons do Shadcn-Svelte nas páginas.
 - 6.4.2. Mutações (`use:enhance`): todos os formulários que alteram o banco usam `use:enhance`, com _Optimistic UI_ onde fizer sentido (ex.: favoritar, marcar como assistido, dar nota).
-- 6.4.3. Notificações: toasts via **Sonner** (componente oficial do Shadcn-Svelte) para sucesso/falha (ex.: "Filme adicionado à biblioteca", "Erro ao avaliar").
+- 6.4.3. Notificações: toasts via **svelte-sonner** (o Sonner do Shadcn-Svelte), montado no layout raiz, para sucesso/falha (ex.: "Adicionado a “Melhores do ano”", "Nota salva: 8/10"). Falhas de validação de campo ficam no próprio formulário; mensagens da action e erros inesperados viram toast.
+- 6.4.4. Toda mutação passa por `withFeedback` (`$lib/feedback/submit`): trava o formulário enquanto envia (botões desativados, `aria-busy`; clique duplo/Enter repetido é ignorado), pergunta antes das ações destrutivas (`confirmAction`, diálogo do app em vez do `confirm()` do navegador — remover da biblioteca, apagar sessão/review/comentário/lista, tirar filme da lista) e mostra o toast. Com a confirmação aberta, pop-ups e modais por baixo ignoram Esc e "clique fora".
+- 6.4.5. Na página direta `/movie/[id]` as actions não recarregam a página (a resposta já traz o estado); só o painel sobreposto chama `refreshAll()` para atualizar a página de baixo — evita que o recarregamento lento de uma ação sobrescreva a seguinte.
 
 ## **6.5. Idiomas e Região (i18n)**
 

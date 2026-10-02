@@ -78,6 +78,7 @@
 			}}
 			errors={form?.errors}
 			submitLabel={m.list_create()}
+			successMessage={m.toast_list_created()}
 			onCancel={() => (creating = false)}
 		/>
 	</Modal>

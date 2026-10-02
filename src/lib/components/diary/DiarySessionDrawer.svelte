@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { withFeedback } from '$lib/feedback/submit';
+	import { isConfirmOpen } from '$lib/feedback/confirm.svelte';
 	import { plural } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
 	import { enhance } from '$app/forms';
@@ -48,7 +50,6 @@
 
 	let panel: HTMLElement | undefined = $state();
 	let deleting = $state(false);
-	let error = $state<string | null>(null);
 
 	$effect(() => {
 		panel?.focus();
@@ -57,7 +58,6 @@
 	// Ao trocar de registro, limpa erros e volta ao topo.
 	$effect(() => {
 		void entry.id;
-		error = null;
 		panel?.scrollTo({ top: 0 });
 	});
 
@@ -74,7 +74,7 @@
 	const label = 'text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase';
 </script>
 
-<svelte:window onkeydown={(event) => event.key === 'Escape' && onClose()} />
+<svelte:window onkeydown={(event) => event.key === 'Escape' && !isConfirmOpen() && onClose()} />
 
 <!-- Fundo: clique fecha -->
 <div
@@ -285,22 +285,28 @@
 			<form
 				method="POST"
 				action="/movie/{movie.id}?/deleteSession"
-				use:enhance={({ cancel }) => {
-					if (!confirm(m.diary_confirm_delete({ date: formatLongDate(entry.watchedAt) })))
-						return cancel();
-					deleting = true;
-					error = null;
-					const removed = entry;
-					return async ({ result, update }) => {
-						deleting = false;
-						if (result.type === 'success') {
-							await update({ reset: false });
-							ondeleted(removed);
-						} else {
-							error = m.diary_delete_error();
-						}
-					};
-				}}
+				use:enhance={withFeedback(
+					() => {
+						deleting = true;
+						const removed = entry;
+						return async ({ result, update }) => {
+							deleting = false;
+							if (result.type === 'success') {
+								await update({ reset: false });
+								ondeleted(removed);
+							}
+						};
+					},
+					{
+						confirm: {
+							title: m.confirm_delete_session_title({ date: formatLongDate(entry.watchedAt) }),
+							description: m.confirm_delete_session_text(),
+							confirmLabel: m.action_delete(),
+							destructive: true
+						},
+						success: m.toast_session_deleted()
+					}
+				)}
 			>
 				<input type="hidden" name="sessionId" value={entry.id} />
 				<button
@@ -324,6 +330,5 @@
 				<ArrowUpRightIcon class="size-4" aria-hidden="true" />
 			</a>
 		</div>
-		{#if error}<p role="alert" class="-mt-4 text-right text-xs text-destructive">{error}</p>{/if}
 	</div>
 </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withFeedback } from '$lib/feedback/submit';
 	import { m } from '$lib/paraglide/messages';
 	import { openMovie } from '$lib/movie/open.svelte';
 	import { enhance } from '$app/forms';
@@ -117,14 +118,17 @@
 				<form
 					method="POST"
 					action={add.action}
-					use:enhance={() => {
-						adding = true;
-						// Não recarrega os dados da página: atualiza só este card.
-						return async ({ result }) => {
-							adding = false;
-							if (result.type === 'success') addedLocally = true;
-						};
-					}}
+					use:enhance={withFeedback(
+						() => {
+							adding = true;
+							// Não recarrega os dados da página: atualiza só este card.
+							return async ({ result }) => {
+								adding = false;
+								if (result.type === 'success') addedLocally = true;
+							};
+						},
+						{ success: m.toast_added_named({ title: movie.originalTitle }) }
+					)}
 				>
 					<input type="hidden" name="movieId" value={movie.id} />
 					<button

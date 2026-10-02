@@ -4,6 +4,7 @@
 	import { prefersReducedMotion } from 'svelte/motion';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { m } from '$lib/paraglide/messages';
+	import { isConfirmOpen } from '$lib/feedback/confirm.svelte';
 
 	/** Janela modal centralizada: Esc e clique fora fecham. */
 	let { title, onClose, children }: { title: string; onClose: () => void; children: Snippet } =
@@ -22,7 +23,7 @@
 	});
 </script>
 
-<svelte:window onkeydown={(event) => event.key === 'Escape' && onClose()} />
+<svelte:window onkeydown={(event) => event.key === 'Escape' && !isConfirmOpen() && onClose()} />
 
 <!-- data-nested-dialog: o painel de detalhes do filme ignora o Esc enquanto este estiver aberto -->
 <div

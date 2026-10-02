@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { actionName, withFeedback } from '$lib/feedback/submit';
 	import type { Snippet } from 'svelte';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
@@ -53,7 +54,6 @@
 
 	let commentsOpen = $state(false);
 	let comments = $state<CommentView[] | null>(null);
-	let error = $state<string | null>(null);
 
 	async function loadComments() {
 		const response = await fetch(`/api/reviews/${review.id}/comments`);
@@ -67,19 +67,27 @@
 	}
 
 	/** Toda action daqui: sem recarregar a página; avisa quem lista e atualiza os comentários. */
-	const submit: SubmitFunction = ({ formElement }) => {
-		error = null;
+	const refresh: SubmitFunction = ({ formElement }) => {
 		return async ({ result }) => {
 			if (result.type === 'success') {
 				if (formElement.dataset.reset !== undefined) formElement.reset();
 				await Promise.all([onChanged(), commentsOpen ? loadComments() : null]);
-			} else if (result.type === 'failure') {
-				error = (result.data?.message as string) ?? m.error_could_not_save();
-			} else if (result.type === 'error') {
-				error = m.error_generic();
 			}
 		};
 	};
+
+	// Curtir e comentar já aparecem na hora; só apagar comentário pede confirmação e avisa.
+	const submit = withFeedback(refresh, {
+		confirm: (input) =>
+			actionName(input) === 'deleteComment'
+				? {
+						title: m.confirm_delete_comment_title(),
+						confirmLabel: m.action_delete(),
+						destructive: true
+					}
+				: null,
+		success: (input) => (actionName(input) === 'deleteComment' ? m.toast_comment_deleted() : null)
+	});
 
 	const base = $derived(`/movie/${movieId}`);
 	const edited = $derived(review.updatedAt.getTime() - review.createdAt.getTime() > 60_000);
@@ -174,8 +182,6 @@
 				: m.comments_show()}
 		</button>
 	</footer>
-
-	{#if error}<p role="alert" class="mt-3 text-xs text-destructive">{error}</p>{/if}
 
 	{#if commentsOpen}
 		<div class="mt-4 space-y-3 border-t border-white/10 pt-4">

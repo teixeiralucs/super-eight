@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withFeedback } from '$lib/feedback/submit';
 	import { enhance } from '$app/forms';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import UserPlusIcon from '@lucide/svelte/icons/user-plus';
@@ -12,19 +13,27 @@
 	}: { username: string; isFollowing: boolean; size?: 'sm' | 'md' } = $props();
 
 	let busy = $state(false);
+	let toastMessage = '';
 	const pad = $derived(size === 'sm' ? 'px-4 py-1.5 text-xs' : 'px-6 py-2.5 text-sm');
 </script>
 
 <form
 	method="POST"
 	action="/u/{username}?/{isFollowing ? 'unfollow' : 'follow'}"
-	use:enhance={() => {
-		busy = true;
-		return async ({ update }) => {
-			await update({ reset: false });
-			busy = false;
-		};
-	}}
+	use:enhance={withFeedback(
+		() => {
+			busy = true;
+			const following = isFollowing;
+			return async ({ update }) => {
+				await update({ reset: false });
+				busy = false;
+				toastMessage = following
+					? m.toast_unfollowed({ username })
+					: m.toast_following({ username });
+			};
+		},
+		{ success: () => toastMessage }
+	)}
 >
 	{#if isFollowing}
 		<button

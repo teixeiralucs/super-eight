@@ -3,6 +3,7 @@
 	import { fly } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import XIcon from '@lucide/svelte/icons/x';
+	import { isConfirmOpen } from '$lib/feedback/confirm.svelte';
 
 	/**
 	 * Pop-up ao lado de um botão (desktop: à esquerda dele, centralizado na vertical sem sair
@@ -55,6 +56,7 @@
 	});
 
 	function onPointerDown(event: PointerEvent) {
+		if (isConfirmOpen()) return;
 		const target = event.target as Node;
 		if (!panel?.contains(target) && !anchor.contains(target)) onClose();
 	}
@@ -63,7 +65,7 @@
 <svelte:window
 	onresize={place}
 	onpointerdown={onPointerDown}
-	onkeydown={(event) => event.key === 'Escape' && onClose()}
+	onkeydown={(event) => event.key === 'Escape' && !isConfirmOpen() && onClose()}
 />
 
 <!-- data-nested-dialog: o painel de detalhes por baixo ignora o Esc enquanto este estiver aberto -->

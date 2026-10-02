@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withFeedback } from '$lib/feedback/submit';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -303,7 +304,19 @@
 									<ArrowDownIcon class="size-3.5" />
 								</button>
 							{/if}
-							<form method="POST" action="?/remove" use:enhance class="ml-auto">
+							<form
+								method="POST"
+								action="?/remove"
+								use:enhance={withFeedback(undefined, {
+									confirm: {
+										title: m.confirm_remove_from_list_title({ title: item.movie.originalTitle }),
+										confirmLabel: m.action_remove(),
+										destructive: true
+									},
+									success: m.toast_list_item_removed()
+								})}
+								class="ml-auto"
+							>
 								<input type="hidden" name="movieId" value={item.movie.id} />
 								<button
 									class="{control} hover:border-destructive hover:text-destructive"
@@ -318,7 +331,13 @@
 			{/each}
 		</ul>
 
-		<form bind:this={reorderForm} method="POST" action="?/reorder" use:enhance={submitOrder} hidden>
+		<form
+			bind:this={reorderForm}
+			method="POST"
+			action="?/reorder"
+			use:enhance={withFeedback(submitOrder)}
+			hidden
+		>
 			<input bind:this={orderInput} type="hidden" name="order" />
 		</form>
 	{:else}
@@ -340,6 +359,7 @@
 				? (form.errors as Record<string, string[] | undefined>)
 				: undefined}
 			submitLabel={m.list_save()}
+			successMessage={m.toast_list_updated()}
 			onCancel={() => (editingFields = false)}
 			submit={() =>
 				async ({ result, update }) => {
@@ -350,9 +370,15 @@
 		<form
 			method="POST"
 			action="?/delete"
-			use:enhance={({ cancel }) => {
-				if (!confirm(m.list_delete_confirm({ title: list.title }))) cancel();
-			}}
+			use:enhance={withFeedback(undefined, {
+				confirm: {
+					title: m.confirm_delete_list_title({ title: list.title }),
+					description: m.confirm_delete_list_text(),
+					confirmLabel: m.list_delete(),
+					destructive: true
+				},
+				success: m.toast_list_deleted()
+			})}
 			class="mt-6 border-t border-white/10 pt-5"
 		>
 			<button

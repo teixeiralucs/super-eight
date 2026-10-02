@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withFeedback } from '$lib/feedback/submit';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
@@ -15,7 +16,8 @@
 		errors,
 		submitLabel,
 		onCancel,
-		submit
+		submit,
+		successMessage
 	}: {
 		action: string;
 		values?: {
@@ -29,19 +31,26 @@
 		onCancel: () => void;
 		/** `use:enhance` personalizado (padrão: comportamento do SvelteKit). */
 		submit?: SubmitFunction;
+		/** Toast quando salvar. */
+		successMessage?: string;
 	} = $props();
 
 	let saving = $state(false);
-	const run: SubmitFunction = (input) => {
-		saving = true;
-		const done = submit?.(input);
-		return async (options) => {
-			const after = await done;
-			if (after) await after(options);
-			else await options.update();
-			saving = false;
-		};
-	};
+	const run = $derived(
+		withFeedback(
+			(input) => {
+				saving = true;
+				const done = submit?.(input);
+				return async (options) => {
+					const after = await done;
+					if (after) await after(options);
+					else await options.update();
+					saving = false;
+				};
+			},
+			{ success: successMessage }
+		)
+	);
 
 	const field =
 		'w-full rounded-2xl border border-white/10 bg-background px-4 py-3 text-sm outline-none transition placeholder:text-white/30 focus:border-neon-cyan';

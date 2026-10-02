@@ -137,3 +137,31 @@
 		0 0 12px var(--neon-cyan),
 		0 0 28px color-mix(in oklab, var(--neon-cyan) 50%, transparent);
 }
+
+/* Toasts (svelte-sonner) no visual do app: cartão escuro, ícone neon por tipo. */
+[data-sonner-toaster][data-sonner-theme='dark'] {
+	--normal-bg: var(--card);
+	--normal-border: rgb(255 255 255 / 0.12);
+	--normal-text: var(--foreground);
+	--border-radius: 1rem;
+	font-family: inherit;
+	z-index: 100;
+}
+.super-eight-toast {
+	box-shadow: 0 18px 50px -12px rgb(0 0 0 / 0.7);
+}
+[data-sonner-toast][data-type='success'] [data-icon] {
+	color: var(--neon-cyan);
+}
+[data-sonner-toast][data-type='error'] [data-icon] {
+	color: var(--destructive);
+}
+
+/* Formulário enviando (ver $lib/feedback/submit): cursor de espera e botões esmaecidos. */
+form[aria-busy='true'] {
+	cursor: progress;
+}
+form[aria-busy='true'] :is(button, input[type='submit']):disabled {
+	opacity: 0.55;
+	cursor: progress;
+}

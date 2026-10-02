@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { withFeedback } from '$lib/feedback/submit';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -43,13 +44,16 @@
 	<form
 		method="POST"
 		action="?/profile"
-		use:enhance={() => {
-			savingProfile = true;
-			return async ({ update }) => {
-				await update({ reset: false });
-				savingProfile = false;
-			};
-		}}
+		use:enhance={withFeedback(
+			() => {
+				savingProfile = true;
+				return async ({ update }) => {
+					await update({ reset: false });
+					savingProfile = false;
+				};
+			},
+			{ success: m.settings_profile_saved() }
+		)}
 		class={card}
 	>
 		<div class="flex items-start justify-between gap-4">
@@ -98,9 +102,6 @@
 			>
 				{m.settings_save_profile()}
 			</button>
-			{#if form?.profileSaved}<p role="status" class="text-xs text-neon-cyan">
-					{m.settings_profile_saved()}
-				</p>{/if}
 		</div>
 	</form>
 

@@ -18,6 +18,8 @@
 		type MovieDetailData,
 		type MovieUserData
 	} from '$lib/movie/types';
+	import { actionName, withFeedback } from '$lib/feedback/submit';
+	import type { ConfirmOptions } from '$lib/feedback/confirm.svelte';
 	import GalleryPanel from './GalleryPanel.svelte';
 	import LibraryControls from './LibraryControls.svelte';
 	import MovieBackdrop from './MovieBackdrop.svelte';
@@ -35,7 +37,6 @@
 
 	// Estado do usuário: começa com o do servidor e é atualizado pelas respostas das actions.
 	let userData = $derived<MovieUserData | null>(data.userData);
-	let message = $state<string | null>(null);
 
 	let tab = $state<DetailTab>('about');
 	// Fora do "Sobre" a tela fica mais leve: some a linha de dados e a frase do filme.
@@ -46,8 +47,8 @@
 
 	let trailerOpen = $state(false);
 
-	const submit: SubmitFunction = () => {
-		message = null;
+	/** Aplica a resposta das actions (estado novo do usuário); erros viram toast (withFeedback). */
+	const applyUserData: SubmitFunction = () => {
 		return async ({ result }) => {
 			if (result.type === 'success' && result.data?.userData) {
 				userData = result.data.userData as MovieUserData;
@@ -55,17 +56,84 @@
 				// a cópia para que voltar/avançar não reabra uma versão antiga.
 				if (page.state.movie) {
 					replaceState('', { movie: { ...page.state.movie, userData } });
+					// Atualiza a página por baixo (ex.: grade do dashboard) sem zerar `page.state`
+					// — `invalidateAll()` zera e fechava o painel no meio da ação.
+					void refreshAll();
 				}
-				// Atualiza a página por baixo (ex.: grade do dashboard) sem zerar `page.state`
-				// — `invalidateAll()` zera e fechava o painel no meio da ação.
-				void refreshAll();
-			} else if (result.type === 'failure') {
-				message = (result.data?.message as string) ?? m.error_could_not_save();
-			} else if (result.type === 'error') {
-				message = m.error_generic();
+				// Página direta (/movie/[id]): a resposta já traz o estado novo. Recarregar aqui
+				// deixava um recarregamento lento de uma ação anterior sobrescrever a seguinte.
 			}
 		};
 	};
+
+	type SubmitInput = Parameters<SubmitFunction>[0];
+
+	/** Confirmação das ações destrutivas, por action. */
+	const confirmFor = (input: SubmitInput): ConfirmOptions | null => {
+		switch (actionName(input)) {
+			case 'remove':
+				return {
+					title: m.confirm_remove_library_title(),
+					description: m.confirm_remove_library_text(),
+					confirmLabel: m.action_remove(),
+					destructive: true
+				};
+			case 'deleteSession': {
+				const id = input.formData.get('sessionId');
+				const session = userData?.sessions.find((s) => s.id === id);
+				return {
+					title: m.confirm_delete_session_title({
+						date: session ? formatLongDate(session.watchedAt) : ''
+					}),
+					description: m.confirm_delete_session_text(),
+					confirmLabel: m.action_delete(),
+					destructive: true
+				};
+			}
+			default:
+				return null;
+		}
+	};
+
+	/** Toast de sucesso, por action (já com o estado novo aplicado). */
+	const successFor = (input: SubmitInput): string | null => {
+		const form = input.formData;
+		const list = (id: unknown) => userData?.lists.find((l) => l.id === id);
+		switch (actionName(input)) {
+			case 'add':
+				return m.toast_added_watchlist();
+			case 'remove':
+				return m.toast_removed_library();
+			case 'rate': {
+				const rating = Number(form.get('rating'));
+				return rating ? m.toast_rating_saved({ rating }) : m.toast_rating_removed();
+			}
+			case 'favorite':
+				return userData?.library?.isFavorite ? m.toast_favorited() : m.toast_unfavorited();
+			case 'logSession':
+				return m.toast_session_logged();
+			case 'deleteSession':
+				return m.toast_session_deleted();
+			case 'artwork':
+				if (!form.get('path')) return m.toast_artwork_restored();
+				return form.get('kind') === 'poster'
+					? m.toast_poster_updated()
+					: m.toast_backdrop_updated();
+			case 'toggleList': {
+				const target = list(form.get('listId'));
+				if (!target) return null;
+				return target.contains
+					? m.toast_list_added({ title: target.title })
+					: m.toast_list_removed({ title: target.title });
+			}
+			case 'quickList':
+				return m.toast_list_created_with({ title: String(form.get('title') ?? '') });
+			default:
+				return null;
+		}
+	};
+
+	const submit = withFeedback(applyUserData, { confirm: confirmFor, success: successFor });
 
 	const longDate = (iso: string | null) =>
 		iso ? formatLongDate(new Date(`${iso}T00:00:00Z`)) : null;
@@ -304,9 +372,6 @@
 					</div>
 				{/key}
 			</div>
-			{#if message && tab === 'gallery'}
-				<p role="alert" class="mt-3 text-xs text-destructive">{message}</p>
-			{/if}
 		</div>
 
 		<!-- Coluna lateral -->
@@ -328,9 +393,6 @@
 			<div class="border-t border-white/10 pt-7">
 				{#if data.signedIn && userData}
 					<LibraryControls movieId={movie.id} {userData} {submit} />
-					{#if message && tab !== 'gallery'}
-						<p role="alert" class="mt-4 text-center text-xs text-destructive">{message}</p>
-					{/if}
 				{:else}
 					<p class="text-sm text-white/70">{m.sign_in_to_save()}</p>
 					<!-- eslint-disable svelte/no-navigation-without-resolve -- loginHref vem de resolve('/login') -->

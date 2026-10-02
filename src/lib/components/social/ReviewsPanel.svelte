@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { actionName, withFeedback } from '$lib/feedback/submit';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
 	import PencilIcon from '@lucide/svelte/icons/pencil';
@@ -18,7 +19,6 @@
 	let failed = $state(false);
 	let editing = $state(false);
 	let saving = $state(false);
-	let error = $state<string | null>(null);
 
 	const revive = (review: ReviewView): ReviewView => ({
 		...review,
@@ -40,25 +40,36 @@
 		void load();
 	});
 
-	const submit: SubmitFunction = ({ action, cancel }) => {
-		if (action.search.includes('deleteReview') && !confirm(m.reviews_delete_confirm())) {
-			cancel();
-			return;
-		}
+	/** Se já havia review no envio, salvar é "atualizar" (decide o texto do toast). */
+	let wasEditing = false;
+
+	const reload: SubmitFunction = () => {
 		saving = true;
-		error = null;
+		wasEditing = Boolean(reviews?.mine);
 		return async ({ result }) => {
 			saving = false;
 			if (result.type === 'success') {
 				editing = false;
 				await load();
-			} else if (result.type === 'failure') {
-				error = (result.data?.message as string) ?? m.error_could_not_save();
-			} else if (result.type === 'error') {
-				error = m.error_generic();
 			}
 		};
 	};
+
+	const submit = withFeedback(reload, {
+		confirm: (input) =>
+			actionName(input) === 'deleteReview'
+				? {
+						title: m.confirm_delete_review_title(),
+						description: m.confirm_delete_review_text(),
+						confirmLabel: m.action_delete(),
+						destructive: true
+					}
+				: null,
+		success: (input) => {
+			if (actionName(input) === 'deleteReview') return m.toast_review_deleted();
+			return wasEditing ? m.toast_review_updated() : m.toast_review_published();
+		}
+	});
 
 	const base = $derived(`/movie/${movieId}`);
 	const sectionLabel = 'mb-3 text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase';
@@ -150,7 +161,6 @@
 				</div>
 			</form>
 		{/if}
-		{#if error}<p role="alert" class="mt-2 text-xs text-destructive">{error}</p>{/if}
 	</section>
 
 	<!-- Comunidade -->

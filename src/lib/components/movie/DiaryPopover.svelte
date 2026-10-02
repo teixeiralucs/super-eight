@@ -29,11 +29,9 @@
 
 	let watchedAt = $state(todayIso());
 	let rating = $state<number | null>(null);
-	let saved = $state(false);
 
 	/** Usa o tratamento comum (estado/erros) e, se deu certo, limpa o formulário. */
 	const submitSession: SubmitFunction = async (input) => {
-		saved = false;
 		const done = await submit(input);
 		return async (options) => {
 			await done?.(options);
@@ -41,7 +39,6 @@
 				input.formElement.reset();
 				watchedAt = todayIso();
 				rating = null;
-				saved = true;
 			}
 		};
 	};
@@ -96,7 +93,6 @@
 			>
 				{m.log_session()}
 			</button>
-			{#if saved}<p role="status" class="text-xs text-neon-cyan">{m.session_logged()}</p>{/if}
 		</div>
 	</form>
 
