@@ -27,3 +27,6 @@ vite.config.ts.timestamp-*
 
 # Referências visuais (locais)
 /inspo
+
+# Backups de biblioteca (dados pessoais) — ver scripts/library-backup.ts
+/backups
