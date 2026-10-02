@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { m } from '$lib/paraglide/messages';
 
 // Validação das actions da página de filme (earlySetup.md §5.2.2–5.2.3, §5.3.1).
 
@@ -12,9 +13,9 @@ const optionalRating = z.preprocess(
 	(value) => (value === '' || value === null || value === undefined ? null : value),
 	z.coerce
 		.number()
-		.int({ error: 'A nota deve ser um número inteiro.' })
-		.min(1, { error: 'A nota vai de 1 a 10.' })
-		.max(10, { error: 'A nota vai de 1 a 10.' })
+		.int({ error: () => m.error_rating_integer() })
+		.min(1, { error: () => m.error_rating_range() })
+		.max(10, { error: () => m.error_rating_range() })
 		.nullable()
 );
 
@@ -24,34 +25,36 @@ export const sessionSchema = (now = new Date()) =>
 	z.object({
 		watchedAt: z
 			.string()
-			.regex(ISO_DATE, { error: 'Data inválida.' })
+			.regex(ISO_DATE, { error: () => m.error_invalid_date() })
 			.refine((value) => !Number.isNaN(Date.parse(`${value}T00:00:00Z`)), {
-				error: 'Data inválida.'
+				error: () => m.error_invalid_date()
 			})
 			.refine((value) => value <= latestAllowedDate(now), {
-				error: 'A data não pode estar no futuro.'
+				error: () => m.error_future_date()
 			}),
 		rating: optionalRating,
 		note: z
 			.string()
 			.trim()
-			.max(500, { error: 'A anotação pode ter até 500 caracteres.' })
+			.max(500, { error: () => m.error_note_too_long() })
 			.optional()
 			.transform((value) => value || null)
 	});
 
 /** Caminho de imagem do TMDb (ex.: "/abc123.jpg"); vazio = restaurar o padrão. */
 export const artworkSchema = z.object({
-	kind: z.enum(['poster', 'backdrop'], { error: 'Tipo de imagem inválido.' }),
+	kind: z.enum(['poster', 'backdrop'], { error: () => m.error_invalid_image_kind() }),
 	path: z.preprocess(
 		(value) => (value === '' ? null : value),
 		z
 			.string()
-			.regex(/^\/[\w-]+\.(jpg|jpeg|png|webp|svg)$/, { error: 'Imagem inválida.' })
+			.regex(/^\/[\w-]+\.(jpg|jpeg|png|webp|svg)$/, { error: () => m.error_invalid_image() })
 			.nullable()
 	)
 });
 
-export const deleteSessionSchema = z.object({ sessionId: z.uuid({ error: 'Sessão inválida.' }) });
+export const deleteSessionSchema = z.object({
+	sessionId: z.uuid({ error: () => m.error_invalid_session() })
+});
 
 export type SessionInput = z.infer<ReturnType<typeof sessionSchema>>;

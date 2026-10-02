@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
@@ -15,12 +16,13 @@
 	class="flex flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6"
 >
 	<div class="flex items-center justify-between">
-		<h2 id="diario-recente" class="font-display text-lg font-semibold">Diário recente</h2>
+		<h2 id="diario-recente" class="font-display text-lg font-semibold">{m.recent_diary_title()}</h2>
 		<a
 			href={resolve('/diary')}
 			class="inline-flex items-center gap-1 text-xs text-white/60 transition hover:text-white"
 		>
-			Ver tudo <ArrowRightIcon class="size-3.5" aria-hidden="true" />
+			{m.see_all()}
+			<ArrowRightIcon class="size-3.5" aria-hidden="true" />
 		</a>
 	</div>
 
@@ -39,9 +41,11 @@
 						class="h-14 w-10 shrink-0 rounded-md object-cover ring-1 ring-white/10"
 					/>
 					<div class="min-w-0 flex-1">
-						<p class="truncate text-sm font-medium">{session.movie.title}</p>
+						<p class="truncate text-sm font-medium">{session.movie.originalTitle}</p>
 						<p class="text-xs text-muted-foreground">
-							{formatShortDate(session.watchedAt)}{session.isRewatch ? ' · revisto' : ''}
+							{formatShortDate(session.watchedAt)}{session.isRewatch
+								? ` · ${m.rewatched_suffix()}`
+								: ''}
 						</p>
 					</div>
 					{#if session.rating}

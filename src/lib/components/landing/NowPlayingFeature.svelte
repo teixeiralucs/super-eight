@@ -1,15 +1,17 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import ArrowUpRightIcon from '@lucide/svelte/icons/arrow-up-right';
 	import { backdropSrcset, backdropUrl, posterSrcset, posterUrl } from '$lib/tmdb/images';
 	import type { TMDbMovie } from '$lib/tmdb/types';
+	import { intlLocale } from '$lib/i18n';
 
 	let { movie }: { movie: TMDbMovie } = $props();
 
 	const releaseLabel = $derived(
 		movie.releaseDate
-			? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'long' }).format(
+			? new Intl.DateTimeFormat(intlLocale(), { day: '2-digit', month: 'long' }).format(
 					new Date(`${movie.releaseDate}T12:00:00`)
 				)
 			: null
@@ -23,7 +25,7 @@
 			id="em-cartaz-title"
 			class="font-display text-4xl leading-none font-bold tracking-[-0.03em] uppercase md:text-6xl"
 		>
-			Em cartaz
+			{m.now_playing()}
 			<span
 				class="font-serif text-3xl font-normal tracking-normal text-white/40 normal-case italic md:text-5xl"
 				>nos cinemas</span
@@ -56,7 +58,12 @@
 					<h3
 						class="font-display text-[clamp(2.5rem,5vw,4.75rem)] leading-[0.95] font-semibold tracking-[-0.04em]"
 					>
-						{movie.title}
+						{movie.originalTitle}
+						{#if movie.title !== movie.originalTitle}
+							<span class="mt-3 block font-sans text-lg font-normal tracking-normal text-white/60"
+								>{movie.title}</span
+							>
+						{/if}
 					</h3>
 					<span class="font-mono text-sm text-muted-foreground">01.</span>
 				</div>
@@ -73,7 +80,7 @@
 					{#if movie.posterPath}
 						<img
 							src={posterUrl(movie.posterPath, 'w342')}
-							alt="Pôster de {movie.title}"
+							alt={m.poster_of({ title: movie.originalTitle })}
 							loading="lazy"
 							class="hidden w-40 rounded-md ring-1 ring-white/10 sm:block"
 						/>
@@ -81,19 +88,19 @@
 					<dl class="grid content-start gap-5 text-sm">
 						{#if movie.genres.length}
 							<div>
-								<dt class="mb-1 text-xs text-muted-foreground">Gêneros</dt>
+								<dt class="mb-1 text-xs text-muted-foreground">{m.genres()}</dt>
 								<dd>{movie.genres.join(', ')}</dd>
 							</div>
 						{/if}
 						{#if releaseLabel}
 							<div>
-								<dt class="mb-1 text-xs text-muted-foreground">Estreia</dt>
+								<dt class="mb-1 text-xs text-muted-foreground">{m.fact_release()}</dt>
 								<dd>{releaseLabel}</dd>
 							</div>
 						{/if}
 						{#if movie.overview}
 							<div>
-								<dt class="mb-1 text-xs text-muted-foreground">Sinopse</dt>
+								<dt class="mb-1 text-xs text-muted-foreground">{m.synopsis()}</dt>
 								<dd class="line-clamp-4 leading-relaxed text-white/75">{movie.overview}</dd>
 							</div>
 						{/if}
@@ -103,7 +110,8 @@
 								onclick={(event) => openMovie(event, movie.id)}
 								class="inline-flex items-center gap-1.5 text-sm font-medium text-neon-cyan underline-offset-4 hover:underline"
 							>
-								Ver detalhes <ArrowUpRightIcon class="size-4" aria-hidden="true" />
+								{m.see_details()}
+								<ArrowUpRightIcon class="size-4" aria-hidden="true" />
 							</a>
 						</div>
 					</dl>

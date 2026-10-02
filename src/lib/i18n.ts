@@ -58,6 +58,21 @@ export const currentLocale = (): Locale => getLocale();
 export const intlLocale = (locale: Locale = getLocale()) => INTL_LOCALE[locale];
 export const tmdbLanguage = (locale: Locale = getLocale()) => TMDB_LANGUAGE[locale];
 
+type CountMessage<P> = (inputs: P & { count: number }) => string;
+
+/**
+ * Singular/plural (as regras de pt, en e es coincidem: 1 = singular).
+ * Ex.: `plural(n, m.sessions_count_one, m.sessions_count_other)` → "1 sessão" / "3 sessões".
+ */
+export function plural<P extends object = object>(
+	count: number,
+	one: CountMessage<P>,
+	other: CountMessage<P>,
+	params = {} as P
+) {
+	return (count === 1 ? one : other)({ ...params, count });
+}
+
 /** Região sugerida pelo `Accept-Language` ("es-AR,es;q=0.9" → "AR"), se for uma das oferecidas. */
 export function regionFromAcceptLanguage(header: string | null) {
 	for (const part of header?.split(',') ?? []) {

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { resolve } from '$app/paths';
 	import Logo from '$lib/components/brand/Logo.svelte';
 	import { backdropUrl } from '$lib/tmdb/images';
@@ -24,14 +25,14 @@
 	<div class="mx-auto flex max-w-3xl flex-col items-center px-5 text-center">
 		<Logo variant="stacked" class="w-64 md:w-80" />
 		<h2 class="mt-10 font-display text-3xl font-semibold tracking-[-0.03em] md:text-5xl">
-			Sua próxima sessão
-			<em class="font-serif font-normal tracking-normal text-white/60">começa aqui.</em>
+			{m.final_cta_title()}
+			<em class="font-serif font-normal tracking-normal text-white/60">{m.final_cta_title_em()}</em>
 		</h2>
 		<a
 			href={resolve(signedIn ? '/dashboard' : '/signup')}
 			class="mt-10 rounded-full bg-primary px-8 py-3.5 text-sm font-semibold text-primary-foreground transition hover:shadow-[0_0_32px_var(--neon-pink)]"
 		>
-			{signedIn ? 'Abrir minha biblioteca' : 'Criar conta grátis'}
+			{signedIn ? m.open_my_library() : m.create_free_account()}
 		</a>
 	</div>
 </section>

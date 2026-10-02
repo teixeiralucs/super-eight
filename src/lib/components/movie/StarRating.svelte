@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { plural } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 	import StarIcon from '@lucide/svelte/icons/star';
 
 	/**
@@ -11,7 +13,7 @@
 		value,
 		mode = 'submit',
 		disabled = false,
-		label = 'Sua nota',
+		label = m.your_rating(),
 		onpick
 	}: {
 		value: number | null;
@@ -23,7 +25,7 @@
 
 	let hover = $state<number | null>(null);
 	const shown = $derived(disabled ? (value ?? 0) : (hover ?? value ?? 0));
-	const describe = (points: number) => `${points} ${points === 1 ? 'estrela' : 'estrelas'}`;
+	const describe = (points: number) => plural(points, m.stars_one, m.stars_other);
 </script>
 
 <div
@@ -38,7 +40,9 @@
 			name={mode === 'submit' ? 'rating' : undefined}
 			value={mode === 'submit' ? (value === points ? '' : points) : undefined}
 			{disabled}
-			aria-label={value === points ? `Remover nota (${describe(points)})` : describe(points)}
+			aria-label={value === points
+				? m.remove_rating({ stars: describe(points) })
+				: describe(points)}
 			aria-pressed={value === points}
 			class="shrink-0 px-px disabled:cursor-not-allowed"
 			onmouseenter={() => (hover = points)}

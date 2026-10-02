@@ -1,9 +1,10 @@
 <script lang="ts">
+	import { plural } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 	// Mini histograma de notas 1–10 dentro do cartão "Nota média". Série única (roxo).
 	let { histogram }: { histogram: { rating: number; count: number }[] } = $props();
 
 	const max = $derived(Math.max(1, ...histogram.map((h) => h.count)));
-	const plural = (n: number) => (n === 1 ? 'filme' : 'filmes');
 </script>
 
 <div>
@@ -18,7 +19,10 @@
 				<div
 					class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-2 -translate-x-1/2 rounded-md bg-card px-2 py-1 text-xs whitespace-nowrap opacity-0 ring-1 ring-white/10 transition group-hover:opacity-100"
 				>
-					Nota {rating}: <span class="font-medium tabular-nums">{count} {plural(count)}</span>
+					{m.histogram_bar({ rating })}
+					<span class="font-medium tabular-nums"
+						>{plural(count, m.movies_count_one, m.movies_count_other)}</span
+					>
 				</div>
 			</div>
 		{/each}
@@ -29,8 +33,8 @@
 	<!-- A <caption> escapa do sr-only aplicado na <table>; por isso o contêiner. -->
 	<div class="sr-only">
 		<table>
-			<caption>Distribuição das suas notas</caption>
-			<thead><tr><th>Nota</th><th>Filmes</th></tr></thead>
+			<caption>{m.histogram_caption()}</caption>
+			<thead><tr><th>{m.col_rating()}</th><th>{m.col_movies()}</th></tr></thead>
 			<tbody>
 				{#each histogram as { rating, count } (rating)}
 					<tr><td>{rating}</td><td>{count}</td></tr>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
@@ -40,7 +41,7 @@
 
 <section
 	class="relative isolate flex min-h-svh flex-col justify-end overflow-hidden"
-	aria-label="Destaques"
+	aria-label={m.hero_label()}
 	onmouseenter={() => (paused = true)}
 	onmouseleave={() => (paused = false)}
 	{@attach trackVisibility((visible) => (onScreen = visible))}
@@ -85,30 +86,30 @@
 		<!-- Chamada principal -->
 		<div class="max-w-4xl">
 			<p class="mb-6 text-xs font-medium tracking-[0.35em] text-neon-cyan uppercase">
-				Seu diário de cinema
+				{m.hero_kicker()}
 			</p>
 			<h1
 				class="font-display text-[clamp(2.75rem,8vw,7.5rem)] leading-[0.9] font-bold tracking-[-0.04em] uppercase"
 			>
-				Tudo que você assiste.
-				<span class="block text-white/35">Num só lugar.</span>
+				{m.hero_title()}
+				<span class="block text-white/35">{m.hero_title_dim()}</span>
 			</h1>
 			<p class="mt-6 max-w-md text-base text-white/70 md:text-lg">
-				Registre, avalie e organize seus filmes — e descubra o que
-				<em class="font-serif text-xl text-white italic md:text-2xl">vale a próxima sessão</em>.
+				{m.hero_text()}
+				<em class="font-serif text-xl text-white italic md:text-2xl">{m.hero_text_em()}</em>.
 			</p>
 			<div class="mt-8 flex flex-wrap gap-3">
 				<a
 					href={resolve(signedIn ? '/dashboard' : '/signup')}
 					class="rounded-full bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition hover:shadow-[0_0_32px_var(--neon-pink)]"
 				>
-					{signedIn ? 'Abrir minha biblioteca' : 'Começar minha biblioteca'}
+					{signedIn ? m.open_my_library() : m.start_my_library()}
 				</a>
 				<a
 					href="#em-alta"
 					class="rounded-full border border-white/20 bg-black/20 px-7 py-3 text-sm font-medium text-white/90 transition hover:border-white/40 hover:bg-white/5"
 				>
-					Explorar filmes
+					{m.explore_movies()}
 				</a>
 			</div>
 		</div>
@@ -117,7 +118,7 @@
 		{#if current}
 			<aside class="w-full max-w-xs lg:justify-self-end">
 				<div class="mb-4 flex items-center gap-3 text-xs tracking-[0.25em] text-white/50 uppercase">
-					<span>Em alta</span>
+					<span>{m.trending()}</span>
 					<span class="text-white/80 tabular-nums">{pad(index + 1)}/{pad(movies.length)}</span>
 				</div>
 				{#key current.id}
@@ -128,12 +129,15 @@
 						in:fade={{ duration: prefersReducedMotion.current ? 0 : 600, delay: 200 }}
 					>
 						<h2 class="font-display text-2xl leading-tight font-semibold">
-							{current.title}
+							{current.originalTitle}
 							<ArrowUpRightIcon
 								class="inline size-5 -translate-y-0.5 text-neon-cyan opacity-0 transition group-hover:translate-x-0.5 group-hover:opacity-100"
 								aria-hidden="true"
 							/>
 						</h2>
+						{#if current.title !== current.originalTitle}
+							<p class="mt-1 text-sm text-white/55">{current.title}</p>
+						{/if}
 						<p class="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-white/60">
 							{#if current.year}<span>{current.year}</span>{/if}
 							{#if current.genres.length}<span aria-hidden="true">·</span><span
@@ -143,7 +147,7 @@
 								<span aria-hidden="true">·</span>
 								<span class="flex items-center gap-1 text-neon-peach">
 									<StarIcon class="size-3.5 fill-current" aria-hidden="true" />
-									<span class="sr-only">Nota</span>{current.voteAverage.toFixed(1)}
+									<span class="sr-only">{m.rating_label()}</span>{current.voteAverage.toFixed(1)}
 								</span>
 							{/if}
 						</p>
@@ -151,13 +155,13 @@
 				{/key}
 
 				<!-- Indicadores -->
-				<div class="mt-6 flex gap-2" role="tablist" aria-label="Escolher destaque">
+				<div class="mt-6 flex gap-2" role="tablist" aria-label={m.choose_highlight()}>
 					{#each movies as movie, i (movie.id)}
 						<button
 							type="button"
 							role="tab"
 							aria-selected={i === index}
-							aria-label={movie.title}
+							aria-label={movie.originalTitle}
 							class="group relative h-6 flex-1"
 							onclick={() => goTo(i)}
 						>

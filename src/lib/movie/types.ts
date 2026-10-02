@@ -1,5 +1,6 @@
 import type { LibraryState } from '$lib/library/types';
 import type { TMDbMovieFull } from '$lib/tmdb/types';
+import { m } from '$lib/paraglide/messages';
 
 export interface DiarySessionRow {
 	id: string;
@@ -28,13 +29,13 @@ export interface MovieDetailData {
 	movie: TMDbMovieFull;
 	userData: MovieUserData | null;
 	signedIn: boolean;
+	/** País do usuário (estreia local). */
+	region: string;
 }
 
 export const DETAIL_TABS = ['about', 'cast', 'gallery'] as const;
 export type DetailTab = (typeof DETAIL_TABS)[number];
 
-export const TAB_LABELS: Record<DetailTab, string> = {
-	about: 'Sobre',
-	cast: 'Elenco',
-	gallery: 'Galeria'
-};
+/** Função: o rótulo depende do idioma de cada requisição. */
+export const tabLabel = (tab: DetailTab) =>
+	({ about: m.tab_about, cast: m.tab_cast, gallery: m.tab_gallery })[tab]();

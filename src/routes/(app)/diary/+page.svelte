@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { plural } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 	import { resolve } from '$app/paths';
 	import NotebookPenIcon from '@lucide/svelte/icons/notebook-pen';
 	import StatTile from '$lib/components/dashboard/StatTile.svelte';
@@ -33,29 +35,27 @@
 	// (que pode até já ter sido apagado) em vez de `null`.
 	let lastShown: DiaryLogEntry | null = null;
 	const shown = $derived.by(() => (selected ? (lastShown = selected) : lastShown));
-
-	const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 </script>
 
 <svelte:head>
-	<title>Diário — Super Eight</title>
+	<title>{m.diary_page_title()}</title>
 </svelte:head>
 
 <main class="mx-auto flex max-w-[1600px] flex-col gap-6 px-5 pt-6 pb-16 md:px-10">
 	<header class="flex flex-wrap items-end justify-between gap-4 pb-2">
 		<div>
-			<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">Diário</p>
+			<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">{m.diary()}</p>
 			<h1
 				class="mt-3 font-display text-[clamp(2.5rem,5vw,4.5rem)] leading-none font-bold tracking-[-0.04em]"
 			>
-				Suas sessões<span class="font-serif font-normal tracking-normal text-white/40 italic"
+				{m.diary_heading()}<span class="font-serif font-normal tracking-normal text-white/40 italic"
 					>.</span
 				>
 			</h1>
 		</div>
 
 		{#if years.length > 1}
-			<nav aria-label="Ir para o ano" class="flex flex-wrap gap-1">
+			<nav aria-label={m.diary_jump_year()} class="flex flex-wrap gap-1">
 				{#each years as y (y.year)}
 					<a
 						href="#ano-{y.year}"
@@ -72,42 +72,41 @@
 			class="flex flex-col items-center gap-4 rounded-3xl border border-white/10 px-6 py-20 text-center"
 		>
 			<NotebookPenIcon class="size-8 text-neon-pink" aria-hidden="true" />
-			<h2 class="font-display text-2xl font-semibold">Nenhuma sessão ainda</h2>
+			<h2 class="font-display text-2xl font-semibold">{m.no_sessions_yet()}</h2>
 			<p class="max-w-sm text-sm text-muted-foreground">
-				Abra um filme e use “Registrar sessão” — cada vez que você assistir, ele aparece aqui, na
-				data certa.
+				{m.diary_empty_text()}
 			</p>
 			<a
 				href={resolve('/search')}
 				class="mt-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
-				>Buscar filmes</a
+				>{m.search_movies()}</a
 			>
 		</section>
 	{:else}
-		<section aria-label="Resumo do diário" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+		<section aria-label={m.diary_summary()} class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
 			<StatTile
-				label="Sessões"
+				label={m.diary_stat_sessions()}
 				value={String(stats.sessions)}
 				accent="bg-neon-pink"
-				caption="no total"
+				caption={m.diary_stat_total()}
 			/>
 			<StatTile
-				label="Em {thisYear}"
+				label={m.diary_stat_in_year({ year: thisYear })}
 				value={String(stats.thisYear)}
 				accent="bg-neon-cyan"
-				caption={plural(stats.moviesThisYear, 'filme', 'filmes')}
+				caption={plural(stats.moviesThisYear, m.movies_count_one, m.movies_count_other)}
 			/>
 			<StatTile
-				label="Filmes"
+				label={m.diary_stat_movies()}
 				value={String(stats.movies)}
 				accent="bg-neon-purple"
-				caption="diferentes"
+				caption={m.diary_stat_distinct()}
 			/>
 			<StatTile
-				label="Revistos"
+				label={m.diary_stat_rewatches()}
 				value={String(stats.rewatches)}
 				accent="bg-neon-peach"
-				caption={plural(stats.rewatches, 'sessão repetida', 'sessões repetidas')}
+				caption={plural(stats.rewatches, m.repeat_sessions_one, m.repeat_sessions_other)}
 			/>
 		</section>
 
@@ -120,31 +119,33 @@
 					>
 						{y.year}
 					</h2>
-					<p class="pb-2 text-sm text-muted-foreground">{plural(y.count, 'sessão', 'sessões')}</p>
+					<p class="pb-2 text-sm text-muted-foreground">
+						{plural(y.count, m.sessions_count_one, m.sessions_count_other)}
+					</p>
 				</div>
 
-				{#each y.months as m (m.key)}
+				{#each y.months as month (month.key)}
 					<div
 						class="grid gap-x-10 gap-y-5 border-b border-white/5 py-8 last:border-b-0 lg:grid-cols-[180px_minmax(0,1fr)]"
 					>
 						<div class="self-start lg:sticky lg:top-24">
 							<p class="font-mono text-xs tracking-widest text-muted-foreground">
-								{String(m.month + 1).padStart(2, '0')}.
+								{String(month.month + 1).padStart(2, '0')}.
 							</p>
 							<h3
 								class="mt-1 font-display text-3xl leading-none font-bold tracking-[-0.03em] first-letter:uppercase"
 							>
-								{formatMonthName(m.month)}
+								{formatMonthName(month.month)}
 							</h3>
 							<p class="mt-2 text-xs text-white/50">
-								{plural(m.entries.length, 'sessão', 'sessões')}
+								{plural(month.entries.length, m.sessions_count_one, m.sessions_count_other)}
 							</p>
 						</div>
 
 						<ul
 							class="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 md:grid-cols-4 md:gap-x-6 xl:grid-cols-5"
 						>
-							{#each m.entries as entry (entry.id)}
+							{#each month.entries as entry (entry.id)}
 								<li>
 									<DiaryCard
 										{entry}

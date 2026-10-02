@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
@@ -50,7 +51,7 @@
 				type="button"
 				onclick={() => scrollByPage(-1)}
 				class="grid size-11 place-items-center rounded-full border border-white/15 transition hover:border-neon-cyan hover:text-neon-cyan"
-				aria-label="Anterior"
+				aria-label={m.previous()}
 			>
 				<ArrowLeftIcon class="size-4" />
 			</button>
@@ -58,7 +59,7 @@
 				type="button"
 				onclick={() => scrollByPage(1)}
 				class="grid size-11 place-items-center rounded-full border border-white/15 transition hover:border-neon-cyan hover:text-neon-cyan"
-				aria-label="Próximo"
+				aria-label={m.next()}
 			>
 				<ArrowRightIcon class="size-4" />
 			</button>
@@ -83,7 +84,7 @@
 							src={posterUrl(movie.posterPath, 'w342')}
 							srcset={posterSrcset(movie.posterPath)}
 							sizes="(min-width: 768px) 260px, (min-width: 640px) 220px, 58vw"
-							alt="Pôster de {movie.title}"
+							alt={m.poster_of({ title: movie.originalTitle })}
 							loading="lazy"
 							decoding="async"
 							class="size-full object-cover"
@@ -97,13 +98,16 @@
 					</div>
 					<div class="mt-3 flex items-start justify-between gap-3">
 						<div class="min-w-0">
-							<h3 class="truncate text-sm font-medium">{movie.title}</h3>
-							<p class="text-xs text-muted-foreground">{movie.year ?? '—'}</p>
+							<h3 class="truncate text-sm font-medium">{movie.originalTitle}</h3>
+							<p class="truncate text-xs text-muted-foreground">
+								{movie.year ?? '—'}{#if movie.title !== movie.originalTitle}
+									· {movie.title}{/if}
+							</p>
 						</div>
 						{#if movie.voteAverage}
 							<span class="flex shrink-0 items-center gap-1 text-xs text-neon-peach tabular-nums">
 								<StarIcon class="size-3 fill-current" aria-hidden="true" />
-								<span class="sr-only">Nota</span>{movie.voteAverage.toFixed(1)}
+								<span class="sr-only">{m.rating_label()}</span>{movie.voteAverage.toFixed(1)}
 							</span>
 						{/if}
 					</div>

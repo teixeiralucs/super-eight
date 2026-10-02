@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	// Formulário próprio e SEM use:enhance: a action redireciona para o domínio do Google,
 	// e o navegador precisa seguir esse redirect normalmente.
-	let { action, label = 'Continuar com Google' }: { action: string; label?: string } = $props();
+	let { action, label = m.continue_with_google() }: { action: string; label?: string } = $props();
 </script>
 
 <form method="POST" {action}>

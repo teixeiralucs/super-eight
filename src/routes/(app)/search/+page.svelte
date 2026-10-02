@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -85,12 +86,12 @@
 </script>
 
 <svelte:head>
-	<title>{data.q ? `${data.q} — Busca` : 'Buscar'} — Super Eight</title>
+	<title>{data.q ? m.search_page_title_q({ q: data.q }) : m.search_page_title()}</title>
 </svelte:head>
 
 <main class="mx-auto flex max-w-[1600px] flex-col gap-8 px-5 pt-6 pb-16 md:px-10">
 	<header>
-		<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">Buscar</p>
+		<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">{m.search_kicker()}</p>
 
 		<form
 			method="GET"
@@ -106,13 +107,13 @@
 				class="flex items-center gap-4 border-b border-white/15 pb-3 transition-colors focus-within:border-neon-cyan"
 			>
 				<SearchIcon class="size-7 shrink-0 text-white/40 md:size-9" aria-hidden="true" />
-				<span class="sr-only">Buscar filmes</span>
+				<span class="sr-only">{m.search_movies()}</span>
 				<input
 					name="q"
 					type="search"
 					bind:value={term}
 					oninput={() => search(term)}
-					placeholder="Que filme você procura?"
+					placeholder={m.search_placeholder()}
 					autocomplete="off"
 					maxlength={MAX_QUERY_LENGTH}
 					class="w-full bg-transparent font-display text-[clamp(1.75rem,4vw,3.5rem)] leading-tight font-semibold tracking-[-0.03em] outline-none placeholder:text-white/25 [&::-webkit-search-cancel-button]:hidden"
@@ -125,7 +126,7 @@
 							search('', 0);
 						}}
 						class="grid size-9 shrink-0 place-items-center rounded-full text-white/50 transition hover:bg-white/10 hover:text-white"
-						aria-label="Limpar busca"
+						aria-label={m.search_clear()}
 					>
 						<XIcon class="size-5" />
 					</button>
@@ -135,21 +136,21 @@
 
 		<p class="mt-4 text-sm text-muted-foreground" aria-live="polite">
 			{#if data.q}
-				Resultados para <span class="text-foreground">“{data.q}”</span>
+				{m.search_results_for()} <span class="text-foreground">“{data.q}”</span>
 			{:else}
-				Em alta agora — digite para buscar entre milhares de filmes.
+				{m.search_trending_hint()}
 			{/if}
 		</p>
 	</header>
 
 	{#if data.failed}
 		<p class="rounded-3xl border border-white/10 px-6 py-16 text-center text-muted-foreground">
-			A busca está indisponível no momento. Tente de novo em instantes.
+			{m.search_unavailable()}
 		</p>
 	{:else if loaded.items.length === 0}
 		<div class="rounded-3xl border border-white/10 px-6 py-20 text-center">
-			<p class="font-display text-2xl font-semibold">Nenhum filme encontrado.</p>
-			<p class="mt-2 text-muted-foreground">Confira a grafia ou tente pelo título original.</p>
+			<p class="font-display text-2xl font-semibold">{m.search_no_results()}</p>
+			<p class="mt-2 text-muted-foreground">{m.search_no_results_hint()}</p>
 		</div>
 	{:else}
 		<ul
@@ -175,14 +176,15 @@
 
 		<div class="flex min-h-12 items-center justify-center text-sm text-muted-foreground">
 			{#if loadingMore}
-				<LoaderCircleIcon class="mr-2 size-4 animate-spin" aria-hidden="true" /> Carregando mais filmes…
+				<LoaderCircleIcon class="mr-2 size-4 animate-spin" aria-hidden="true" />
+				{m.search_loading_more()}
 			{:else if loadError}
 				<button
 					type="button"
 					onclick={loadMore}
 					class="rounded-full border border-white/15 px-5 py-2 text-white/80 transition hover:border-white/30"
 				>
-					Não foi possível carregar mais. Tentar de novo
+					{m.search_load_more_error()}
 				</button>
 			{:else if !hasMore}
 				Fim dos resultados.

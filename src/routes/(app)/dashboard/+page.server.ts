@@ -1,5 +1,6 @@
 import { error, fail } from '@sveltejs/kit';
 import { dev } from '$app/environment';
+import { m } from '$lib/paraglide/messages';
 import { parseLibraryFilters } from '$lib/library/filters';
 import { clearLibrary, seedDemoLibrary } from '$lib/server/dev-seed';
 import { getDashboardOverview, getLibraryGrid, getLibrarySuggestions } from '$lib/server/library';
@@ -31,7 +32,7 @@ export const actions: Actions = {
 			});
 		} catch (err) {
 			console.error('[dev] seed falhou:', err);
-			return fail(500, { message: 'Não foi possível carregar os filmes de exemplo.' });
+			return fail(500, { message: m.error_demo_seed() });
 		}
 	},
 	clearDemo: async ({ locals }) => {

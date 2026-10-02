@@ -2,6 +2,8 @@ import { fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { loginSchema } from '$lib/schemas/auth';
 import { safeRedirectPath } from '$lib/server/auth';
+import { syncPreferencesOnLogin } from '$lib/server/preferences';
+import { m } from '$lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = ({ url }) => ({
@@ -9,7 +11,7 @@ export const load: PageServerLoad = ({ url }) => ({
 });
 
 export const actions: Actions = {
-	login: async ({ request, url, locals }) => {
+	login: async ({ request, url, locals, cookies }) => {
 		const formData = Object.fromEntries(await request.formData());
 		const parsed = loginSchema.safeParse(formData);
 
@@ -20,15 +22,19 @@ export const actions: Actions = {
 			});
 		}
 
-		const { error } = await locals.supabase.auth.signInWithPassword(parsed.data);
+		const { data, error } = await locals.supabase.auth.signInWithPassword(parsed.data);
 
 		if (error) {
 			return fail(400, {
 				email: parsed.data.email,
-				message: 'E-mail ou senha incorretos.'
+				message: m.error_login_failed()
 			});
 		}
 
+		await syncPreferencesOnLogin(cookies, data.user.id, {
+			locale: locals.locale,
+			region: locals.region
+		});
 		redirect(303, safeRedirectPath(url.searchParams.get('next')));
 	},
 
@@ -43,7 +49,7 @@ export const actions: Actions = {
 		});
 
 		if (error || !data.url) {
-			return fail(500, { message: 'Não foi possível conectar com o Google.' });
+			return fail(500, { message: m.error_google() });
 		}
 
 		redirect(303, data.url);

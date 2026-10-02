@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { plural } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { fade, fly } from 'svelte/transition';
@@ -61,14 +63,14 @@
 
 	const gap = (from: Date, to: Date) => {
 		const days = daysBetween(from, to);
-		if (days === 0) return 'no mesmo dia';
-		if (days < 60) return `${days} ${days === 1 ? 'dia' : 'dias'} depois`;
+		if (days === 0) return m.gap_same_day();
+		if (days < 60) return plural(days, m.gap_days_one, m.gap_days_other);
 		const months = Math.round(days / 30.4);
-		if (months < 24) return `${months} meses depois`;
-		return `${Math.round(days / 365)} anos depois`;
+		if (months < 24) return m.gap_months({ count: months });
+		return m.gap_years({ count: Math.round(days / 365) });
 	};
 
-	const ordinal = (n: number) => `${n}ª vez`;
+	const ordinal = (n: number) => m.diary_nth_time({ n });
 	const label = 'text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase';
 </script>
 
@@ -86,7 +88,7 @@
 	bind:this={panel}
 	role="dialog"
 	aria-modal="true"
-	aria-label="Registro: {movie.title}, {formatLongDate(entry.watchedAt)}"
+	aria-label={m.diary_entry({ title: movie.originalTitle, date: formatLongDate(entry.watchedAt) })}
 	tabindex="-1"
 	class="fixed inset-y-0 right-0 z-50 flex w-full flex-col overflow-y-auto border-l border-white/10 bg-background outline-none sm:w-[440px]"
 	transition:fly={{ x: prefersReducedMotion.current ? 0 : 48, duration: 280, opacity: 0 }}
@@ -111,7 +113,7 @@
 			type="button"
 			onclick={onClose}
 			class="absolute top-4 right-4 grid size-9 place-items-center rounded-full border border-white/15 bg-background/70 transition hover:border-white/40"
-			aria-label="Fechar registro"
+			aria-label={m.diary_close_entry()}
 		>
 			<XIcon class="size-4" />
 		</button>
@@ -126,8 +128,11 @@
 			{/if}
 			<div class="min-w-0 flex-1">
 				<h2 class="font-display text-2xl leading-tight font-bold tracking-[-0.02em] text-balance">
-					{movie.title}
+					{movie.originalTitle}
 				</h2>
+				{#if movie.title !== movie.originalTitle}
+					<p class="mt-0.5 text-sm text-white/65">{movie.title}</p>
+				{/if}
 				<p class="mt-1 text-sm text-white/60 tabular-nums">{yearOf(movie.releaseDate) ?? '—'}</p>
 				<MovieMetaLine {meta} class="mt-0.5 text-xs text-white/55" directorClass="text-white/75" />
 			</div>
@@ -137,7 +142,7 @@
 	<div class="flex flex-1 flex-col gap-8 px-6 pt-2 pb-6">
 		<!-- Esta sessão -->
 		<section aria-labelledby="sessao-title">
-			<h3 id="sessao-title" class={label}>Esta sessão</h3>
+			<h3 id="sessao-title" class={label}>{m.diary_this_session()}</h3>
 			<p class="mt-3 font-display text-3xl leading-none font-bold tracking-[-0.03em]">
 				{formatLongDate(entry.watchedAt)}
 			</p>
@@ -147,7 +152,7 @@
 				<span class="inline-flex items-center gap-1">
 					{#if entry.isRewatch}<RotateCcwIcon class="size-3.5" aria-hidden="true" />{/if}
 					{ordinal(position + 1)}{#if history.length > 1}<span class="text-white/35"
-							>&nbsp;de {history.length}</span
+							>&nbsp;{m.diary_of_total({ total: history.length })}</span
 						>{/if}
 				</span>
 				{#if previous}
@@ -173,7 +178,7 @@
 						>{entry.rating}<span class="text-white/40">/10</span></span
 					>
 				{:else}
-					<span class="text-sm text-white/45">Sem nota nesta sessão.</span>
+					<span class="text-sm text-white/45">{m.diary_no_rating()}</span>
 				{/if}
 			</div>
 
@@ -184,39 +189,43 @@
 					{entry.note}
 				</blockquote>
 			{:else}
-				<p class="mt-5 text-sm text-white/40">Sem anotação.</p>
+				<p class="mt-5 text-sm text-white/40">{m.diary_no_note()}</p>
 			{/if}
 		</section>
 
 		<!-- Você e o filme -->
 		<section aria-labelledby="historico-title">
-			<h3 id="historico-title" class={label}>Você e o filme</h3>
+			<h3 id="historico-title" class={label}>{m.diary_you_and_movie()}</h3>
 			<dl
 				class="mt-3 grid grid-cols-2 gap-px overflow-hidden rounded-2xl border border-white/10 bg-white/10"
 			>
 				<div class="bg-background p-4">
-					<dt class="text-xs text-white/50">Assistido</dt>
+					<dt class="text-xs text-white/50">{m.diary_watched()}</dt>
 					<dd class="mt-1 text-lg font-semibold tabular-nums">
-						{history.length}× <span class="text-sm font-normal text-white/50">no diário</span>
+						{history.length}×
+						<span class="text-sm font-normal text-white/50">{m.diary_in_diary()}</span>
 					</dd>
 				</div>
 				<div class="bg-background p-4">
-					<dt class="text-xs text-white/50">Sua nota atual</dt>
+					<dt class="text-xs text-white/50">{m.diary_current_rating()}</dt>
 					<dd class="mt-1 flex items-center gap-2 text-lg font-semibold">
 						{#if entry.library?.rating}<RatingBadge rating={entry.library.rating} />{:else}<span
 								class="text-white/40">—</span
 							>{/if}
 						{#if entry.library?.isFavorite}
-							<HeartIcon class="size-4 fill-neon-pink text-neon-pink" aria-label="Favorito" />
+							<HeartIcon
+								class="size-4 fill-neon-pink text-neon-pink"
+								aria-label={m.status_favorite()}
+							/>
 						{/if}
 					</dd>
 				</div>
 				<div class="bg-background p-4">
-					<dt class="text-xs text-white/50">Primeira vez</dt>
+					<dt class="text-xs text-white/50">{m.diary_first_time()}</dt>
 					<dd class="mt-1 text-sm">{formatLongDate(first.watchedAt)}</dd>
 				</div>
 				<div class="bg-background p-4">
-					<dt class="text-xs text-white/50">Última vez</dt>
+					<dt class="text-xs text-white/50">{m.diary_last_time()}</dt>
 					<dd class="mt-1 text-sm">{formatLongDate(last.watchedAt)}</dd>
 				</div>
 			</dl>
@@ -225,7 +234,7 @@
 		<!-- Todas as datas -->
 		{#if history.length > 1}
 			<section aria-labelledby="datas-title">
-				<h3 id="datas-title" class={label}>Todas as sessões</h3>
+				<h3 id="datas-title" class={label}>{m.diary_all_sessions()}</h3>
 				<ol class="mt-3 space-y-1">
 					{#each history.toReversed() as item (item.entry.id)}
 						{@const current = item.entry.id === entry.id}
@@ -277,7 +286,8 @@
 				method="POST"
 				action="/movie/{movie.id}?/deleteSession"
 				use:enhance={({ cancel }) => {
-					if (!confirm(`Apagar a sessão de ${formatLongDate(entry.watchedAt)}?`)) return cancel();
+					if (!confirm(m.diary_confirm_delete({ date: formatLongDate(entry.watchedAt) })))
+						return cancel();
 					deleting = true;
 					error = null;
 					const removed = entry;
@@ -287,7 +297,7 @@
 							await update({ reset: false });
 							ondeleted(removed);
 						} else {
-							error = 'Não foi possível apagar a sessão.';
+							error = m.diary_delete_error();
 						}
 					};
 				}}
@@ -297,7 +307,8 @@
 					disabled={deleting}
 					class="inline-flex items-center gap-1.5 text-xs text-white/45 transition hover:text-destructive disabled:opacity-50"
 				>
-					<Trash2Icon class="size-3.5" aria-hidden="true" /> Apagar sessão
+					<Trash2Icon class="size-3.5" aria-hidden="true" />
+					{m.diary_delete()}
 				</button>
 			</form>
 
@@ -309,7 +320,8 @@
 				}}
 				class="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
 			>
-				Ver filme <ArrowUpRightIcon class="size-4" aria-hidden="true" />
+				{m.diary_see_movie()}
+				<ArrowUpRightIcon class="size-4" aria-hidden="true" />
 			</a>
 		</div>
 		{#if error}<p role="alert" class="-mt-4 text-right text-xs text-destructive">{error}</p>{/if}

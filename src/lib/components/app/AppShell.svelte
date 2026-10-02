@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import SearchIcon from '@lucide/svelte/icons/search';
+	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import Logo from '$lib/components/brand/Logo.svelte';
 	import { APP_NAV } from './nav';
 
@@ -28,14 +30,14 @@
 <div class="min-h-svh pb-24 lg:pb-0 lg:pl-24">
 	<!-- Barra lateral flutuante (desktop) -->
 	<nav
-		aria-label="Principal"
+		aria-label={m.nav_main()}
 		class="fixed top-1/2 left-5 z-40 hidden -translate-y-1/2 flex-col gap-2 rounded-full border border-white/10 bg-card/95 p-2 lg:flex"
 	>
 		{#each APP_NAV as item (item.href)}
 			{@const Icon = item.icon}
 			<a
 				href={resolve(item.href)}
-				aria-label={item.label}
+				aria-label={item.label()}
 				aria-current={isActive(item.href) ? 'page' : undefined}
 				class={[
 					'group relative grid size-11 place-items-center rounded-full transition',
@@ -47,21 +49,38 @@
 				<Icon class="size-[18px]" aria-hidden="true" />
 				<span
 					class="pointer-events-none absolute left-full ml-3 rounded-md bg-card px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 ring-1 ring-white/10 transition group-hover:opacity-100 group-focus-visible:opacity-100"
-					>{item.label}</span
+					>{item.label()}</span
 				>
 			</a>
 		{/each}
 		{#if profile}
 			<div class="mx-3 my-1 h-px bg-white/10"></div>
+			<a
+				href={resolve('/settings')}
+				aria-label={m.nav_settings()}
+				aria-current={isActive('/settings') ? 'page' : undefined}
+				class={[
+					'group relative grid size-11 place-items-center rounded-full transition',
+					isActive('/settings')
+						? 'bg-white text-background'
+						: 'text-white/60 hover:bg-white/10 hover:text-white'
+				]}
+			>
+				<SettingsIcon class="size-[18px]" aria-hidden="true" />
+				<span
+					class="pointer-events-none absolute left-full ml-3 rounded-md bg-card px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 ring-1 ring-white/10 transition group-hover:opacity-100 group-focus-visible:opacity-100"
+					>{m.nav_settings()}</span
+				>
+			</a>
 			<form method="POST" action="/logout">
 				<button
 					class="group relative grid size-11 place-items-center rounded-full text-white/60 transition hover:bg-white/10 hover:text-white"
-					aria-label="Sair"
+					aria-label={m.nav_logout()}
 				>
 					<LogOutIcon class="size-[18px]" aria-hidden="true" />
 					<span
 						class="pointer-events-none absolute left-full ml-3 rounded-md bg-card px-2 py-1 text-xs whitespace-nowrap text-white opacity-0 ring-1 ring-white/10 transition group-hover:opacity-100 group-focus-visible:opacity-100"
-						>Sair</span
+						>{m.nav_logout()}</span
 					>
 				</button>
 			</form>
@@ -71,7 +90,7 @@
 	<!-- Topo -->
 	<header class="sticky top-0 z-30 bg-background/95">
 		<div class="mx-auto flex h-18 max-w-[1600px] items-center gap-4 px-5 md:px-10">
-			<a href={resolve('/')} class="shrink-0" aria-label="Super Eight — início">
+			<a href={resolve('/')} class="shrink-0" aria-label={m.nav_home()}>
 				<Logo class="h-9 w-auto" />
 			</a>
 
@@ -85,11 +104,11 @@
 					class="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 transition focus-within:border-neon-cyan/60"
 				>
 					<SearchIcon class="size-4 text-white/50" aria-hidden="true" />
-					<span class="sr-only">Buscar filmes</span>
+					<span class="sr-only">{m.search_movies()}</span>
 					<input
 						name="q"
 						type="search"
-						placeholder="Buscar filmes…"
+						placeholder={m.search_movies_placeholder()}
 						class="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
 					/>
 				</label>
@@ -101,7 +120,7 @@
 					<a
 						href={resolve('/search')}
 						class="grid size-9 place-items-center rounded-full border border-white/10 text-white/70 transition hover:text-white md:hidden"
-						aria-label="Buscar filmes"
+						aria-label={m.search_movies()}
 					>
 						<SearchIcon class="size-4" aria-hidden="true" />
 					</a>
@@ -110,15 +129,19 @@
 					<a
 						href={resolve('/login')}
 						class="hidden rounded-full px-4 py-2 text-sm text-white/80 transition hover:text-white sm:block"
-						>Entrar</a
+						>{m.auth_sign_in()}</a
 					>
 					<a
 						href={resolve('/signup')}
 						class="rounded-full bg-primary px-5 py-2 text-sm font-medium text-primary-foreground"
-						>Criar conta</a
+						>{m.auth_create_account()}</a
 					>
 				{:else}
-					<span class="hidden text-sm text-white/70 sm:block">@{profile.username}</span>
+					<a
+						href={resolve('/settings')}
+						class="hidden text-sm text-white/70 transition hover:text-white sm:block"
+						>@{profile.username}</a
+					>
 					{#if profile.avatarUrl}
 						<img
 							src={profile.avatarUrl}
@@ -141,14 +164,14 @@
 
 	<!-- Barra inferior (celular) -->
 	<nav
-		aria-label="Principal"
+		aria-label={m.nav_main()}
 		class="fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-full border border-white/10 bg-card/95 p-1.5 lg:hidden"
 	>
 		{#each APP_NAV as item (item.href)}
 			{@const Icon = item.icon}
 			<a
 				href={resolve(item.href)}
-				aria-label={item.label}
+				aria-label={item.label()}
 				aria-current={isActive(item.href) ? 'page' : undefined}
 				class={[
 					'grid size-11 place-items-center rounded-full transition',

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { fade } from 'svelte/transition';
 	import { prefersReducedMotion } from 'svelte/motion';
 	import { backdropUrl } from '$lib/tmdb/images';
@@ -11,8 +12,15 @@
 	 */
 	let {
 		movies
-	}: { movies: { id: number; title: string; year: number | null; backdropPath: string }[] } =
-		$props();
+	}: {
+		movies: {
+			id: number;
+			title: string;
+			originalTitle: string;
+			year: number | null;
+			backdropPath: string;
+		}[];
+	} = $props();
 
 	const INTERVAL_MS = 7000;
 	let index = $state(0);
@@ -60,8 +68,8 @@
 				in:fade={{ duration: prefersReducedMotion.current ? 0 : 600, delay: 400 }}
 			>
 				<span class="size-1.5 rounded-full bg-neon-pink shadow-[0_0_8px_var(--neon-pink)]"></span>
-				<span class="text-white/60">Em alta</span>
-				<span class="font-medium">{current.title}</span>
+				<span class="text-white/60">{m.trending()}</span>
+				<span class="font-medium">{current.originalTitle}</span>
 				{#if current.year}<span class="text-white/50 tabular-nums">{current.year}</span>{/if}
 			</p>
 		{/key}

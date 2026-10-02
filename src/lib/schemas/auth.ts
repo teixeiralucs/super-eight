@@ -1,20 +1,25 @@
 import { z } from 'zod';
+import { m } from '$lib/paraglide/messages';
 
 export const USERNAME_PATTERN = /^[a-z0-9_]{3,20}$/;
 
-const email = z.email({ error: 'E-mail inválido.' });
+const email = z.email({ error: () => m.error_invalid_email() });
 
 export const loginSchema = z.object({
 	email,
-	password: z.string().min(1, { error: 'Informe sua senha.' })
+	password: z.string().min(1, { error: () => m.error_password_required() })
 });
 
 export const signupSchema = z.object({
 	email,
-	password: z.string().min(8, { error: 'A senha precisa ter pelo menos 8 caracteres.' }),
-	username: z.string().trim().toLowerCase().regex(USERNAME_PATTERN, {
-		error: 'Use de 3 a 20 caracteres: letras minúsculas, números ou _.'
-	})
+	password: z.string().min(8, { error: () => m.error_password_short() }),
+	username: z
+		.string()
+		.trim()
+		.toLowerCase()
+		.regex(USERNAME_PATTERN, {
+			error: () => m.error_username_format()
+		})
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

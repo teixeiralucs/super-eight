@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import ArrowDownWideNarrowIcon from '@lucide/svelte/icons/arrow-down-wide-narrow';
@@ -6,12 +7,12 @@
 	import ShuffleIcon from '@lucide/svelte/icons/shuffle';
 	import { VIEW_ICONS } from './library-icons';
 	import {
-		DIRECTION_LABELS,
+		directionLabel,
 		filtersQuery,
 		LIBRARY_SORTS,
 		LIBRARY_VIEWS,
-		SORT_LABELS,
-		VIEW_LABELS,
+		sortLabel,
+		viewLabel,
 		type LibraryFilters,
 		type LibraryView
 	} from '$lib/library/filters';
@@ -45,7 +46,7 @@
 </script>
 
 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-	<nav aria-label="Filtrar biblioteca" class="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
+	<nav aria-label={m.filter_library()} class="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
 		{#each LIBRARY_VIEWS as view (view)}
 			{@const { icon: Icon, color } = VIEW_ICONS[view]}
 			<!-- eslint-disable svelte/no-navigation-without-resolve -- caminho vem de resolve(); a regra não suporta query string -->
@@ -64,7 +65,7 @@
 					class={['size-4', filters.view !== view && color, view === 'favorites' && 'fill-current']}
 					aria-hidden="true"
 				/>
-				{VIEW_LABELS[view]}
+				{viewLabel(view)}
 				<span
 					class={[
 						'text-xs tabular-nums',
@@ -86,20 +87,20 @@
 		{#if filters.view !== 'all'}<input type="hidden" name="view" value={filters.view} />{/if}
 		{#if filters.sort !== 'random'}<input type="hidden" name="dir" value={filters.dir} />{/if}
 
-		<label class="sr-only" for="filtro-genero">Gênero</label>
+		<label class="sr-only" for="filtro-genero">{m.filter_genre()}</label>
 		<select
 			id="filtro-genero"
 			name="genre"
 			onchange={submit}
 			class="rounded-full border border-white/10 bg-background px-4 py-2 text-sm text-white/80 outline-none focus-visible:border-neon-cyan"
 		>
-			<option value="">Todos os gêneros</option>
+			<option value="">{m.filter_all_genres()}</option>
 			{#each genres as genre (genre.id)}
 				<option value={genre.id} selected={filters.genre === String(genre.id)}>{genre.name}</option>
 			{/each}
 		</select>
 
-		<label class="sr-only" for="filtro-ordem">Ordenar por</label>
+		<label class="sr-only" for="filtro-ordem">{m.filter_sort_by()}</label>
 		<select
 			id="filtro-ordem"
 			name="sort"
@@ -107,7 +108,7 @@
 			class="rounded-full border border-white/10 bg-background px-4 py-2 text-sm text-white/80 outline-none focus-visible:border-neon-cyan"
 		>
 			{#each LIBRARY_SORTS as sort (sort)}
-				<option value={sort} selected={filters.sort === sort}>{SORT_LABELS[sort]}</option>
+				<option value={sort} selected={filters.sort === sort}>{sortLabel(sort)}</option>
 			{/each}
 		</select>
 
@@ -120,9 +121,10 @@
 					invalidateAll();
 				}}
 				class="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 transition hover:border-white/25 hover:text-white"
-				title="Embaralhar de novo"
+				title={m.filter_shuffle_again()}
 			>
-				<ShuffleIcon class="size-4" aria-hidden="true" /> Embaralhar
+				<ShuffleIcon class="size-4" aria-hidden="true" />
+				{m.filter_shuffle()}
 			</a>
 		{:else}
 			{@const DirIcon = filters.dir === 'asc' ? ArrowUpNarrowWideIcon : ArrowDownWideNarrowIcon}
@@ -130,11 +132,11 @@
 				href={hrefWith({ dir: nextDir })}
 				data-sveltekit-noscroll
 				class="flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-white/80 transition hover:border-white/25 hover:text-white"
-				title="Inverter ordem"
+				title={m.filter_reverse()}
 			>
 				<DirIcon class="size-4" aria-hidden="true" />
-				{DIRECTION_LABELS[filters.sort][filters.dir]}
-				<span class="sr-only">(clique para inverter)</span>
+				{directionLabel(filters.sort, filters.dir)}
+				<span class="sr-only">{m.filter_reverse_hint()}</span>
 			</a>
 		{/if}
 		<!-- eslint-enable svelte/no-navigation-without-resolve -->

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { refreshAll, replaceState } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -9,10 +10,10 @@
 	import StarIcon from '@lucide/svelte/icons/star';
 	import XIcon from '@lucide/svelte/icons/x';
 	import Logo from '$lib/components/brand/Logo.svelte';
-	import { formatDuration, formatLongDate } from '$lib/format';
+	import { countryName, formatDuration, formatLongDate, languageName } from '$lib/format';
 	import {
 		DETAIL_TABS,
-		TAB_LABELS,
+		tabLabel,
 		type DetailTab,
 		type MovieDetailData,
 		type MovieUserData
@@ -58,40 +59,42 @@
 				// — `invalidateAll()` zera e fechava o painel no meio da ação.
 				void refreshAll();
 			} else if (result.type === 'failure') {
-				message = (result.data?.message as string) ?? 'Não foi possível salvar.';
+				message = (result.data?.message as string) ?? m.error_could_not_save();
 			} else if (result.type === 'error') {
-				message = 'Algo deu errado. Tente de novo.';
+				message = m.error_generic();
 			}
 		};
 	};
 
-	const regionNames = new Intl.DisplayNames('pt-BR', { type: 'region' });
-	const country = (code: string) => {
-		try {
-			return regionNames.of(code) ?? code;
-		} catch {
-			return code;
-		}
-	};
+	const longDate = (iso: string | null) =>
+		iso ? formatLongDate(new Date(`${iso}T00:00:00Z`)) : null;
 
 	// Direção e roteiro aparecem com foto na aba Elenco.
 	const facts = $derived(
 		[
+			// Estreia no país do usuário quando o TMDb tem; senão, a mundial.
+			movie.regionalRelease
+				? {
+						label: m.fact_release(),
+						value: `${longDate(movie.regionalRelease)} (${countryName(data.region)})`,
+						wide: true
+					}
+				: { label: m.fact_release(), value: longDate(movie.releaseDate), wide: true },
+			{ label: m.fact_country(), value: movie.countries.map(countryName).join(', ') || null },
 			{
-				label: 'Estreia',
-				value: movie.releaseDate ? formatLongDate(new Date(`${movie.releaseDate}T00:00:00Z`)) : null
+				label: m.fact_original_language(),
+				value: movie.originalLanguage ? languageName(movie.originalLanguage) : null
 			},
-			{ label: 'País', value: movie.countries.map(country).join(', ') || null },
-			{ label: 'Gênero', value: movie.genres.join(', ') || null, wide: true },
-			{ label: 'Estúdio', value: movie.studios.join(', ') || null, wide: true },
-			{ label: 'Música', value: movie.composers.join(', ') || null, wide: true }
+			{ label: m.fact_genre(), value: movie.genres.join(', ') || null, wide: true },
+			{ label: m.fact_studio(), value: movie.studios.join(', ') || null, wide: true },
+			{ label: m.fact_music(), value: movie.composers.join(', ') || null, wide: true }
 		].filter((fact) => fact.value)
 	);
 
 	const crew = $derived(
 		[
-			{ label: 'Direção', people: movie.directing },
-			{ label: 'Roteiro', people: movie.writing }
+			{ label: m.crew_directing(), people: movie.directing },
+			{ label: m.crew_writing(), people: movie.writing }
 		].filter((group) => group.people.length)
 	);
 
@@ -134,24 +137,25 @@
 						type="button"
 						onclick={onClose}
 						class="grid size-10 place-items-center rounded-full border border-white/15 bg-background/60 transition hover:border-white/40"
-						aria-label="Fechar detalhes"
+						aria-label={m.close_details()}
 					>
 						<XIcon class="size-4" />
 					</button>
 				{:else}
-					<a href={resolve('/')} aria-label="Super Eight — início"><Logo class="h-9 w-auto" /></a>
+					<a href={resolve('/')} aria-label={m.nav_home()}><Logo class="h-9 w-auto" /></a>
 					<button
 						type="button"
 						onclick={() => history.back()}
 						class="hidden items-center gap-1.5 text-sm text-white/60 transition hover:text-white sm:inline-flex"
 					>
-						<ArrowLeftIcon class="size-4" aria-hidden="true" /> Voltar
+						<ArrowLeftIcon class="size-4" aria-hidden="true" />
+						{m.back()}
 					</button>
 				{/if}
 
 				<div
 					role="tablist"
-					aria-label="Seções do filme"
+					aria-label={m.tabs_label()}
 					class="-mx-1 flex max-w-full min-w-0 gap-1 overflow-x-auto px-1"
 				>
 					{#each DETAIL_TABS as t (t)}
@@ -165,7 +169,7 @@
 							class={[
 								'shrink-0 rounded-full px-4 py-1.5 text-xs font-medium tracking-[0.18em] uppercase transition',
 								tab === t ? 'bg-white text-background' : 'text-white/70 hover:text-white'
-							]}>{TAB_LABELS[t]}</button
+							]}>{tabLabel(t)}</button
 						>
 					{/each}
 				</div>
@@ -196,7 +200,7 @@
 								<span aria-hidden="true" class="text-white/30">|</span>
 								<span
 									class="inline-flex items-center gap-1"
-									title="{movie.voteCount} votos no TMDb"
+									title={m.votes_on_tmdb({ count: movie.voteCount })}
 								>
 									<StarIcon class="size-3.5 fill-neon-peach text-neon-peach" aria-hidden="true" />
 									{movie.voteAverage.toFixed(1)}
@@ -211,13 +215,14 @@
 						'max-w-5xl font-display leading-[0.9] font-bold tracking-[-0.045em] text-balance transition-[font-size] duration-500 ease-out',
 						compact ? 'text-[clamp(2.25rem,4.5vw,4.25rem)]' : 'text-[clamp(2.75rem,7vw,7rem)]'
 					]}
+					lang={movie.originalLanguage ?? undefined}
 				>
-					{movie.title}
+					{movie.originalTitle}
 				</h1>
 				<div class={['collapsible', compact && 'is-collapsed']}>
 					<div class="min-h-0 overflow-hidden" aria-hidden={compact}>
-						{#if movie.originalTitle && movie.originalTitle !== movie.title}
-							<p class="pt-3 text-sm text-white/50">{movie.originalTitle}</p>
+						{#if movie.title !== movie.originalTitle}
+							<p class="pt-3 text-lg text-white/65">{movie.title}</p>
 						{/if}
 						{#if movie.tagline}
 							<p class="pt-4 font-serif text-2xl text-white/80 italic">{movie.tagline}</p>
@@ -243,7 +248,7 @@
 							{#if movie.overview}
 								<p class="text-base leading-relaxed text-white/80">{movie.overview}</p>
 							{:else}
-								<p class="text-white/50">Sem sinopse em português por enquanto.</p>
+								<p class="text-white/50">{m.no_overview()}</p>
 							{/if}
 						{:else if tab === 'cast'}
 							<div class="space-y-6">
@@ -266,7 +271,7 @@
 									</div>
 								{/if}
 								<section>
-									<h2 class={sectionLabel}>Elenco</h2>
+									<h2 class={sectionLabel}>{m.crew_cast()}</h2>
 									{#if movie.cast.length}
 										<ul class="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
 											{#each movie.cast as person (person.id)}
@@ -278,7 +283,7 @@
 											{/each}
 										</ul>
 									{:else}
-										<p class="text-white/50">Elenco não informado.</p>
+										<p class="text-white/50">{m.cast_unknown()}</p>
 									{/if}
 								</section>
 							</div>
@@ -304,7 +309,7 @@
 		<!-- Coluna lateral -->
 		<aside
 			class="flex flex-col gap-7 border-white/10 bg-background/70 px-5 py-8 md:px-10 lg:min-h-0 lg:overflow-y-auto lg:border-l lg:px-8 lg:pt-20"
-			aria-label="Informações e sua biblioteca"
+			aria-label={m.sidebar_label()}
 		>
 			<dl class="grid grid-cols-2 gap-x-6 gap-y-4">
 				{#each facts as fact (fact.label)}
@@ -324,12 +329,12 @@
 						<p role="alert" class="mt-4 text-center text-xs text-destructive">{message}</p>
 					{/if}
 				{:else}
-					<p class="text-sm text-white/70">Entre para salvar, avaliar e registrar este filme.</p>
+					<p class="text-sm text-white/70">{m.sign_in_to_save()}</p>
 					<!-- eslint-disable svelte/no-navigation-without-resolve -- loginHref vem de resolve('/login') -->
 					<a
 						href={loginHref}
 						class="mt-4 flex w-full justify-center rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground"
-						>Entrar</a
+						>{m.auth_sign_in()}</a
 					>
 					<!-- eslint-enable svelte/no-navigation-without-resolve -->
 				{/if}
@@ -339,7 +344,7 @@
 				<button
 					type="button"
 					onclick={() => (trailerOpen = true)}
-					aria-label="Ver trailer: {movie.trailer.name}"
+					aria-label={m.watch_trailer_named({ name: movie.trailer.name })}
 					class="group relative mt-auto aspect-video shrink-0 overflow-hidden rounded-xl ring-1 ring-white/10"
 				>
 					<img
@@ -354,7 +359,7 @@
 						<span class="grid size-10 place-items-center rounded-full bg-white text-background"
 							><PlayIcon class="ml-0.5 size-4 fill-current" /></span
 						>
-						Ver trailer
+						{m.watch_trailer()}
 					</span>
 				</button>
 			{/if}

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { plural } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 	import type { MonthBucket } from '$lib/library/stats';
 
 	// Sessões por mês (12 meses). Série única → sem legenda; o título nomeia a série.
@@ -6,7 +8,6 @@
 
 	const max = $derived(Math.max(1, ...months.map((m) => m.sessions)));
 	const total = $derived(months.reduce((sum, m) => sum + m.sessions, 0));
-	const plural = (n: number) => (n === 1 ? 'sessão' : 'sessões');
 </script>
 
 <section
@@ -14,9 +15,10 @@
 	class="flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6"
 >
 	<div class="flex items-baseline justify-between gap-4">
-		<h2 id="sessoes-mes" class="font-display text-lg font-semibold">Sessões por mês</h2>
+		<h2 id="sessoes-mes" class="font-display text-lg font-semibold">{m.monthly_title()}</h2>
 		<p class="text-sm text-muted-foreground">
-			<span class="text-foreground tabular-nums">{total}</span> nos últimos 12 meses
+			<span class="text-foreground tabular-nums">{total}</span>
+			{m.monthly_last_12()}
 		</p>
 	</div>
 
@@ -40,7 +42,7 @@
 				>
 					<span class="text-muted-foreground capitalize">{month.label}</span>
 					<span class="ml-1.5 font-medium tabular-nums"
-						>{month.sessions} {plural(month.sessions)}</span
+						>{plural(month.sessions, m.sessions_count_one, m.sessions_count_other)}</span
 					>
 				</div>
 			</div>
@@ -57,8 +59,8 @@
 	<!-- A <caption> escapa do sr-only aplicado na <table>; por isso o contêiner. -->
 	<div class="sr-only">
 		<table>
-			<caption>Sessões por mês nos últimos 12 meses</caption>
-			<thead><tr><th>Mês</th><th>Sessões</th></tr></thead>
+			<caption>{m.monthly_caption()}</caption>
+			<thead><tr><th>{m.col_month()}</th><th>{m.col_sessions()}</th></tr></thead>
 			<tbody>
 				{#each months as month (month.key)}
 					<tr><td>{month.label}</td><td>{month.sessions}</td></tr>

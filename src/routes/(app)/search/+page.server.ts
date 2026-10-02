@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { prisma } from '$lib/server/db';
+import { m } from '$lib/paraglide/messages';
 import { ensureMovie } from '$lib/server/movies';
 import { searchPage } from '$lib/server/search';
 import { TMDbError } from '$lib/server/tmdb';
@@ -25,17 +26,17 @@ const addSchema = z.object({ movieId: z.coerce.number().int().positive() });
 export const actions: Actions = {
 	/** Adiciona à biblioteca como "Quero ver". Não rebaixa quem já está na biblioteca. */
 	add: async ({ request, locals, fetch }) => {
-		if (!locals.user) return fail(401, { message: 'Entre para adicionar filmes.' });
+		if (!locals.user) return fail(401, { message: m.error_sign_in_to_add() });
 
 		const parsed = addSchema.safeParse(Object.fromEntries(await request.formData()));
-		if (!parsed.success) return fail(400, { message: 'Filme inválido.' });
+		if (!parsed.success) return fail(400, { message: m.error_invalid_movie() });
 
 		const { movieId } = parsed.data;
 		try {
 			await ensureMovie(movieId, fetch);
 		} catch (err) {
 			if (err instanceof TMDbError && err.status === 404) {
-				return fail(404, { message: 'Filme não encontrado.' });
+				return fail(404, { message: m.error_movie_not_found() });
 			}
 			throw err;
 		}

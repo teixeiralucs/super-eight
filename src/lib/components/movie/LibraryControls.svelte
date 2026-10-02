@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
 	import BookmarkIcon from '@lucide/svelte/icons/bookmark';
@@ -44,9 +45,9 @@
 			]}
 		>
 			{#if watched}
-				<EyeIcon class="size-4" aria-hidden="true" /> Assistido
+				<EyeIcon class="size-4" aria-hidden="true" /> {m.status_watched()}
 			{:else}
-				<BookmarkIcon class="size-4 fill-current" aria-hidden="true" /> Quero ver
+				<BookmarkIcon class="size-4 fill-current" aria-hidden="true" /> {m.status_watchlist()}
 			{/if}
 		</p>
 	{:else}
@@ -54,7 +55,8 @@
 			<button
 				class="flex w-full items-center gap-2.5 rounded-full border border-dashed border-white/25 px-5 py-2.5 text-sm text-white/80 transition hover:border-white/60 hover:text-white"
 			>
-				<PlusIcon class="size-4" aria-hidden="true" /> Adicionar em “Quero ver”
+				<PlusIcon class="size-4" aria-hidden="true" />
+				{m.add_to_watchlist()}
 			</button>
 		</form>
 	{/if}
@@ -62,7 +64,7 @@
 	<!-- Nota (10 estrelas, 1–10) + favorito -->
 	<div>
 		<div class="mb-2 flex items-baseline justify-between text-xs">
-			<span class="tracking-wider text-white/50 uppercase">Sua nota</span>
+			<span class="tracking-wider text-white/50 uppercase">{m.your_rating()}</span>
 			{#if library?.rating}
 				<span class="text-white/80 tabular-nums">{library.rating}/10</span>
 			{/if}
@@ -75,7 +77,7 @@
 				<button
 					disabled={!watched}
 					aria-pressed={library?.isFavorite ?? false}
-					aria-label={library?.isFavorite ? 'Remover dos favoritos' : 'Favoritar'}
+					aria-label={library?.isFavorite ? m.favorite_remove() : m.favorite_add()}
 					class="grid size-9 place-items-center rounded-full border border-white/15 transition enabled:hover:border-neon-pink disabled:cursor-not-allowed disabled:opacity-40"
 				>
 					<HeartIcon
@@ -88,7 +90,7 @@
 			</form>
 		</div>
 		{#if !watched}
-			<p class="mt-2 text-xs text-white/45">Registre uma sessão para avaliar e favoritar.</p>
+			<p class="mt-2 text-xs text-white/45">{m.rate_needs_session()}</p>
 		{/if}
 	</div>
 
@@ -100,7 +102,8 @@
 		aria-haspopup="dialog"
 		class="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
 	>
-		<NotebookPenIcon class="size-4" aria-hidden="true" /> Registrar sessão
+		<NotebookPenIcon class="size-4" aria-hidden="true" />
+		{m.log_session()}
 		{#if userData.sessions.length}
 			<span class="rounded-full bg-black/15 px-2 py-0.5 text-xs tabular-nums"
 				>{userData.sessions.length}</span
@@ -113,7 +116,7 @@
 			<button
 				class="text-xs text-white/40 underline-offset-4 transition hover:text-white/80 hover:underline"
 			>
-				Remover da biblioteca
+				{m.remove_from_library()}
 			</button>
 		</form>
 	{/if}

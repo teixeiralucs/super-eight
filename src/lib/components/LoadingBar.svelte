@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { navigating } from '$app/state';
 	import { movieOpening } from '$lib/movie/open.svelte';
 
@@ -21,7 +22,7 @@
 	<div
 		class="pointer-events-none fixed inset-x-0 top-0 z-[70] h-0.5 overflow-hidden"
 		role="progressbar"
-		aria-label="Carregando"
+		aria-label={m.loading()}
 	>
 		<div
 			class="loading-bar h-full w-1/3 bg-linear-to-r from-neon-pink via-neon-purple to-neon-cyan"

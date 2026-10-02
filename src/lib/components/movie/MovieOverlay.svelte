@@ -32,7 +32,7 @@
 	bind:this={dialog}
 	role="dialog"
 	aria-modal="true"
-	aria-label={data.movie.title}
+	aria-label={data.movie.originalTitle}
 	tabindex="-1"
 	class="fixed inset-0 z-[60] overflow-y-auto bg-background outline-none"
 	transition:fly={{ y: prefersReducedMotion.current ? 0 : 24, duration: 350, opacity: 0 }}

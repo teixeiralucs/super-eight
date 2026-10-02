@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -68,7 +69,7 @@
 		language === 'all' ? list : list.filter((image) => (image.language ?? 'none') === language)
 	);
 
-	const languageLabel = (key: string) => (key === 'none' ? 'Sem texto' : key.toUpperCase());
+	const languageLabel = (key: string) => (key === 'none' ? m.gallery_no_text() : key.toUpperCase());
 	const src = (image: MovieImage) =>
 		kind === 'poster'
 			? `https://image.tmdb.org/t/p/w342${image.path}`
@@ -91,7 +92,7 @@
 <div class="flex h-full min-h-0 flex-col gap-4">
 	<div class="flex flex-wrap items-center gap-x-6 gap-y-3">
 		<div class="flex gap-1 rounded-full border border-white/10 bg-background/60 p-1">
-			{#each [['backdrop', 'Fundos'], ['poster', 'Pôsteres']] as const as [value, label] (value)}
+			{#each [['backdrop', m.gallery_backdrops()], ['poster', m.gallery_posters()]] as const as [value, label] (value)}
 				<button
 					type="button"
 					aria-pressed={kind === value}
@@ -108,7 +109,7 @@
 		</div>
 
 		{#if languages.length > 1}
-			<div class="flex min-w-0 gap-1 overflow-x-auto" aria-label="Filtrar por idioma">
+			<div class="flex min-w-0 gap-1 overflow-x-auto" aria-label={m.gallery_filter_language()}>
 				{#each ['all', ...languages] as key (key)}
 					<button
 						type="button"
@@ -117,7 +118,7 @@
 						class={[
 							chip,
 							language === key ? 'bg-white/15 text-white' : 'text-white/55 hover:text-white'
-						]}>{key === 'all' ? 'Todos' : languageLabel(key)}</button
+						]}>{key === 'all' ? m.gallery_all() : languageLabel(key)}</button
 					>
 				{/each}
 			</div>
@@ -131,19 +132,19 @@
 					value=""
 					class="text-xs text-white/50 underline-offset-4 transition hover:text-white hover:underline"
 				>
-					Restaurar padrão
+					{m.gallery_restore()}
 				</button>
 			</form>
 		{/if}
 	</div>
 
 	{#if !signedIn}
-		<p class="text-xs text-white/50">Entre para personalizar o pôster e o fundo deste filme.</p>
+		<p class="text-xs text-white/50">{m.gallery_sign_in()}</p>
 	{/if}
 
 	<div class="min-h-0 flex-1 overflow-y-auto pr-1 pb-2">
 		{#if failed}
-			<p class="text-white/50">Não foi possível carregar as imagens.</p>
+			<p class="text-white/50">{m.gallery_error()}</p>
 		{:else if !images}
 			<ul
 				class={[
@@ -164,7 +165,7 @@
 				{/each}
 			</ul>
 		{:else if !visible.length}
-			<p class="text-white/50">Sem imagens disponíveis.</p>
+			<p class="text-white/50">{m.gallery_empty()}</p>
 		{:else}
 			<form method="POST" action="/movie/{movieId}?/artwork" use:enhance={submitArtwork}>
 				<input type="hidden" name="kind" value={kind} />
@@ -187,8 +188,8 @@
 								onclick={() => !signedIn && onpreview(image.path)}
 								aria-pressed={selected}
 								aria-label={kind === 'poster'
-									? `Usar este pôster (${languageLabel(image.language ?? 'none')})`
-									: `Usar este fundo (${languageLabel(image.language ?? 'none')})`}
+									? m.gallery_use_poster({ language: languageLabel(image.language ?? 'none') })
+									: m.gallery_use_backdrop({ language: languageLabel(image.language ?? 'none') })}
 								class={[
 									'block w-full overflow-hidden rounded-xl bg-white/5 ring-1 transition',
 									kind === 'poster' ? 'aspect-2/3' : 'aspect-video',

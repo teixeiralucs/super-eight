@@ -1,3 +1,5 @@
+import { formatMonthShort } from '$lib/format';
+import { intlLocale } from '$lib/i18n';
 // Cálculo das métricas do dashboard (puro, testável, sem acesso ao banco).
 
 export interface StatsLibraryEntry {
@@ -31,15 +33,13 @@ export interface DashboardStats {
 	ratingHistogram: { rating: number; count: number }[];
 }
 
-const monthLabel = new Intl.DateTimeFormat('pt-BR', { month: 'short', timeZone: 'UTC' });
-
 /** Últimos `count` meses, do mais antigo ao atual (UTC). */
 export function lastMonths(now: Date, count = 12): MonthBucket[] {
 	return Array.from({ length: count }, (_, i) => {
 		const date = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - (count - 1 - i), 1));
 		return {
 			key: date.toISOString().slice(0, 7),
-			label: monthLabel.format(date).replace('.', ''),
+			label: formatMonthShort(date.getUTCMonth()),
 			sessions: 0
 		};
 	});
@@ -86,7 +86,7 @@ export function computeStats(
 		monthly,
 		topGenres: [...genreCounts]
 			.map(([genre, count]) => ({ genre, count }))
-			.sort((a, b) => b.count - a.count || a.genre.localeCompare(b.genre, 'pt-BR'))
+			.sort((a, b) => b.count - a.count || a.genre.localeCompare(b.genre, intlLocale()))
 			.slice(0, 5),
 		ratingHistogram: histogram
 	};

@@ -41,7 +41,7 @@ const i18n: Handle = ({ event, resolve }) =>
 	});
 
 /** Rotas que exigem login (earlySetup.md §6.1). */
-const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/lists', '/feed'];
+const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/lists', '/feed', '/settings'];
 /** Rotas que não fazem sentido para quem já está logado. */
 const GUEST_ONLY_PREFIXES = ['/login', '/signup'];
 

@@ -56,7 +56,8 @@ O Super Eight se apoia no conceito de Tracking de Filmes, semelhante ao Letterbo
 ## **3.3. Entidade: Movie (Filme — Cache Local do TMDb)**
 
 - _Objetivo: evitar chamadas excessivas à API do TMDb, garantir integridade referencial e permitir renderizar a grade sem consultar a API._
-- 3.3.1. Campos: `id` (Int, = ID do TMDb), `title`, `originalTitle`, `overview`, `posterPath`, `backdropPath`, `releaseDate`, `runtime`, `genres` (array de nomes), `voteAverage`, `createdAt`, `updatedAt` (data da última sincronização).
+- 3.3.1. Campos: `id` (Int, = ID do TMDb), `originalTitle` e `originalLanguage` (o título no idioma original — português, inglês, russo, chinês… — é o **destaque** na UI), `titlePt`/`titleEn`/`titleEs` (traduções; nulo = sem tradução ou igual ao original), `posterPt`/`posterEn`/`posterEs` (o texto do pôster muda por idioma), `backdropPath`, `releaseDate`, `runtime`, `genreIds` (IDs do TMDb; o nome é traduzido na hora), `directors`, `countries`, `voteAverage`, `createdAt`, `updatedAt` (data da última sincronização).
+- 3.3.1-A. Traduções vêm de `append_to_response=translations` (pt-BR > pt-PT; en-US > en-GB; es-MX > outros países latinos > es-ES) e pôsteres de `images` (mais votado por idioma). `npm run movies:backfill-i18n` (re)preenche os filmes já cacheados.
 - 3.3.2. Informações técnicas mais pesadas (elenco, equipe, trailers) **não** são persistidas: são buscadas no TMDb sob demanda, com cache HTTP (ver 4.3.3).
 
 ## **3.4. Entidade: LibraryEntry (Biblioteca / Lista Principal)**
@@ -130,6 +131,8 @@ model User {
   name      String?
   avatarUrl String?
   bio       String?
+  locale    String? // "pt" | "en" | "es"; nulo = automático (§6.5)
+  region    String? // ISO 3166-1; nulo = automático (§6.5)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -145,20 +148,32 @@ model User {
 }
 
 model Movie {
-  id            Int       @id // TMDb ID
-  title         String
-  originalTitle String?
-  overview      String?
-  posterPath    String?
-  backdropPath  String?
-  releaseDate   DateTime? @db.Date
-  runtime       Int?
-  genres        String[]
-  voteAverage   Float?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id               Int       @id // TMDb ID
+  /// Título no idioma original (pode ser português, inglês, russo, chinês…) — o destaque na UI.
+  originalTitle    String?
+  /// ISO 639-1 do idioma original (ex.: "ja").
+  originalLanguage String?
+  /// Títulos traduzidos (nulo = sem tradução; a UI cai no original).
+  titlePt          String?
+  titleEn          String?
+  titleEs          String?
+  /// Pôster de cada idioma (o texto do pôster muda); o DNA do usuário tem prioridade.
+  posterPt         String?
+  posterEn         String?
+  posterEs         String?
+  backdropPath     String?
+  releaseDate      DateTime? @db.Date
+  runtime          Int?
+  /// IDs de gênero do TMDb; o nome vem traduzido no idioma de quem vê.
+  genreIds         Int[]     @default([])
+  directors        String[]  @default([])
+  countries        String[]  @default([]) // ISO 3166-1 (ex.: "US")
+  voteAverage      Float?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   libraryEntries LibraryEntry[]
+  artworks       MovieArtwork[]
   diaryEntries   DiaryEntry[]
   listItems      ListMovie[]
   reviews        Review[]
@@ -334,7 +349,7 @@ model CatalogEntry {
 - 4.2.1. Busca por Texto (`/search/movie`): aceita termo de busca e paginação.
 - 4.2.2. Detalhes do Filme (`/movie/{movie_id}`): com `append_to_response=credits,videos` para trazer dados principais, elenco e trailers em uma única requisição.
 - 4.2.3. Catálogos: `/movie/popular` e `/movie/now_playing` para a Landing Page (`/`).
-- 4.2.4. Idioma: enviar `language=pt-BR` nas requisições (com fallback para o título original quando não houver tradução).
+- 4.2.4. Idioma e região (§6.5): toda chamada recebe `{ locale, region }` de `event.locals`. `language` = pt-BR, en-US ou es-MX; catálogos (`popular`, `now_playing`) usam `region`; detalhes trazem `release_dates` para a estreia na região do usuário. O cache em memória separa as respostas por idioma/região.
 
 ## **4.3. Otimização e Tipagem de Dados**
 
@@ -411,6 +426,14 @@ model CatalogEntry {
 - 6.4.1. Loading States: usar `navigating` de `$app/state` para indicadores globais de carregamento e Skeletons do Shadcn-Svelte nas páginas.
 - 6.4.2. Mutações (`use:enhance`): todos os formulários que alteram o banco usam `use:enhance`, com _Optimistic UI_ onde fizer sentido (ex.: favoritar, marcar como assistido, dar nota).
 - 6.4.3. Notificações: toasts via **Sonner** (componente oficial do Shadcn-Svelte) para sucesso/falha (ex.: "Filme adicionado à biblioteca", "Erro ao avaliar").
+
+## **6.5. Idiomas e Região (i18n)**
+
+- 6.5.1. Idiomas: **português (base), inglês e espanhol (América Latina)**, com **Paraglide JS** (`messages/{pt,en,es}.json`). Menus, textos, mensagens de validação e erros do servidor são traduzidos. Rótulos usados fora de componentes (navegação, ordenações, abas) são **funções**, nunca constantes de módulo — no servidor, uma constante ficaria presa ao idioma da primeira requisição. Mensagens do Zod usam `error: () => m.chave()`.
+- 6.5.2. Escolha do idioma: sem prefixo na URL. Ordem: cookie `locale` → idioma do navegador → pt. A região é independente: cookie `region` → país do `Accept-Language` → padrão do idioma (pt→BR, en→US, es→MX). O hook `i18n` resolve os dois, grava os cookies na primeira visita e expõe `locals.locale`/`locals.region`; `<html lang>` acompanha.
+- 6.5.3. Preferências: `/settings` (logado) e o seletor de idioma do rodapé/telas de login (visitantes) enviam para `POST /preferences`, que grava cookies e, se logado, `User.locale`/`User.region`, e recarrega a página. No login (senha, Google, cadastro) o perfil vale para outros dispositivos; o que o perfil não tem é preenchido com o que o navegador já usa.
+- 6.5.4. Títulos: **o original em destaque e, embaixo, a tradução** no idioma de quem vê (cards, detalhes, diário, carrosséis); a linha da tradução existe sempre nos cards para manter a grade alinhada. A biblioteca ordena por título original.
+- 6.5.5. Formatação: datas, meses, nomes de países e de idiomas via `Intl` no idioma atual (`$lib/format`). O campo de data do diário segue o idioma (pt/es dd/mm/aaaa; en mm/dd/yyyy).
 
 # **7. Deploy, Infraestrutura e CI/CD**
 

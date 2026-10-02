@@ -1,4 +1,5 @@
 import { prisma } from '$lib/server/db';
+import { m } from '$lib/paraglide/messages';
 import { ensureMovie } from '$lib/server/movies';
 import { getMovieImages } from '$lib/server/tmdb';
 import { LibraryRuleError } from '$lib/server/library-actions';
@@ -42,7 +43,7 @@ export async function setArtwork(
 		const images = await getMovieImages(movieId, fetchFn);
 		const options = kind === 'poster' ? images.posters : images.backdrops;
 		if (!options.some((image) => image.path === path)) {
-			throw new LibraryRuleError('Imagem não encontrada para este filme.');
+			throw new LibraryRuleError(m.error_image_not_found());
 		}
 	}
 

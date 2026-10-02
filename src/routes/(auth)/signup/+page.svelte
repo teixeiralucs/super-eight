@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import AuthField from '$lib/components/auth/AuthField.svelte';
@@ -15,18 +16,19 @@
 </script>
 
 <svelte:head>
-	<title>Criar conta — Super Eight</title>
+	<title>{m.signup_page_title()}</title>
 </svelte:head>
 
-<AuthHeading step="02" label="Criar conta" title="Comece sua coleção">
-	Já tem conta?
-	<a href={resolve('/login')} class="text-neon-cyan underline-offset-4 hover:underline">Entrar</a>
+<AuthHeading step="02" label={m.auth_create_account()} title={m.signup_title()}>
+	{m.signup_have_account()}
+	<a href={resolve('/login')} class="text-neon-cyan underline-offset-4 hover:underline"
+		>{m.auth_sign_in()}</a
+	>
 </AuthHeading>
 
 {#if form && 'confirmEmail' in form}
 	<FormMessage tone="success">
-		Enviamos um link de confirmação para <strong>{form.email}</strong>. Abra seu e-mail para ativar
-		a conta.
+		{m.confirm_email_before()} <strong>{form.email}</strong>. {m.confirm_email_after()}
 	</FormMessage>
 {:else}
 	{#if form && 'message' in form && form.message}
@@ -38,7 +40,8 @@
 	</div>
 
 	<div class="my-7 flex items-center gap-4 text-xs text-white/40" aria-hidden="true">
-		<span class="h-px flex-1 bg-white/10"></span>ou com e-mail<span class="h-px flex-1 bg-white/10"
+		<span class="h-px flex-1 bg-white/10"></span>{m.or_with_email()}<span
+			class="h-px flex-1 bg-white/10"
 		></span>
 	</div>
 
@@ -54,30 +57,30 @@
 		}}
 	>
 		<AuthField
-			label="Username"
+			label={m.field_username()}
 			name="username"
 			prefix="@"
 			autocomplete="username"
 			autocapitalize="none"
 			spellcheck={false}
-			placeholder="cinefilo"
+			placeholder={m.username_placeholder()}
 			required
 			value={form?.username ?? ''}
 			error={errors?.username?.[0]}
-			hint="3 a 20 caracteres: letras minúsculas, números ou _"
+			hint={m.username_hint()}
 		/>
 		<AuthField
-			label="E-mail"
+			label={m.field_email()}
 			name="email"
 			type="email"
 			autocomplete="email"
-			placeholder="voce@exemplo.com"
+			placeholder={m.email_placeholder()}
 			required
 			value={form?.email ?? ''}
 			error={errors?.email?.[0]}
 		/>
 		<AuthField
-			label="Senha"
+			label={m.field_password()}
 			name="password"
 			type="password"
 			autocomplete="new-password"
@@ -85,8 +88,8 @@
 			minlength={8}
 			required
 			error={errors?.password?.[0]}
-			hint="Pelo menos 8 caracteres"
+			hint={m.password_hint()}
 		/>
-		<SubmitButton {submitting} label="Criar conta" busyLabel="Criando conta…" />
+		<SubmitButton {submitting} label={m.auth_create_account()} busyLabel={m.creating_account()} />
 	</form>
 {/if}

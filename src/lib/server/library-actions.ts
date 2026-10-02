@@ -1,4 +1,5 @@
 import { prisma } from '$lib/server/db';
+import { m } from '$lib/paraglide/messages';
 import { ensureMovie } from '$lib/server/movies';
 import type { SessionInput } from '$lib/schemas/library';
 import type { LibraryState } from '$lib/library/types';
@@ -42,7 +43,7 @@ async function requireWatched(userId: string, movieId: number) {
 		select: { status: true, isFavorite: true }
 	});
 	if (entry?.status !== 'WATCHED') {
-		throw new LibraryRuleError('Registre uma sessão no diário para avaliar ou favoritar.');
+		throw new LibraryRuleError(m.error_needs_session());
 	}
 	return entry;
 }
@@ -119,7 +120,7 @@ export async function deleteSession(userId: string, sessionId: string) {
 			where: { id: sessionId, userId },
 			select: { movieId: true }
 		});
-		if (!session) throw new LibraryRuleError('Sessão não encontrada.');
+		if (!session) throw new LibraryRuleError(m.error_session_not_found());
 
 		await tx.diaryEntry.delete({ where: { id: sessionId } });
 		const remaining = await tx.diaryEntry.count({ where: { userId, movieId: session.movieId } });

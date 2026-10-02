@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
+	import { intlLocale, plural } from '$lib/i18n';
 	import DevTools from '$lib/components/dashboard/DevTools.svelte';
 	import EmptyLibrary from '$lib/components/dashboard/EmptyLibrary.svelte';
 	import GenreBars from '$lib/components/dashboard/GenreBars.svelte';
@@ -15,7 +17,7 @@
 	let { data }: { data: PageData } = $props();
 
 	const stats = $derived(data.stats);
-	const today = new Intl.DateTimeFormat('pt-BR', {
+	const today = new Intl.DateTimeFormat(intlLocale(), {
 		weekday: 'long',
 		day: 'numeric',
 		month: 'long'
@@ -31,7 +33,7 @@
 </script>
 
 <svelte:head>
-	<title>Biblioteca — Super Eight</title>
+	<title>{m.dashboard_page_title()}</title>
 </svelte:head>
 
 <main class="mx-auto flex max-w-[1600px] flex-col gap-6 px-5 pt-6 pb-16 md:px-10">
@@ -44,7 +46,9 @@
 			<h1
 				class="mt-3 font-display text-[clamp(2.5rem,5vw,4.5rem)] leading-none font-bold tracking-[-0.04em]"
 			>
-				Olá, {data.profile?.name?.split(' ')[0] ?? `@${data.profile?.username}`}
+				{m.dashboard_hello({
+					name: data.profile?.name?.split(' ')[0] ?? `@${data.profile?.username}`
+				})}
 				<span class="font-serif font-normal tracking-normal text-white/40 italic">.</span>
 			</h1>
 		</div>
@@ -71,22 +75,27 @@
 		<EmptyLibrary />
 	{:else}
 		<!-- Métricas -->
-		<section aria-label="Métricas" class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
+		<section aria-label={m.metrics()} class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
 			<StatTile
-				label="Assistidos"
+				label={m.stat_watched()}
 				value={String(stats.watched)}
 				accent="bg-neon-pink"
-				caption={`${stats.favorites} ${stats.favorites === 1 ? 'favorito' : 'favoritos'}`}
+				caption={plural(stats.favorites, m.stat_favorites_one, m.stat_favorites_other)}
 			/>
 			<StatTile
-				label="Tempo de cinema"
+				label={m.stat_cinema_time()}
 				value={String(hours)}
 				unit="h"
 				accent="bg-neon-cyan"
-				caption={`${stats.sessionsThisYear} ${stats.sessionsThisYear === 1 ? 'sessão' : 'sessões'} em ${year}`}
+				caption={plural(
+					stats.sessionsThisYear,
+					m.stat_sessions_in_year_one,
+					m.stat_sessions_in_year_other,
+					{ year }
+				)}
 			/>
 			<StatTile
-				label="Nota média"
+				label={m.stat_average_rating()}
 				value={stats.averageRating?.toFixed(1) ?? '—'}
 				unit={stats.averageRating ? '/10' : undefined}
 				accent="bg-neon-purple"
@@ -94,10 +103,10 @@
 				<RatingHistogram histogram={stats.ratingHistogram} />
 			</StatTile>
 			<StatTile
-				label="Quero ver"
+				label={m.stat_watchlist()}
 				value={String(stats.watchlist)}
 				accent="bg-neon-peach"
-				caption="filmes na sua lista"
+				caption={m.stat_watchlist_caption()}
 			/>
 		</section>
 
@@ -115,7 +124,7 @@
 					id="biblioteca-title"
 					class="font-display text-4xl leading-none font-bold tracking-[-0.03em] uppercase md:text-6xl"
 				>
-					Minha biblioteca
+					{m.my_library()}
 				</h2>
 			</div>
 
@@ -135,7 +144,7 @@
 				<p
 					class="mt-10 rounded-3xl border border-white/10 px-6 py-16 text-center text-muted-foreground"
 				>
-					Nenhum filme com esses filtros.
+					{m.no_movies_with_filters()}
 				</p>
 			{/if}
 		</section>

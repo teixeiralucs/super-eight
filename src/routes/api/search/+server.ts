@@ -1,6 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import { parseSearchPage, parseSearchQuery } from '$lib/search';
 import { searchPage } from '$lib/server/search';
+import { m } from '$lib/paraglide/messages';
 import type { RequestHandler } from './$types';
 
 // Exceção permitida (earlySetup.md §5.2): endpoint só de LEITURA para a rolagem infinita da busca.
@@ -23,6 +24,6 @@ export const GET: RequestHandler = async ({ url, locals, fetch }) => {
 		);
 	} catch (err) {
 		console.error('[api/search] falha:', err);
-		error(502, 'Busca indisponível no momento.');
+		error(502, m.error_search_unavailable());
 	}
 };

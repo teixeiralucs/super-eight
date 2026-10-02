@@ -1,23 +1,24 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	const features = [
 		{
-			title: 'Biblioteca',
-			text: 'Sua coleção em grade: o que você viu, o que quer ver, suas notas de 1 a 10 e seus favoritos.',
+			title: m.nav_library(),
+			text: m.feature_library_text(),
 			color: 'text-neon-pink'
 		},
 		{
-			title: 'Diário',
-			text: 'Cada sessão com data, nota e anotações. Reviu? O diário guarda todas as vezes.',
+			title: m.nav_diary(),
+			text: m.feature_diary_text(),
 			color: 'text-neon-cyan'
 		},
 		{
-			title: 'Listas',
-			text: 'Coleções temáticas do seu jeito — privadas ou públicas, na ordem que você quiser.',
+			title: m.nav_lists(),
+			text: m.feature_lists_text(),
 			color: 'text-neon-purple'
 		},
 		{
-			title: 'Comunidade',
-			text: 'Siga amigos, leia reviews, curta listas e veja o que a sua gente anda assistindo.',
+			title: m.nav_community(),
+			text: m.feature_community_text(),
 			color: 'text-neon-peach'
 		}
 	];
@@ -30,8 +31,8 @@
 			id="recursos-title"
 			class="max-w-4xl font-display text-4xl leading-[0.95] font-bold tracking-[-0.03em] uppercase md:text-6xl"
 		>
-			Feito para quem vive
-			<span class="text-white/35">de cinema.</span>
+			{m.features_title()}
+			<span class="text-white/35">{m.features_title_dim()}</span>
 		</h2>
 
 		<ol class="mt-14 grid border-t border-white/10 sm:grid-cols-2 lg:grid-cols-4">

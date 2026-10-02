@@ -1,4 +1,6 @@
 <script lang="ts">
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import { m } from '$lib/paraglide/messages';
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
@@ -21,17 +23,19 @@
 	<!-- Formulário -->
 	<div class="flex flex-col px-3 py-4 sm:px-8 lg:px-14 lg:py-8">
 		<header class="flex items-center justify-between">
-			<a href={resolve('/')} aria-label="Super Eight — início"><Logo class="h-9 w-auto" /></a>
+			<a href={resolve('/')} aria-label={m.nav_home()}><Logo class="h-9 w-auto" /></a>
 			<a
 				href={resolve('/')}
 				class="inline-flex items-center gap-1.5 text-sm text-white/60 transition hover:text-white"
 			>
-				<ArrowLeftIcon class="size-4" aria-hidden="true" /> Voltar ao início
+				<ArrowLeftIcon class="size-4" aria-hidden="true" />
+				{m.back_to_home()}
 			</a>
 		</header>
 
 		<main class="mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-12">
 			{@render children()}
 		</main>
+		<LanguageSwitcher class="self-center" />
 	</div>
 </div>

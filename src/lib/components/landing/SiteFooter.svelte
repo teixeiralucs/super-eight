@@ -1,4 +1,6 @@
 <script lang="ts">
+	import LanguageSwitcher from '$lib/components/LanguageSwitcher.svelte';
+	import { m } from '$lib/paraglide/messages';
 	import { resolve } from '$app/paths';
 	import Logo from '$lib/components/brand/Logo.svelte';
 </script>
@@ -20,21 +22,25 @@
 				<img src="/tmdb-logo.svg" alt="The Movie Database (TMDB)" class="h-3 w-auto" />
 			</a>
 			<p class="max-w-md text-xs leading-relaxed text-muted-foreground">
-				Dados e imagens de filmes fornecidos por
+				{m.tmdb_credit_before()}
 				<a
 					href="https://www.themoviedb.org/"
 					target="_blank"
 					rel="noopener noreferrer"
 					class="text-white/80 underline-offset-4 hover:underline">The Movie Database (TMDB)</a
-				>. Este produto usa a API do TMDB, mas não é endossado nem certificado pelo TMDB.
+				>. {m.tmdb_credit_after()}
 			</p>
 		</div>
 
-		<nav aria-label="Rodapé" class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-			<a href={resolve('/search')} class="transition hover:text-white">Buscar</a>
-			<a href={resolve('/login')} class="transition hover:text-white">Entrar</a>
-			<a href={resolve('/signup')} class="transition hover:text-white">Criar conta</a>
+		<nav
+			aria-label={m.footer_label()}
+			class="flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground"
+		>
+			<a href={resolve('/search')} class="transition hover:text-white">{m.search()}</a>
+			<a href={resolve('/login')} class="transition hover:text-white">{m.auth_sign_in()}</a>
+			<a href={resolve('/signup')} class="transition hover:text-white">{m.auth_create_account()}</a>
 			<span class="text-white/30">© {new Date().getFullYear()} Super Eight</span>
+			<LanguageSwitcher />
 		</nav>
 	</div>
 </footer>

@@ -1,10 +1,12 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { todayIso } from '$lib/format';
+	import { currentLocale } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 
 	/**
-	 * Data no formato brasileiro (dd/mm/aaaa) independente do idioma do navegador —
-	 * o `<input type="date">` segue o idioma do sistema (ex.: mm/dd/aaaa em inglês).
+	 * Data digitada no formato do idioma (pt/es: dd/mm/aaaa; en: mm/dd/yyyy), independente do
+	 * idioma do sistema — o `<input type="date">` segue o sistema, não o site.
 	 * Envia `name` em ISO (YYYY-MM-DD), que é o que o servidor valida.
 	 */
 	let {
@@ -15,13 +17,21 @@
 
 	const id = $props.id();
 
-	const toBr = (iso: string) => (iso ? iso.split('-').reverse().join('/') : '');
+	/** Ordem dos campos: mês primeiro só no inglês (EUA). */
+	const monthFirst = currentLocale() === 'en';
 
-	/** "dd/mm/aaaa" válido e não futuro → ISO; senão `null`. */
-	function parseBr(text: string) {
+	function toText(iso: string) {
+		if (!iso) return '';
+		const [year, month, day] = iso.split('-');
+		return monthFirst ? `${month}/${day}/${year}` : `${day}/${month}/${year}`;
+	}
+
+	/** Texto completo, válido e não futuro → ISO; senão `null`. */
+	function parse(text: string) {
 		const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
 		if (!match) return null;
-		const [, day, month, year] = match;
+		const [, a, b, year] = match;
+		const [day, month] = monthFirst ? [b, a] : [a, b];
 		const iso = `${year}-${month}-${day}`;
 		const date = new Date(`${iso}T00:00:00Z`);
 		if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== iso) return null;
@@ -30,12 +40,12 @@
 	}
 
 	// Texto digitado (pode estar incompleto); só vira `value` quando é uma data válida.
-	let text = $state(untrack(() => toBr(value)));
+	let text = $state(untrack(() => toText(value)));
 	$effect(() => {
 		// Mudança de fora (atalhos, reset do formulário) → reflete no campo.
 		const iso = value;
 		untrack(() => {
-			if (iso && parseBr(text) !== iso) text = toBr(iso);
+			if (iso && parse(text) !== iso) text = toText(iso);
 		});
 	});
 	let input: HTMLInputElement | undefined = $state();
@@ -45,16 +55,16 @@
 		const digits = event.currentTarget.value.replace(/\D/g, '').slice(0, 8);
 		text = [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4)].filter(Boolean).join('/');
 		event.currentTarget.value = text;
-		const iso = parseBr(text);
+		const iso = parse(text);
 		value = iso ?? '';
 		event.currentTarget.setCustomValidity(
-			iso || !text ? '' : 'Use uma data válida (dd/mm/aaaa), que não esteja no futuro.'
+			iso || !text ? '' : m.date_invalid({ format: m.date_format() })
 		);
 	}
 
 	const quick = [
-		{ label: 'Hoje', offset: 0 },
-		{ label: 'Ontem', offset: 1 }
+		{ label: m.date_today, offset: 0 },
+		{ label: m.date_yesterday, offset: 1 }
 	];
 </script>
 
@@ -74,7 +84,7 @@
 						value === todayIso(option.offset)
 							? 'bg-white/15 text-white'
 							: 'text-white/50 hover:text-white'
-					]}>{option.label}</button
+					]}>{option.label()}</button
 				>
 			{/each}
 		</div>
@@ -85,7 +95,7 @@
 		type="text"
 		inputmode="numeric"
 		autocomplete="off"
-		placeholder="dd/mm/aaaa"
+		placeholder={m.date_format()}
 		value={text}
 		oninput={onInput}
 		required

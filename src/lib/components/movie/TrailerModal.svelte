@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import XIcon from '@lucide/svelte/icons/x';
 	import type { Trailer } from '$lib/tmdb/types';
 
@@ -16,7 +17,7 @@
 	data-nested-dialog
 	role="dialog"
 	aria-modal="true"
-	aria-label="Trailer: {trailer.name}"
+	aria-label={m.trailer_named({ name: trailer.name })}
 	tabindex="-1"
 	class="fixed inset-0 z-[80] grid place-items-center bg-background/90 p-4 md:p-10"
 	onclick={(event) => event.target === event.currentTarget && onClose()}
@@ -28,7 +29,7 @@
 			type="button"
 			onclick={onClose}
 			class="absolute -top-12 right-0 grid size-10 place-items-center rounded-full border border-white/15 transition hover:border-white/40"
-			aria-label="Fechar trailer"
+			aria-label={m.close_trailer()}
 		>
 			<XIcon class="size-4" />
 		</button>

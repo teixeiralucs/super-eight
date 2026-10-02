@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { m } from '$lib/paraglide/messages';
 
 // Filtros da grade da biblioteca, refletidos na URL (earlySetup.md §6.3.2).
 
@@ -10,22 +11,25 @@ export type LibraryView = (typeof LIBRARY_VIEWS)[number];
 export type LibrarySort = (typeof LIBRARY_SORTS)[number];
 export type SortDirection = (typeof SORT_DIRECTIONS)[number];
 
-export const VIEW_LABELS: Record<LibraryView, string> = {
-	all: 'Todos',
-	watched: 'Assistidos',
-	watchlist: 'Quero ver',
-	favorites: 'Favoritos'
-};
+/** Rótulos são funções: o texto depende do idioma de cada requisição. */
+export const viewLabel = (view: LibraryView) =>
+	({
+		all: m.view_all,
+		watched: m.view_watched,
+		watchlist: m.view_watchlist,
+		favorites: m.view_favorites
+	})[view]();
 
 export const DEFAULT_SORT: LibrarySort = 'release';
 
-export const SORT_LABELS: Record<LibrarySort, string> = {
-	release: 'Lançamento',
-	recent: 'Adicionados',
-	rating: 'Minha nota',
-	title: 'Título',
-	random: 'Aleatório'
-};
+export const sortLabel = (sort: LibrarySort) =>
+	({
+		release: m.sort_release,
+		recent: m.sort_recent,
+		rating: m.sort_rating,
+		title: m.sort_title,
+		random: m.sort_random
+	})[sort]();
 
 /** Direção natural de cada ordenação (aleatório ignora direção). */
 export const DEFAULT_DIRECTION: Record<LibrarySort, SortDirection> = {
@@ -36,16 +40,14 @@ export const DEFAULT_DIRECTION: Record<LibrarySort, SortDirection> = {
 	random: 'asc'
 };
 
-/** Rótulos da direção, no vocabulário de cada ordenação. */
-export const DIRECTION_LABELS: Record<
-	Exclude<LibrarySort, 'random'>,
-	Record<SortDirection, string>
-> = {
-	release: { asc: 'Mais antigos primeiro', desc: 'Mais recentes primeiro' },
-	recent: { asc: 'Adicionados há mais tempo', desc: 'Adicionados recentemente' },
-	rating: { asc: 'Menor nota primeiro', desc: 'Maior nota primeiro' },
-	title: { asc: 'A → Z', desc: 'Z → A' }
-};
+/** Rótulo da direção, no vocabulário de cada ordenação. */
+export const directionLabel = (sort: Exclude<LibrarySort, 'random'>, dir: SortDirection) =>
+	({
+		release: { asc: m.dir_release_asc, desc: m.dir_release_desc },
+		recent: { asc: m.dir_recent_asc, desc: m.dir_recent_desc },
+		rating: { asc: m.dir_rating_asc, desc: m.dir_rating_desc },
+		title: { asc: m.dir_title_asc, desc: m.dir_title_desc }
+	})[sort][dir]();
 
 export const libraryFiltersSchema = z
 	.object({

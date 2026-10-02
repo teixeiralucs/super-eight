@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
@@ -19,18 +20,18 @@
 </script>
 
 <svelte:head>
-	<title>Entrar — Super Eight</title>
+	<title>{m.login_page_title()}</title>
 </svelte:head>
 
-<AuthHeading step="01" label="Entrar" title="Bem-vindo de volta">
-	Não tem conta?
+<AuthHeading step="01" label={m.auth_sign_in()} title={m.login_title()}>
+	{m.login_no_account()}
 	<a href={resolve('/signup')} class="text-neon-cyan underline-offset-4 hover:underline"
-		>Criar conta</a
+		>{m.auth_create_account()}</a
 	>
 </AuthHeading>
 
 {#if data.callbackError}
-	<FormMessage>Não foi possível concluir o login. Tente novamente.</FormMessage>
+	<FormMessage>{m.login_callback_error()}</FormMessage>
 {/if}
 {#if form && 'message' in form && form.message}
 	<FormMessage>{form.message}</FormMessage>
@@ -41,7 +42,8 @@
 </div>
 
 <div class="my-7 flex items-center gap-4 text-xs text-white/40" aria-hidden="true">
-	<span class="h-px flex-1 bg-white/10"></span>ou com e-mail<span class="h-px flex-1 bg-white/10"
+	<span class="h-px flex-1 bg-white/10"></span>{m.or_with_email()}<span
+		class="h-px flex-1 bg-white/10"
 	></span>
 </div>
 
@@ -58,17 +60,17 @@
 	}}
 >
 	<AuthField
-		label="E-mail"
+		label={m.field_email()}
 		name="email"
 		type="email"
 		autocomplete="email"
-		placeholder="voce@exemplo.com"
+		placeholder={m.email_placeholder()}
 		required
 		value={form && 'email' in form ? form.email : ''}
 		error={errors?.email?.[0]}
 	/>
 	<AuthField
-		label="Senha"
+		label={m.field_password()}
 		name="password"
 		type="password"
 		autocomplete="current-password"
@@ -76,5 +78,5 @@
 		required
 		error={errors?.password?.[0]}
 	/>
-	<SubmitButton {submitting} label="Entrar" busyLabel="Entrando…" />
+	<SubmitButton {submitting} label={m.auth_sign_in()} busyLabel={m.signing_in()} />
 </form>

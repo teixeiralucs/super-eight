@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { openMovie } from '$lib/movie/open.svelte';
 	import { resolve } from '$app/paths';
 	import { fade } from 'svelte/transition';
@@ -42,8 +43,8 @@
 </script>
 
 <section
-	aria-roledescription="carrossel"
-	aria-label="Sugestões para você"
+	aria-roledescription={m.carousel_role()}
+	aria-label={m.suggestions_title()}
 	class="relative isolate h-full min-h-[380px] overflow-hidden rounded-3xl ring-1 ring-white/10 transition duration-300 has-[a:hover]:ring-2 has-[a:hover]:ring-neon-pink md:min-h-[460px]"
 	onmouseenter={() => (paused = true)}
 	onmouseleave={() => (paused = false)}
@@ -84,18 +85,23 @@
 			class="absolute inset-0 flex flex-col justify-between p-6 md:p-8"
 		>
 			<p class="flex items-center gap-3 text-xs tracking-[0.25em] uppercase">
-				<span class="text-neon-cyan">Sugestões para você</span>
+				<span class="text-neon-cyan">{m.suggestions_title()}</span>
 				<span class="text-white/60 tabular-nums">{pad(index + 1)}/{pad(movies.length)}</span>
 			</p>
 
 			{#key current.id}
 				<div in:fade={{ duration: prefersReducedMotion.current ? 0 : 500, delay: 150 }}>
 					<div class="flex items-end justify-between gap-6">
-						<h2
-							class="font-display text-[clamp(2rem,4vw,3.5rem)] leading-[0.95] font-semibold tracking-[-0.03em]"
-						>
-							{current.title}
-						</h2>
+						<div class="min-w-0">
+							<h2
+								class="font-display text-[clamp(2rem,4vw,3.5rem)] leading-[0.95] font-semibold tracking-[-0.03em]"
+							>
+								{current.originalTitle}
+							</h2>
+							{#if current.title !== current.originalTitle}
+								<p class="mt-2 text-sm text-white/60">{current.title}</p>
+							{/if}
+						</div>
 						{#if yearOf(current.releaseDate)}
 							<span
 								class="shrink-0 font-display text-2xl font-light text-white/80 tabular-nums md:text-3xl"
@@ -114,7 +120,7 @@
 				type="button"
 				onclick={() => goTo(index - 1)}
 				class="grid size-9 place-items-center rounded-full border border-white/15 bg-background/60 transition hover:border-white/40"
-				aria-label="Sugestão anterior"
+				aria-label={m.suggestions_prev()}
 			>
 				<ChevronLeftIcon class="size-4" />
 			</button>
@@ -122,7 +128,7 @@
 				type="button"
 				onclick={() => goTo(index + 1)}
 				class="grid size-9 place-items-center rounded-full border border-white/15 bg-background/60 transition hover:border-white/40"
-				aria-label="Próxima sugestão"
+				aria-label={m.suggestions_next()}
 			>
 				<ChevronRightIcon class="size-4" />
 			</button>
@@ -139,7 +145,7 @@
 		</div>
 	{:else}
 		<div class="grid h-full place-items-center p-8 text-center text-muted-foreground">
-			Não foi possível carregar sugestões agora.
+			{m.suggestions_error()}
 		</div>
 	{/if}
 </section>

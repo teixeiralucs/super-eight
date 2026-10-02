@@ -1,19 +1,23 @@
-// Datas do diário são `@db.Date` (meia-noite UTC): formatar sempre em UTC evita o "dia anterior" no Brasil.
+import { intlLocale } from '$lib/i18n';
 
-const shortDate = new Intl.DateTimeFormat('pt-BR', {
-	day: '2-digit',
-	month: 'short',
-	timeZone: 'UTC'
-});
-const longDate = new Intl.DateTimeFormat('pt-BR', {
-	day: 'numeric',
-	month: 'long',
-	year: 'numeric',
-	timeZone: 'UTC'
-});
+// Formatação no idioma atual (ver $lib/i18n). Datas do diário são `@db.Date` (meia-noite
+// UTC): formatar sempre em UTC evita o "dia anterior" no Brasil.
 
-export const formatShortDate = (date: Date) => shortDate.format(date).replace('.', '');
-export const formatLongDate = (date: Date) => longDate.format(date);
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/** `Intl.DateTimeFormat` do idioma atual, criado uma vez por idioma + opções. */
+function dateFormat(options: Intl.DateTimeFormatOptions) {
+	const locale = intlLocale();
+	const key = `${locale}|${JSON.stringify(options)}`;
+	let format = formatters.get(key);
+	if (!format) formatters.set(key, (format = new Intl.DateTimeFormat(locale, options)));
+	return format;
+}
+
+export const formatShortDate = (date: Date) =>
+	dateFormat({ day: '2-digit', month: 'short', timeZone: 'UTC' }).format(date).replace('.', '');
+export const formatLongDate = (date: Date) =>
+	dateFormat({ day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 
 /** 315 → "5h 15min"; 60 → "1h"; 45 → "45min". */
 export function formatDuration(minutes: number) {
@@ -58,11 +62,32 @@ export function todayIso(offsetDays = 0) {
 	return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
 
-const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' });
-const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: 'UTC' });
-
 /** "domingo" (datas do diário, em UTC). */
-export const formatWeekday = (date: Date) => weekday.format(date);
+export const formatWeekday = (date: Date) =>
+	dateFormat({ weekday: 'long', timeZone: 'UTC' }).format(date);
 /** 8 → "setembro" (mês 0–11). */
 export const formatMonthName = (month: number) =>
-	monthName.format(new Date(Date.UTC(2000, month, 1)));
+	dateFormat({ month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, month, 1)));
+/** 8 → "set" (mês 0–11), para eixos de gráfico. */
+export const formatMonthShort = (month: number) =>
+	dateFormat({ month: 'short', timeZone: 'UTC' })
+		.format(new Date(Date.UTC(2000, month, 1)))
+		.replace('.', '');
+
+/** "Estados Unidos" / "United States" / "Estados Unidos" (ISO 3166-1). */
+export function countryName(code: string) {
+	try {
+		return new Intl.DisplayNames(intlLocale(), { type: 'region' }).of(code) ?? code;
+	} catch {
+		return code;
+	}
+}
+
+/** "japonês" / "Japanese" (ISO 639-1). */
+export function languageName(code: string) {
+	try {
+		return new Intl.DisplayNames(intlLocale(), { type: 'language' }).of(code) ?? code;
+	} catch {
+		return code;
+	}
+}

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import type { HTMLInputAttributes } from 'svelte/elements';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
@@ -49,7 +50,7 @@
 				type="button"
 				onclick={() => (revealed = !revealed)}
 				class="text-white/50 transition hover:text-white"
-				aria-label={revealed ? 'Esconder senha' : 'Mostrar senha'}
+				aria-label={revealed ? m.hide_password() : m.show_password()}
 				aria-pressed={revealed}
 			>
 				{#if revealed}<EyeOffIcon class="size-4" />{:else}<EyeIcon class="size-4" />{/if}

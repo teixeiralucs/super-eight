@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db';
+import { m } from '$lib/paraglide/messages';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
@@ -13,7 +14,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	});
 
 	// Se não existir, o trigger auth.users → public."User" falhou.
-	if (!profile) error(500, 'Perfil não encontrado.');
+	if (!profile) error(500, m.error_profile_not_found());
 
 	return { profile };
 };

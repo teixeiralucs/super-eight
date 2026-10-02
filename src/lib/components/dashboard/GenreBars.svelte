@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	// Gêneros mais assistidos. Série única (ciano); rótulos e valores em cor de texto.
 	let { genres }: { genres: { genre: string; count: number }[] } = $props();
 
@@ -9,8 +10,8 @@
 	aria-labelledby="generos"
 	class="flex h-full flex-col rounded-3xl border border-white/10 bg-white/[0.03] p-6"
 >
-	<h2 id="generos" class="font-display text-lg font-semibold">Seus gêneros</h2>
-	<p class="mt-1 text-sm text-muted-foreground">Entre os filmes que você assistiu</p>
+	<h2 id="generos" class="font-display text-lg font-semibold">{m.genres_title()}</h2>
+	<p class="mt-1 text-sm text-muted-foreground">{m.genres_subtitle()}</p>
 
 	{#if genres.length}
 		<ol class="mt-6 flex flex-col gap-4">
@@ -27,12 +28,12 @@
 						</div>
 					</div>
 					<span class="self-end text-muted-foreground tabular-nums"
-						>{count} <span class="sr-only">filmes</span></span
+						>{count} <span class="sr-only">{m.movies_word()}</span></span
 					>
 				</li>
 			{/each}
 		</ol>
 	{:else}
-		<p class="mt-6 text-sm text-muted-foreground">Assista a alguns filmes para ver seu perfil.</p>
+		<p class="mt-6 text-sm text-muted-foreground">{m.genres_empty()}</p>
 	{/if}
 </section>

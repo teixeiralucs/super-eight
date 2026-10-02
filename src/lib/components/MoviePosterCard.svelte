@@ -1,9 +1,11 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import { openMovie } from '$lib/movie/open.svelte';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 	import PlusIcon from '@lucide/svelte/icons/plus';
+	import CardTitle from '$lib/components/CardTitle.svelte';
 	import MovieMetaLine from '$lib/components/MovieMetaLine.svelte';
 	import { VIEW_ICONS } from '$lib/components/dashboard/library-icons';
 	import RatingBadge from '$lib/components/dashboard/RatingBadge.svelte';
@@ -42,10 +44,10 @@
 		!current
 			? null
 			: current.isFavorite
-				? { ...VIEW_ICONS.favorites, label: 'Favorito', fill: true }
+				? { ...VIEW_ICONS.favorites, label: m.status_favorite(), fill: true }
 				: current.status === 'WATCHED'
-					? { ...VIEW_ICONS.watched, label: 'Assistido', fill: false }
-					: { ...VIEW_ICONS.watchlist, label: 'Quero ver', fill: false }
+					? { ...VIEW_ICONS.watched, label: m.status_watched(), fill: false }
+					: { ...VIEW_ICONS.watchlist, label: m.status_watchlist(), fill: false }
 	);
 	const meta = $derived(movieMeta(movie));
 	const badge = 'grid size-7 place-items-center rounded-full bg-background/80';
@@ -65,7 +67,7 @@
 					src={posterUrl(movie.posterPath, 'w342')}
 					srcset={posterSrcset(movie.posterPath)}
 					sizes="(min-width: 1280px) 16vw, (min-width: 768px) 22vw, 45vw"
-					alt="Pôster de {movie.title}"
+					alt={m.poster_of({ title: movie.originalTitle })}
 					loading="lazy"
 					decoding="async"
 					class="size-full object-cover"
@@ -81,10 +83,7 @@
 			{/if}
 		</div>
 
-		<div class="mt-2.5 flex items-baseline justify-between gap-2">
-			<p class="truncate text-sm font-medium">{movie.title}</p>
-			<p class="shrink-0 text-xs text-muted-foreground tabular-nums">{movie.year ?? '—'}</p>
-		</div>
+		<CardTitle title={movie.title} originalTitle={movie.originalTitle} year={movie.year} />
 		<MovieMetaLine
 			{meta}
 			class="mt-0.5 text-xs text-muted-foreground"
@@ -108,10 +107,10 @@
 				<a
 					href={add.loginHref}
 					class="{badge} transition hover:bg-primary hover:text-primary-foreground"
-					title="Entre para adicionar"
+					title={m.card_sign_in_to_add()}
 				>
 					<PlusIcon class="size-4" aria-hidden="true" />
-					<span class="sr-only">Entre para adicionar {movie.title} à biblioteca</span>
+					<span class="sr-only">{m.card_sign_in_to_add_movie({ title: movie.originalTitle })}</span>
 				</a>
 				<!-- eslint-enable svelte/no-navigation-without-resolve -->
 			{:else if add}
@@ -131,14 +130,14 @@
 					<button
 						disabled={adding}
 						class="{badge} transition hover:bg-primary hover:text-primary-foreground disabled:opacity-70"
-						title="Adicionar à biblioteca (Quero ver)"
+						title={m.card_add_hint()}
 					>
 						{#if adding}
 							<LoaderCircleIcon class="size-4 animate-spin" aria-hidden="true" />
 						{:else}
 							<PlusIcon class="size-4" aria-hidden="true" />
 						{/if}
-						<span class="sr-only">Adicionar {movie.title} à biblioteca</span>
+						<span class="sr-only">{m.card_add_movie({ title: movie.originalTitle })}</span>
 					</button>
 				</form>
 			{/if}
@@ -147,10 +146,10 @@
 		{#if current && current.watchCount > 1}
 			<span
 				class="pointer-events-auto grid h-7 min-w-7 place-items-center rounded-full bg-background/80 px-2 text-xs font-medium tabular-nums"
-				title="Assistido {current.watchCount} vezes"
+				title={m.card_watched_times({ count: current.watchCount })}
 			>
 				<span aria-hidden="true">{current.watchCount}×</span>
-				<span class="sr-only">Assistido {current.watchCount} vezes</span>
+				<span class="sr-only">{m.card_watched_times({ count: current.watchCount })}</span>
 			</span>
 		{/if}
 	</div>

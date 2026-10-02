@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { plural } from '$lib/i18n';
+	import { m } from '$lib/paraglide/messages';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
 	import { fly } from 'svelte/transition';
@@ -97,7 +99,7 @@
 	bind:this={panel}
 	data-nested-dialog
 	role="dialog"
-	aria-label="Diário do filme"
+	aria-label={m.diary_movie()}
 	class={[
 		'fixed z-[70] flex max-h-[min(640px,calc(100svh-2rem))] flex-col overflow-hidden border border-white/10 bg-background/95 shadow-2xl shadow-black/60',
 		'inset-x-0 bottom-0 rounded-t-3xl lg:inset-x-auto lg:bottom-auto lg:w-[380px] lg:rounded-3xl',
@@ -108,12 +110,12 @@
 	transition:fly={{ x: prefersReducedMotion.current ? 0 : 12, duration: 200 }}
 >
 	<header class="flex items-center justify-between px-6 pt-5">
-		<h2 class="text-xs font-semibold tracking-[0.2em] text-white/60 uppercase">Diário</h2>
+		<h2 class="text-xs font-semibold tracking-[0.2em] text-white/60 uppercase">{m.diary()}</h2>
 		<button
 			type="button"
 			onclick={onClose}
 			class="-mr-2 grid size-8 place-items-center rounded-full text-white/60 transition hover:text-white"
-			aria-label="Fechar diário"
+			aria-label={m.close_diary()}
 		>
 			<XIcon class="size-4" />
 		</button>
@@ -124,17 +126,17 @@
 		action="/movie/{movieId}?/logSession"
 		use:enhance={submitSession}
 		class="space-y-5 px-6 pt-3 pb-6"
-		aria-label="Registrar sessão"
+		aria-label={m.log_session()}
 	>
-		<DateField name="watchedAt" label="Quando assistiu" bind:value={watchedAt} />
+		<DateField name="watchedAt" label={m.when_watched()} bind:value={watchedAt} />
 
 		<div>
-			<span class="text-xs text-white/60">Nota (opcional)</span>
+			<span class="text-xs text-white/60">{m.rating_optional()}</span>
 			<div class="mt-2 flex items-center gap-3">
 				<StarRating
 					value={rating}
 					mode="pick"
-					label="Nota da sessão"
+					label={m.session_rating()}
 					onpick={(value) => (rating = value)}
 				/>
 				{#if rating}<span class="text-xs text-white/70 tabular-nums">{rating}/10</span>{/if}
@@ -143,12 +145,12 @@
 		</div>
 
 		<label class="block">
-			<span class="text-xs text-white/60">Anotação (opcional)</span>
+			<span class="text-xs text-white/60">{m.note_optional()}</span>
 			<textarea
 				name="note"
 				rows="2"
 				maxlength="500"
-				placeholder="Com quem, onde, o que achou…"
+				placeholder={m.note_placeholder()}
 				class="{field} resize-none placeholder:text-white/30"></textarea>
 		</label>
 
@@ -156,17 +158,17 @@
 			<button
 				class="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
 			>
-				Registrar sessão
+				{m.log_session()}
 			</button>
-			{#if saved}<p role="status" class="text-xs text-neon-cyan">Sessão registrada.</p>{/if}
+			{#if saved}<p role="status" class="text-xs text-neon-cyan">{m.session_logged()}</p>{/if}
 		</div>
 	</form>
 
 	<div class="min-h-0 flex-1 overflow-y-auto border-t border-white/10 px-4 py-4">
 		<p class="mb-2 px-2 text-xs tracking-wider text-white/50 uppercase">
 			{sessions.length
-				? `${sessions.length} ${sessions.length === 1 ? 'sessão' : 'sessões'}`
-				: 'Nenhuma sessão ainda'}
+				? plural(sessions.length, m.sessions_count_one, m.sessions_count_other)
+				: m.no_sessions_yet()}
 		</p>
 		<ol class="space-y-1">
 			{#each sessions as session (session.id)}
@@ -176,7 +178,7 @@
 							{formatLongDate(session.watchedAt)}
 							{#if session.isRewatch}
 								<span class="inline-flex items-center gap-1 text-xs text-white/50"
-									><RotateCcwIcon class="size-3" aria-hidden="true" /> revisto</span
+									><RotateCcwIcon class="size-3" aria-hidden="true" /> {m.rewatched()}</span
 								>
 							{/if}
 						</p>
@@ -189,7 +191,7 @@
 						<input type="hidden" name="sessionId" value={session.id} />
 						<button
 							class="grid size-7 place-items-center rounded-full text-white/40 opacity-0 transition group-hover:opacity-100 hover:text-destructive focus-visible:opacity-100"
-							aria-label="Apagar sessão de {formatLongDate(session.watchedAt)}"
+							aria-label={m.delete_session_of({ date: formatLongDate(session.watchedAt) })}
 						>
 							<Trash2Icon class="size-3.5" />
 						</button>

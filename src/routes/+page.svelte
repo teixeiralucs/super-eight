@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import Features from '$lib/components/landing/Features.svelte';
 	import FinalCta from '$lib/components/landing/FinalCta.svelte';
 	import Hero from '$lib/components/landing/Hero.svelte';
@@ -15,11 +16,8 @@
 </script>
 
 <svelte:head>
-	<title>Super Eight — seu diário de cinema</title>
-	<meta
-		name="description"
-		content="Registre, avalie e organize os filmes que você assiste. Biblioteca, diário, listas e comunidade num só lugar."
-	/>
+	<title>{m.home_page_title()}</title>
+	<meta name="description" content={m.home_description()} />
 </svelte:head>
 
 <SiteHeader user={data.user} />
@@ -33,8 +31,8 @@
 		<PosterRail
 			id="em-alta"
 			number="01."
-			title="Em alta"
-			subtitle="esta semana"
+			title={m.trending()}
+			subtitle={m.trending_subtitle()}
 			movies={data.popular}
 			ranked
 		/>
@@ -46,8 +44,8 @@
 			<PosterRail
 				id="mais-em-cartaz"
 				number="02.1"
-				title="Também"
-				subtitle="em cartaz"
+				title={m.also()}
+				subtitle={m.now_playing_dim()}
 				movies={nowPlayingRest}
 			/>
 		{/if}

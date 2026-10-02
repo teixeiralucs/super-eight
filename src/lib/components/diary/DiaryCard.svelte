@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { m } from '$lib/paraglide/messages';
 	import HeartIcon from '@lucide/svelte/icons/heart';
 	import MessageSquareTextIcon from '@lucide/svelte/icons/message-square-text';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
+	import CardTitle from '$lib/components/CardTitle.svelte';
 	import MovieMetaLine from '$lib/components/MovieMetaLine.svelte';
 	import RatingBadge from '$lib/components/dashboard/RatingBadge.svelte';
 	import { formatLongDate, movieMeta, yearOf } from '$lib/format';
@@ -37,7 +39,7 @@
 				src={posterUrl(entry.movie.posterPath, 'w342')}
 				srcset={posterSrcset(entry.movie.posterPath)}
 				sizes="(min-width: 1280px) 16vw, (min-width: 768px) 22vw, 45vw"
-				alt="Pôster de {entry.movie.title}"
+				alt={m.poster_of({ title: entry.movie.originalTitle })}
 				loading="lazy"
 				decoding="async"
 				class="size-full object-cover"
@@ -57,17 +59,17 @@
 			<span class="{badge} text-xs font-semibold tabular-nums" aria-hidden="true">{day}</span>
 			<span class="flex gap-1">
 				{#if entry.note}
-					<span class={badge} title="Com anotação">
+					<span class={badge} title={m.diary_with_note()}>
 						<MessageSquareTextIcon class="size-3.5 text-neon-cyan" aria-hidden="true" />
 					</span>
 				{/if}
 				{#if entry.isRewatch}
-					<span class={badge} title="Revisto">
+					<span class={badge} title={m.diary_rewatch()}>
 						<RotateCcwIcon class="size-3.5 text-white/80" aria-hidden="true" />
 					</span>
 				{/if}
 				{#if entry.library?.isFavorite}
-					<span class={badge} title="Favorito">
+					<span class={badge} title={m.status_favorite()}>
 						<HeartIcon class="size-3.5 fill-current text-neon-pink" aria-hidden="true" />
 					</span>
 				{/if}
@@ -75,12 +77,11 @@
 		</div>
 	</div>
 
-	<div class="mt-2.5 flex items-baseline justify-between gap-2">
-		<p class="truncate text-sm font-medium">{entry.movie.title}</p>
-		<p class="shrink-0 text-xs text-muted-foreground tabular-nums">
-			{yearOf(entry.movie.releaseDate) ?? '—'}
-		</p>
-	</div>
+	<CardTitle
+		title={entry.movie.title}
+		originalTitle={entry.movie.originalTitle}
+		year={yearOf(entry.movie.releaseDate)}
+	/>
 	<MovieMetaLine
 		{meta}
 		class="mt-0.5 text-xs text-muted-foreground"
@@ -93,7 +94,10 @@
 		onclick={onselect}
 		aria-haspopup="dialog"
 		aria-pressed={selected}
-		aria-label="Ver registro: {entry.movie.title}, {formatLongDate(entry.watchedAt)}"
+		aria-label={m.diary_view_entry({
+			title: entry.movie.originalTitle,
+			date: formatLongDate(entry.watchedAt)
+		})}
 		class="absolute inset-0 rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-neon-pink"
 	></button>
 </article>

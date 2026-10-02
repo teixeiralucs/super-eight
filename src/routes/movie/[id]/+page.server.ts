@@ -48,7 +48,7 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 		locals.user ? getMovieUserData(locals.user.id, movieId) : null
 	]);
 
-	return { movie, userData, signedIn: Boolean(locals.user) };
+	return { movie, userData, signedIn: Boolean(locals.user), region: locals.region };
 };
 
 /**
@@ -61,13 +61,13 @@ function action<S extends z.ZodType>(
 ) {
 	return async (event: RequestEvent) => {
 		const { locals, params, request } = event;
-		if (!locals.user) return fail(401, { message: 'Entre para salvar este filme.' });
+		if (!locals.user) return fail(401, { message: m.error_sign_in_to_save() });
 		const movieId = parseMovieId(params.id ?? '');
 
 		const resolved = typeof schema === 'function' ? schema(new Date()) : schema;
 		const parsed = resolved.safeParse(Object.fromEntries(await request.formData()));
 		if (!parsed.success) {
-			return fail(400, { message: parsed.error.issues[0]?.message ?? 'Dados inválidos.' });
+			return fail(400, { message: parsed.error.issues[0]?.message ?? m.error_invalid_data() });
 		}
 
 		try {
