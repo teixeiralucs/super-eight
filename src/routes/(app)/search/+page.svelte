@@ -7,6 +7,9 @@
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import XIcon from '@lucide/svelte/icons/x';
 	import MoviePosterCard from '$lib/components/MoviePosterCard.svelte';
+	import Avatar from '$lib/components/social/Avatar.svelte';
+	import FollowButton from '$lib/components/social/FollowButton.svelte';
+	import { plural } from '$lib/i18n';
 	import { infiniteScroll } from '$lib/attachments/infinite-scroll';
 	import type { SearchItem } from '$lib/library/types';
 	import { MAX_QUERY_LENGTH } from '$lib/search';
@@ -36,6 +39,15 @@
 			}
 		});
 	});
+
+	const people = $derived(data.type === 'people');
+	/** URL da busca com termo e tipo (filmes é o padrão e fica fora da URL). */
+	const searchHref = (q: string, type: string = data.type) => {
+		const query = [q && `q=${encodeURIComponent(q)}`, type === 'people' && 'type=people']
+			.filter(Boolean)
+			.join('&');
+		return query ? `${resolve('/search')}?${query}` : resolve('/search');
+	};
 
 	const hasMore = $derived(loaded.page < loaded.totalPages);
 	const signedIn = $derived(data.profile !== null);
@@ -76,7 +88,7 @@
 			const q = value.trim();
 			requested = q;
 			// eslint-disable-next-line svelte/no-navigation-without-resolve -- caminho vem de resolve(); a regra não suporta query string
-			goto(q ? `${resolve('/search')}?q=${encodeURIComponent(q)}` : resolve('/search'), {
+			goto(searchHref(q), {
 				replaceState: true,
 				keepFocus: true,
 				noScroll: true
@@ -91,7 +103,27 @@
 
 <main class="mx-auto flex max-w-[1600px] flex-col gap-8 px-5 pt-6 pb-16 md:px-10">
 	<header>
-		<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">{m.search_kicker()}</p>
+		<div class="flex flex-wrap items-center justify-between gap-4">
+			<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">{m.search_kicker()}</p>
+			<!-- eslint-disable svelte/no-navigation-without-resolve -- searchHref usa resolve(); a regra não suporta query string -->
+			<nav
+				class="flex gap-1 rounded-full border border-white/10 p-1"
+				aria-label={m.search_kicker()}
+			>
+				{#each [['movies', m.search_tab_movies()], ['people', m.search_tab_people()]] as const as [type, label] (type)}
+					<a
+						href={searchHref(term.trim(), type)}
+						data-sveltekit-keepfocus
+						aria-current={data.type === type ? 'page' : undefined}
+						class={[
+							'rounded-full px-4 py-1.5 text-xs font-medium tracking-[0.15em] uppercase transition',
+							data.type === type ? 'bg-white text-background' : 'text-white/70 hover:text-white'
+						]}>{label}</a
+					>
+				{/each}
+			</nav>
+			<!-- eslint-enable svelte/no-navigation-without-resolve -->
+		</div>
 
 		<form
 			method="GET"
@@ -113,7 +145,7 @@
 					type="search"
 					bind:value={term}
 					oninput={() => search(term)}
-					placeholder={m.search_placeholder()}
+					placeholder={people ? m.search_people_placeholder() : m.search_placeholder()}
 					autocomplete="off"
 					maxlength={MAX_QUERY_LENGTH}
 					class="w-full bg-transparent font-display text-[clamp(1.75rem,4vw,3.5rem)] leading-tight font-semibold tracking-[-0.03em] outline-none placeholder:text-white/25 [&::-webkit-search-cancel-button]:hidden"
@@ -138,12 +170,49 @@
 			{#if data.q}
 				{m.search_results_for()} <span class="text-foreground">“{data.q}”</span>
 			{:else}
-				{m.search_trending_hint()}
+				{people ? m.search_people_hint() : m.search_trending_hint()}
 			{/if}
 		</p>
 	</header>
 
-	{#if data.failed}
+	{#if people}
+		{#if data.q && !data.people.length}
+			<p class="rounded-3xl border border-white/10 px-6 py-16 text-center text-muted-foreground">
+				{m.search_people_none()}
+			</p>
+		{:else}
+			<ul class="grid gap-3 md:grid-cols-2">
+				{#each data.people as person (person.username)}
+					{@const href = resolve('/(app)/u/[username]', { username: person.username })}
+					<li
+						class="flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.02] p-4 transition hover:border-white/25"
+					>
+						<a {href}><Avatar user={person} class="size-12 text-lg" /></a>
+						<div class="min-w-0 flex-1">
+							<a {href} class="block truncate font-medium hover:underline"
+								>{person.name ?? `@${person.username}`}</a
+							>
+							<p class="truncate text-xs text-white/50">
+								@{person.username} · {plural(
+									person.followers,
+									m.followers_count_one,
+									m.followers_count_other
+								)}
+							</p>
+							{#if person.bio}<p class="mt-1 line-clamp-1 text-sm text-white/65">
+									{person.bio}
+								</p>{/if}
+						</div>
+						{#if person.isMe}
+							<span class="text-xs text-white/40">{m.you()}</span>
+						{:else if signedIn}
+							<FollowButton username={person.username} isFollowing={person.isFollowing} size="sm" />
+						{/if}
+					</li>
+				{/each}
+			</ul>
+		{/if}
+	{:else if data.failed}
 		<p class="rounded-3xl border border-white/10 px-6 py-16 text-center text-muted-foreground">
 			{m.search_unavailable()}
 		</p>
@@ -187,7 +256,7 @@
 					{m.search_load_more_error()}
 				</button>
 			{:else if !hasMore}
-				Fim dos resultados.
+				{m.search_end()}
 			{/if}
 		</div>
 	{/if}

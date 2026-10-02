@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import ArrowDownIcon from '@lucide/svelte/icons/arrow-down';
 	import ArrowUpIcon from '@lucide/svelte/icons/arrow-up';
 	import CheckIcon from '@lucide/svelte/icons/check';
@@ -145,8 +146,10 @@
 			</span>
 			{#if !list.isOwner}
 				<span class="text-white/30" aria-hidden="true">·</span>
-				<span class="tracking-normal text-white/60 normal-case"
-					>{m.list_by({ username: list.owner.username })}</span
+				<a
+					href={resolve('/(app)/u/[username]', { username: list.owner.username })}
+					class="tracking-normal text-white/60 normal-case hover:text-white hover:underline"
+					>{m.list_by({ username: list.owner.username })}</a
 				>
 			{/if}
 		</p>

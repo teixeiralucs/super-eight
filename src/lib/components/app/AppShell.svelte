@@ -138,7 +138,7 @@
 					>
 				{:else}
 					<a
-						href={resolve('/settings')}
+						href={resolve('/(app)/u/[username]', { username: profile.username })}
 						class="hidden text-sm text-white/70 transition hover:text-white sm:block"
 						>@{profile.username}</a
 					>

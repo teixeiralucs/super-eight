@@ -36,9 +36,9 @@ export interface MovieDetailData {
 	region: string;
 }
 
-export const DETAIL_TABS = ['about', 'cast', 'gallery'] as const;
+export const DETAIL_TABS = ['about', 'cast', 'reviews', 'gallery'] as const;
 export type DetailTab = (typeof DETAIL_TABS)[number];
 
 /** Função: o rótulo depende do idioma de cada requisição. */
 export const tabLabel = (tab: DetailTab) =>
-	({ about: m.tab_about, cast: m.tab_cast, gallery: m.tab_gallery })[tab]();
+	({ about: m.tab_about, cast: m.tab_cast, reviews: m.tab_reviews, gallery: m.tab_gallery })[tab]();

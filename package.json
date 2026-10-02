@@ -16,7 +16,7 @@
 		"db:migrate": "prisma migrate dev",
 		"db:deploy": "prisma migrate deploy",
 		"db:studio": "prisma studio",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "node scripts/compile-messages.mjs && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"lint": "prettier --check . && eslint .",
 		"format": "prettier --write .",
@@ -24,7 +24,8 @@
 		"test": "npm run test:unit -- --run",
 		"library:backup": "tsx scripts/library-backup.ts",
 		"library:restore": "tsx scripts/library-restore.ts",
-		"movies:backfill-i18n": "tsx scripts/movies-backfill-i18n.ts"
+		"movies:backfill-i18n": "tsx scripts/movies-backfill-i18n.ts",
+		"i18n:compile": "node scripts/compile-messages.mjs"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",

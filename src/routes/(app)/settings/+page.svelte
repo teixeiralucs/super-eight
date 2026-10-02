@@ -1,12 +1,17 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import { countryName } from '$lib/format';
 	import { LOCALE_NAMES, locales, REGIONS } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+	let savingProfile = $state(false);
+	const field =
+		'w-full rounded-2xl border border-white/10 bg-background px-4 py-3 text-sm outline-none transition placeholder:text-white/30 focus:border-neon-cyan';
 
 	// Países no idioma atual, em ordem alfabética.
 	const regions = $derived(
@@ -26,13 +31,80 @@
 
 <main class="mx-auto flex max-w-3xl flex-col gap-6 px-5 pt-6 pb-16 md:px-10">
 	<header class="pb-2">
-		<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">{m.settings_kicker()}</p>
+		<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">@{data.account.username}</p>
 		<h1
 			class="mt-3 font-display text-[clamp(2.25rem,4.5vw,3.75rem)] leading-none font-bold tracking-[-0.04em]"
 		>
-			{m.settings_title()}
+			{m.settings_kicker()}
 		</h1>
 	</header>
+
+	<!-- Perfil público (§6.6) -->
+	<form
+		method="POST"
+		action="?/profile"
+		use:enhance={() => {
+			savingProfile = true;
+			return async ({ update }) => {
+				await update({ reset: false });
+				savingProfile = false;
+			};
+		}}
+		class={card}
+	>
+		<div class="flex items-start justify-between gap-4">
+			<div>
+				<h2 class={label}>{m.settings_profile()}</h2>
+				<p class="mt-1 text-sm text-muted-foreground">{m.settings_profile_hint()}</p>
+			</div>
+			<a
+				href={resolve('/(app)/u/[username]', { username: data.account.username })}
+				class="shrink-0 text-xs text-white/55 hover:text-white">{m.settings_view_profile()}</a
+			>
+		</div>
+		<label class="flex flex-col gap-2">
+			<span class="text-xs text-white/60">{m.settings_name()}</span>
+			<input name="name" maxlength="60" value={data.account.name ?? ''} class={field} />
+			{#if form?.errors?.name}<span class="text-xs text-destructive">{form.errors.name[0]}</span
+				>{/if}
+		</label>
+		<label class="flex flex-col gap-2">
+			<span class="text-xs text-white/60">{m.settings_bio()}</span>
+			<textarea
+				name="bio"
+				rows="3"
+				maxlength="300"
+				placeholder={m.settings_bio_placeholder()}
+				class="{field} resize-none">{data.account.bio ?? ''}</textarea
+			>
+			{#if form?.errors?.bio}<span class="text-xs text-destructive">{form.errors.bio[0]}</span>{/if}
+		</label>
+		<label class="flex cursor-pointer items-start gap-3">
+			<input
+				type="checkbox"
+				name="isPrivate"
+				checked={data.account.isPrivate}
+				class="mt-0.5 size-4 shrink-0 accent-[var(--neon-pink)]"
+			/>
+			<span>
+				<span class="block text-sm font-medium">{m.settings_private()}</span>
+				<span class="mt-0.5 block text-xs text-muted-foreground">{m.settings_private_hint()}</span>
+			</span>
+		</label>
+		<div class="flex items-center gap-4">
+			<button
+				disabled={savingProfile}
+				class="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-background transition hover:bg-white/85 disabled:opacity-60"
+			>
+				{m.settings_save_profile()}
+			</button>
+			{#if form?.profileSaved}<p role="status" class="text-xs text-neon-cyan">
+					{m.settings_profile_saved()}
+				</p>{/if}
+		</div>
+	</form>
+
+	<h2 class="mt-4 font-display text-2xl font-semibold tracking-[-0.02em]">{m.settings_title()}</h2>
 
 	<!-- Formulário comum (sem enhance): o recarregamento aplica o idioma em tudo. -->
 	<form method="POST" action="/preferences" class="flex flex-col gap-6">

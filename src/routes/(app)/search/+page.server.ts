@@ -4,6 +4,7 @@ import { prisma } from '$lib/server/db';
 import { m } from '$lib/paraglide/messages';
 import { ensureMovie } from '$lib/server/movies';
 import { searchPage } from '$lib/server/search';
+import { searchPeople } from '$lib/server/social';
 import { TMDbError } from '$lib/server/tmdb';
 import { parseSearchQuery } from '$lib/search';
 import type { Actions, PageServerLoad } from './$types';
@@ -12,12 +13,25 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ url, locals, fetch }) => {
 	const ctx = { locale: locals.locale, region: locals.region, fetch };
 	const q = parseSearchQuery(url.searchParams);
+	const type = url.searchParams.get('type') === 'people' ? 'people' : 'movies';
+
+	// Pessoas (§6.6): por @username ou nome; sem termo, nada (sem listar todo mundo).
+	if (type === 'people') {
+		const people = await searchPeople(q, locals.user?.id ?? null);
+		return { q, type, people, failed: false, items: [], page: 1, totalPages: 1 };
+	}
 
 	try {
-		return { q, failed: false, ...(await searchPage(locals.user?.id ?? null, q, 1, ctx)) };
+		return {
+			q,
+			type,
+			people: [],
+			failed: false,
+			...(await searchPage(locals.user?.id ?? null, q, 1, ctx))
+		};
 	} catch (err) {
 		console.error('[search] falha na busca:', err);
-		return { q, failed: true, items: [], page: 1, totalPages: 1 };
+		return { q, type, people: [], failed: true, items: [], page: 1, totalPages: 1 };
 	}
 };
 

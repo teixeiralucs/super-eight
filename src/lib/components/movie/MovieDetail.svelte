@@ -22,6 +22,7 @@
 	import LibraryControls from './LibraryControls.svelte';
 	import MovieBackdrop from './MovieBackdrop.svelte';
 	import PersonCard from './PersonCard.svelte';
+	import ReviewsPanel from '$lib/components/social/ReviewsPanel.svelte';
 	import TrailerModal from './TrailerModal.svelte';
 
 	/**
@@ -238,7 +239,7 @@
 				aria-labelledby="tab-{tab}"
 				class={[
 					'mt-6 min-w-0',
-					tab === 'about' && 'max-w-3xl',
+					(tab === 'about' || tab === 'reviews') && 'max-w-3xl',
 					tab === 'gallery' && 'lg:min-h-0 lg:flex-1'
 				]}
 			>
@@ -297,6 +298,8 @@
 								onpreview={(path) => (backdrop = path)}
 								{submit}
 							/>
+						{:else if tab === 'reviews'}
+							<ReviewsPanel movieId={movie.id} signedIn={data.signedIn} {loginHref} />
 						{/if}
 					</div>
 				{/key}

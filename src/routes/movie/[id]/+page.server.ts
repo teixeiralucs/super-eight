@@ -9,6 +9,14 @@ import {
 import { setArtwork } from '$lib/server/artwork';
 import { quickListSchema, listIdSchema } from '$lib/schemas/lists';
 import { addToList, createList, toggleInList } from '$lib/server/lists';
+import { commentIdSchema, commentSchema, reviewIdSchema, reviewSchema } from '$lib/schemas/social';
+import {
+	addComment,
+	deleteComment,
+	deleteReview,
+	toggleReviewLike,
+	upsertReview
+} from '$lib/server/reviews';
 import {
 	addToLibrary,
 	deleteSession,
@@ -101,6 +109,20 @@ export const actions: Actions = {
 	),
 	toggleList: action(listIdSchema, (userId, movieId, { listId }, { fetch }) =>
 		toggleInList(userId, listId, movieId, fetch)
+	),
+	// Comunidade (§6.6): a aba Reviews recarrega a própria lista depois de cada action.
+	review: action(reviewSchema, (userId, movieId, input, { fetch }) =>
+		upsertReview(userId, movieId, input, fetch)
+	),
+	deleteReview: action(empty, (userId, movieId) => deleteReview(userId, movieId)),
+	likeReview: action(reviewIdSchema, (userId, _movieId, { reviewId }) =>
+		toggleReviewLike(userId, reviewId)
+	),
+	comment: action(commentSchema, (userId, _movieId, { reviewId, content }) =>
+		addComment(userId, reviewId, content)
+	),
+	deleteComment: action(commentIdSchema, (userId, _movieId, { commentId }) =>
+		deleteComment(userId, commentId)
 	),
 	/** Cria uma coleção privada com o título dado e já põe o filme nela. */
 	quickList: action(quickListSchema, async (userId, movieId, { title }, { fetch }) => {

@@ -91,3 +91,22 @@ export function languageName(code: string) {
 		return code;
 	}
 }
+
+const RELATIVE_STEPS: [Intl.RelativeTimeFormatUnit, number][] = [
+	['year', 365 * 24 * 3600],
+	['month', 30 * 24 * 3600],
+	['week', 7 * 24 * 3600],
+	['day', 24 * 3600],
+	['hour', 3600],
+	['minute', 60]
+];
+
+/** "há 3 dias" / "3 days ago" / "hace 3 días" (agora = "agora"). */
+export function formatRelative(date: Date, now = new Date()) {
+	const seconds = Math.round((date.getTime() - now.getTime()) / 1000);
+	const format = new Intl.RelativeTimeFormat(intlLocale(), { numeric: 'auto' });
+	for (const [unit, size] of RELATIVE_STEPS) {
+		if (Math.abs(seconds) >= size) return format.format(Math.round(seconds / size), unit);
+	}
+	return format.format(0, 'second');
+}

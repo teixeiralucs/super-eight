@@ -34,6 +34,8 @@ model User {
   locale    String?
   /// País (ISO 3166-1) para "Em cartaz", populares e estreia local; nulo = automático.
   region    String?
+  /// Perfil privado: só nome, @ e listas públicas aparecem; fica fora do feed (§6.6).
+  isPrivate Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

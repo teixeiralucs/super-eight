@@ -19,10 +19,14 @@ async function ownedList(userId: string, listId: string) {
 }
 
 /** Listas do usuário para a página /lists (mais recentes primeiro). */
-export async function getUserLists(userId: string, locale: Locale): Promise<ListSummary[]> {
+export async function getUserLists(
+	userId: string,
+	locale: Locale,
+	{ publicOnly = false } = {}
+): Promise<ListSummary[]> {
 	const [lists, artworks] = await Promise.all([
 		prisma.list.findMany({
-			where: { userId },
+			where: { userId, ...(publicOnly && { isPublic: true }) },
 			orderBy: { updatedAt: 'desc' },
 			select: {
 				id: true,

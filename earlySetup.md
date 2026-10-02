@@ -406,8 +406,14 @@ model CatalogEntry {
 - 6.1.7-A. `/lists/[id]`: destaque com o fundo do 1º filme, título, descrição e dono; grade de pôsteres (cards da biblioteca, com o estado de quem vê). Ranking: números grandes e, no modo edição do dono, reordenar arrastando ou com setas (salva na hora). Coleção: quem vê ordena por adição, lançamento ou título original. Modo edição: remover filmes, editar dados e apagar a lista. **Públicas abrem para qualquer pessoa (inclusive sem conta)** e têm "Copiar link"; privadas de outra pessoa respondem 404 (sem revelar que existem). Só `/lists` exato exige login no hook.
 - 6.1.7-B. Nos detalhes do filme, o botão "Listas" (mostra "Em N listas") abre um pop-up ao lado, igual ao do diário, com as listas marcáveis e a criação rápida.
 - 6.1.8. `/list/[id]`: lista pública ou privada (conforme `isPublic`); se privada, apenas o dono acessa.
-- 6.1.9. `/u/[username]`: perfil público (favoritos, atividade recente, listas públicas, seguidores/seguindo).
-- 6.1.10. `/feed` (Protegida): atividade dos usuários seguidos.
+- 6.1.9. `/u/[username]`: perfil (aberto a visitantes): avatar, nome, @, bio, desde quando, números (assistidos, reviews, listas, seguidores, seguindo) e Seguir/Deixar de seguir (ou "Editar perfil" no próprio). Seções: favoritos, assistiu recentemente (datas e notas — **anotações do diário nunca aparecem**), reviews e listas públicas. Perfil privado de outra pessoa: só cabeçalho, números e listas públicas.
+- 6.1.10. `/feed` (Protegida): sessões assistidas por quem o usuário segue (perfis privados ficam de fora; sem anotações), agrupadas por dia (Hoje/Ontem/data), com pôster, título original e traduzido, nota e quando foi registrada. Feed vazio leva à busca de pessoas.
+
+## **6.6. Comunidade**
+
+- 6.6.1. Reviews: aba **Reviews** nos detalhes do filme (uma review por pessoa por filme; escrever, editar, apagar, marcar spoiler). As da comunidade vêm de quem o usuário segue primeiro, depois as mais curtidas. Spoiler fica borrado até "Mostrar mesmo assim". Curtir (não a própria) e comentar (apaga quem escreveu o comentário ou o autor da review). Leitura por `GET /api/movie/[id]/reviews` e `GET /api/reviews/[id]/comments` (exceção só leitura, §5.2); mutações em actions de `/movie/[id]` (`review`, `deleteReview`, `likeReview`, `comment`, `deleteComment`).
+- 6.6.2. Privacidade: `User.isPrivate` (em `/settings`, junto de nome e bio). Privado esconde diário, favoritos e reviews dos outros e tira a pessoa do feed de quem a segue; listas públicas continuam públicas.
+- 6.6.3. Busca de pessoas: alternância Filmes/Pessoas em `/search` (`?type=people`), por @username ou nome, com Seguir na própria lista.
 
 ## **6.2. Arquitetura de Componentes e UI**
 
