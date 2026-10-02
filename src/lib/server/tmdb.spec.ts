@@ -2,8 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('$env/static/private', () => ({ TMDB_READ_ACCESS_TOKEN: 'test-token' }));
 
-const { isShowcaseable, pickTrailer, toMovie, toMovieDetails, toMovieFull } =
-	await import('./tmdb');
+const {
+	isShowcaseable,
+	pickTranslation,
+	pickTrailer,
+	regionalRelease,
+	toMovie,
+	toMovieCache,
+	toMovieFull
+} = await import('./tmdb');
 
 const raw = {
 	id: 1,
@@ -55,9 +62,12 @@ describe('isShowcaseable', () => {
 	});
 });
 
-describe('toMovieDetails', () => {
+describe('toMovieCache', () => {
 	const details = {
 		...raw,
+		title: 'The Odyssey',
+		original_title: 'Odysseia',
+		original_language: 'el',
 		runtime: 166,
 		genres: [{ id: 18, name: 'Drama' }],
 		origin_country: ['US'],
@@ -67,25 +77,83 @@ describe('toMovieDetails', () => {
 				{ job: 'Director', name: 'Christopher Nolan' },
 				{ job: 'Producer', name: 'Emma Thomas' }
 			]
+		},
+		translations: {
+			translations: [
+				{ iso_639_1: 'pt', iso_3166_1: 'PT', data: { title: 'A Odisseia (PT)' } },
+				{ iso_639_1: 'pt', iso_3166_1: 'BR', data: { title: 'A Odisseia' } },
+				{ iso_639_1: 'es', iso_3166_1: 'ES', data: { title: 'La Odisea' } },
+				{ iso_639_1: 'en', iso_3166_1: 'US', data: { title: '' } }
+			]
+		},
+		images: {
+			backdrops: [],
+			posters: [
+				{ file_path: '/pt-ruim.jpg', iso_639_1: 'pt', vote_average: 1 },
+				{ file_path: '/pt-bom.jpg', iso_639_1: 'pt', vote_average: 5 }
+			]
 		}
 	};
 
-	it('extrai direção, país de origem e duração', () => {
-		const movie = toMovieDetails(details);
+	it('guarda original, traduções (país preferido) e pôster por idioma', () => {
+		const movie = toMovieCache(details);
+		expect(movie.originalTitle).toBe('Odysseia');
+		expect(movie.originalLanguage).toBe('el');
+		// pt-BR antes de pt-PT; espanhol cai na Espanha sem tradução latina;
+		// inglês vazio na tradução usa o título da própria resposta em inglês.
+		expect(movie.titles).toEqual({ pt: 'A Odisseia', en: 'The Odyssey', es: 'La Odisea' });
+		expect(movie.posters).toEqual({ pt: '/pt-bom.jpg', en: '/poster.jpg', es: '/poster.jpg' });
+		expect(movie.genreIds).toEqual([18]);
 		expect(movie.directors).toEqual(['Christopher Nolan']);
 		expect(movie.countries).toEqual(['US']);
 		expect(movie.runtime).toBe(166);
-		expect(movie.genres).toEqual(['Drama']);
 	});
 
-	it('usa países de produção quando não há país de origem', () => {
-		expect(toMovieDetails({ ...details, origin_country: [] }).countries).toEqual(['GB']);
+	it('tradução igual ao original vira nulo; sem país de origem usa países de produção', () => {
+		const movie = toMovieCache({
+			...details,
+			title: 'Odysseia',
+			origin_country: [],
+			translations: { translations: [] }
+		});
+		expect(movie.titles).toEqual({ pt: null, en: null, es: null });
+		expect(movie.countries).toEqual(['GB']);
 	});
 
 	it('trata duração zero e créditos ausentes', () => {
-		const movie = toMovieDetails({ ...details, runtime: 0, credits: undefined });
+		const movie = toMovieCache({ ...details, runtime: 0, credits: undefined });
 		expect(movie.runtime).toBeNull();
 		expect(movie.directors).toEqual([]);
+	});
+});
+
+describe('pickTranslation', () => {
+	it('ignora traduções vazias', () => {
+		const t = [{ iso_639_1: 'es', iso_3166_1: 'MX', data: { title: '  ' } }];
+		expect(pickTranslation(t, 'es', ['MX'])).toBeNull();
+	});
+});
+
+describe('regionalRelease', () => {
+	const dates = {
+		results: [
+			{
+				iso_3166_1: 'BR',
+				release_dates: [
+					{ release_date: '2026-09-01T00:00:00.000Z', type: 4 },
+					{ release_date: '2026-07-20T00:00:00.000Z', type: 3 }
+				]
+			}
+		]
+	};
+
+	it('prefere a estreia em cinema na região', () => {
+		expect(regionalRelease(dates, 'BR')).toBe('2026-07-20');
+	});
+
+	it('sem data para a região, nulo', () => {
+		expect(regionalRelease(dates, 'US')).toBeNull();
+		expect(regionalRelease(undefined, 'BR')).toBeNull();
 	});
 });
 
@@ -100,15 +168,21 @@ describe('pickTrailer', () => {
 		...over
 	});
 
-	it('prefere trailer em português, depois inglês oficial', () => {
+	it('prefere trailer no idioma de quem vê, depois inglês oficial', () => {
 		const videos = [
 			video({ key: 'teaser-pt', type: 'Teaser', iso_639_1: 'pt' }),
 			video({ key: 'en' }),
 			video({ key: 'pt', iso_639_1: 'pt', official: false }),
 			video({ key: 'featurette', type: 'Featurette', iso_639_1: 'pt' })
 		];
-		expect(pickTrailer(videos)?.key).toBe('pt');
-		expect(pickTrailer(videos.filter((v) => v.key !== 'pt'))?.key).toBe('en');
+		expect(pickTrailer(videos, 'pt')?.key).toBe('pt');
+		expect(
+			pickTrailer(
+				videos.filter((v) => v.key !== 'pt'),
+				'pt'
+			)?.key
+		).toBe('en');
+		expect(pickTrailer(videos, 'es')?.key).toBe('en');
 	});
 
 	it('ignora vídeos fora do YouTube e retorna nulo sem trailer', () => {
@@ -119,27 +193,39 @@ describe('pickTrailer', () => {
 
 describe('toMovieFull', () => {
 	it('extrai equipe com foto, música, estúdios e elenco ordenado', () => {
-		const movie = toMovieFull({
-			...raw,
-			runtime: 120,
-			genres: [],
-			tagline: '',
-			vote_count: 10,
-			credits: {
-				crew: [
-					{ id: 10, job: 'Director', name: 'D', profile_path: '/d.jpg' },
-					{ id: 11, job: 'Screenplay', name: 'W1' },
-					{ id: 11, job: 'Story', name: 'W1' },
-					{ job: 'Original Music Composer', name: 'M' },
-					{ job: 'Music Editor', name: 'X' }
-				],
-				cast: [
-					{ id: 2, name: 'B', character: 'b', profile_path: null, order: 1 },
-					{ id: 1, name: 'A', character: 'a', profile_path: '/a.jpg', order: 0 }
-				]
+		const labels = {
+			directing: 'Direção',
+			writing: 'Roteiro',
+			story: 'História',
+			novel: 'Livro',
+			characters: 'Personagens'
+		};
+		const movie = toMovieFull(
+			{
+				...raw,
+				runtime: 120,
+				genres: [],
+				tagline: '',
+				vote_count: 10,
+				credits: {
+					crew: [
+						{ id: 10, job: 'Director', name: 'D', profile_path: '/d.jpg' },
+						{ id: 11, job: 'Screenplay', name: 'W1' },
+						{ id: 11, job: 'Story', name: 'W1' },
+						{ job: 'Original Music Composer', name: 'M' },
+						{ job: 'Music Editor', name: 'X' }
+					],
+					cast: [
+						{ id: 2, name: 'B', character: 'b', profile_path: null, order: 1 },
+						{ id: 1, name: 'A', character: 'a', profile_path: '/a.jpg', order: 0 }
+					]
+				},
+				production_companies: [{ name: 'S1' }, { name: 'S2' }]
 			},
-			production_companies: [{ name: 'S1' }, { name: 'S2' }]
-		});
+			'pt',
+			'BR',
+			labels
+		);
 
 		expect(movie.tagline).toBeNull();
 		expect(movie.directing).toEqual([{ id: 10, name: 'D', job: 'Direção', profilePath: '/d.jpg' }]);

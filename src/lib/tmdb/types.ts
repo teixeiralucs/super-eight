@@ -46,10 +46,18 @@ export interface Trailer {
 	name: string;
 }
 
-/** Tudo que a página de detalhes precisa (earlySetup.md §4.2.2). */
-export interface TMDbMovieFull extends TMDbMovieDetails {
+/** Tudo que a página de detalhes precisa (earlySetup.md §4.2.2), no idioma de quem vê. */
+export interface TMDbMovieFull extends TMDbMovie {
+	originalLanguage: string | null;
+	runtime: number | null;
+	/** Nomes de quem dirigiu (pode haver mais de um). */
+	directors: string[];
+	/** Códigos ISO 3166-1 (ex.: "US", "BR"); o nome é traduzido na UI. */
+	countries: string[];
 	tagline: string | null;
-	posterPath: string | null;
+	voteCount: number;
+	/** Estreia na região do usuário (YYYY-MM-DD), se o TMDb tiver. */
+	regionalRelease: string | null;
 	directing: CrewMember[];
 	writing: CrewMember[];
 	composers: string[];
@@ -57,13 +65,24 @@ export interface TMDbMovieFull extends TMDbMovieDetails {
 	studios: string[];
 	cast: CastMember[];
 	trailer: Trailer | null;
-	voteCount: number;
 }
 
-export interface TMDbMovieDetails extends TMDbMovie {
+export type Localized<T> = { pt: T; en: T; es: T };
+
+/** Dados do filme independentes de idioma, para o cache local `Movie` (§3.3). */
+export interface MovieCacheData {
+	id: number;
+	originalTitle: string;
+	originalLanguage: string | null;
+	/** Título traduzido por idioma; nulo = sem tradução ou igual ao original. */
+	titles: Localized<string | null>;
+	posters: Localized<string | null>;
+	backdropPath: string | null;
+	releaseDate: string | null;
+	year: number | null;
 	runtime: number | null;
-	/** Nomes de quem dirigiu (pode haver mais de um). */
+	genreIds: number[];
 	directors: string[];
-	/** Códigos ISO 3166-1 (ex.: "US", "BR"); o nome é traduzido na UI. */
 	countries: string[];
+	voteAverage: number;
 }

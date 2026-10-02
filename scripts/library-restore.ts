@@ -15,6 +15,36 @@ if (!file) {
 }
 
 const backup: LibraryBackup = JSON.parse(await readFile(file, 'utf8'));
+
+/**
+ * Linha do backup → colunas atuais de `Movie`. Backups antigos (antes do i18n) tinham
+ * `title`/`posterPath` em pt-BR e `genres` por nome: viram `titlePt`/`posterPt`; os demais
+ * campos traduzidos ficam vazios até `npm run movies:backfill-i18n`.
+ */
+function toMovieRow(row: Record<string, unknown>) {
+	const value = <T>(key: string) => (row[key] ?? null) as T;
+	const date = (key: string) => (row[key] ? new Date(row[key] as string) : null);
+	return {
+		id: row.id as number,
+		originalTitle: value<string | null>('originalTitle'),
+		originalLanguage: value<string | null>('originalLanguage'),
+		titlePt: value<string | null>('titlePt') ?? value<string | null>('title'),
+		titleEn: value<string | null>('titleEn'),
+		titleEs: value<string | null>('titleEs'),
+		posterPt: value<string | null>('posterPt') ?? value<string | null>('posterPath'),
+		posterEn: value<string | null>('posterEn'),
+		posterEs: value<string | null>('posterEs'),
+		backdropPath: value<string | null>('backdropPath'),
+		releaseDate: date('releaseDate'),
+		runtime: value<number | null>('runtime'),
+		genreIds: value<number[] | null>('genreIds') ?? [],
+		directors: value<string[] | null>('directors') ?? [],
+		countries: value<string[] | null>('countries') ?? [],
+		voteAverage: value<number | null>('voteAverage'),
+		createdAt: date('createdAt') ?? new Date(),
+		updatedAt: date('updatedAt') ?? new Date()
+	};
+}
 if (backup.version !== 1) throw new Error(`Versão de backup desconhecida: ${backup.version}`);
 
 const username = target ?? backup.username;
@@ -28,15 +58,7 @@ const userId = user.id;
 await prisma.$transaction(
 	async (tx) => {
 		// Filmes primeiro (as outras tabelas apontam para eles); os que já existem ficam como estão.
-		await tx.movie.createMany({
-			data: backup.movies.map((movie) => ({
-				...movie,
-				releaseDate: movie.releaseDate ? new Date(movie.releaseDate) : null,
-				createdAt: new Date(movie.createdAt),
-				updatedAt: new Date(movie.updatedAt)
-			})),
-			skipDuplicates: true
-		});
+		await tx.movie.createMany({ data: backup.movies.map(toMovieRow), skipDuplicates: true });
 
 		for (const entry of backup.library) {
 			const data = {

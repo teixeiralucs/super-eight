@@ -1,0 +1,9 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"crew_directing": "Directing",
+	"crew_writing": "Screenplay",
+	"crew_story": "Story",
+	"crew_novel": "Novel",
+	"crew_characters": "Characters",
+	"error_movie_not_found": "Movie not found."
+}

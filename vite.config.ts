@@ -1,3 +1,4 @@
+import { paraglideVitePlugin } from '@inlang/paraglide-js';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 import { playwright } from '@vitest/browser-playwright';
@@ -15,6 +16,16 @@ export default defineConfig({
 			},
 			// Runtime fixo: o build não depende do Node instalado na máquina e bate com `engines`.
 			adapter: adapter({ runtime: 'nodejs24.x' })
+		}),
+
+		paraglideVitePlugin({
+			project: './project.inlang',
+			outdir: './src/lib/paraglide',
+			emitTsDeclarations: true,
+			// Sem idioma na URL: vale a escolha salva (cookie, espelhado no perfil); na 1ª visita,
+			// o idioma do navegador. Ver $lib/i18n.
+			strategy: ['cookie', 'preferredLanguage', 'baseLocale'],
+			cookieName: 'locale'
 		})
 	],
 	test: {

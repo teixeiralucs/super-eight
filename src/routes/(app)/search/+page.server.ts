@@ -9,10 +9,11 @@ import type { Actions, PageServerLoad } from './$types';
 
 // Busca orientada a URL (/search?q=batman): o link é compartilhável (earlySetup.md §6.1.3).
 export const load: PageServerLoad = async ({ url, locals, fetch }) => {
+	const ctx = { locale: locals.locale, region: locals.region, fetch };
 	const q = parseSearchQuery(url.searchParams);
 
 	try {
-		return { q, failed: false, ...(await searchPage(locals.user?.id ?? null, q, 1, fetch)) };
+		return { q, failed: false, ...(await searchPage(locals.user?.id ?? null, q, 1, ctx)) };
 	} catch (err) {
 		console.error('[search] falha na busca:', err);
 		return { q, failed: true, items: [], page: 1, totalPages: 1 };

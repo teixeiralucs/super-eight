@@ -52,7 +52,12 @@ export const libraryFiltersSchema = z
 		view: z.enum(LIBRARY_VIEWS).catch('all'),
 		sort: z.enum(LIBRARY_SORTS).catch(DEFAULT_SORT),
 		dir: z.enum(SORT_DIRECTIONS).optional().catch(undefined),
-		genre: z.string().trim().max(40).optional().catch(undefined)
+		// ID de gênero do TMDb (o nome é traduzido na UI).
+		genre: z
+			.string()
+			.regex(/^\d{1,6}$/)
+			.optional()
+			.catch(undefined)
 	})
 	.transform((filters) => ({ ...filters, dir: filters.dir ?? DEFAULT_DIRECTION[filters.sort] }));
 

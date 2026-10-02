@@ -34,9 +34,8 @@ describe('filtersQuery', () => {
 		expect(filtersQuery(parse('sort=random&dir=desc'))).toBe('?sort=random');
 	});
 
-	it('codifica gênero', () => {
-		expect(filtersQuery(parse('genre=Ficção científica'))).toBe(
-			'?genre=Fic%C3%A7%C3%A3o%20cient%C3%ADfica'
-		);
+	it('gênero é o ID do TMDb (o nome muda com o idioma)', () => {
+		expect(filtersQuery(parse('genre=878'))).toBe('?genre=878');
+		expect(parse('genre=Ficção').genre).toBeUndefined();
 	});
 });

@@ -1,22 +1,26 @@
 import { prisma } from '$lib/server/db';
-import { getMovieDetails } from '$lib/server/tmdb';
+import { getMovieCacheData } from '$lib/server/tmdb';
 
 /**
- * Garante que o filme existe no cache local `Movie` (earlySetup.md §4.3.2),
- * buscando os metadados no TMDb e fazendo upsert.
+ * Garante que o filme existe no cache local `Movie` (earlySetup.md §4.3.2), buscando no
+ * TMDb o título original, as traduções pt/en/es e o pôster de cada idioma.
  */
 export async function ensureMovie(tmdbId: number, fetchFn?: typeof fetch) {
-	const details = await getMovieDetails(tmdbId, fetchFn);
+	const details = await getMovieCacheData(tmdbId, fetchFn);
 
 	const data = {
-		title: details.title,
 		originalTitle: details.originalTitle,
-		overview: details.overview,
-		posterPath: details.posterPath,
+		originalLanguage: details.originalLanguage,
+		titlePt: details.titles.pt,
+		titleEn: details.titles.en,
+		titleEs: details.titles.es,
+		posterPt: details.posters.pt,
+		posterEn: details.posters.en,
+		posterEs: details.posters.es,
 		backdropPath: details.backdropPath,
 		releaseDate: details.releaseDate ? new Date(`${details.releaseDate}T00:00:00Z`) : null,
 		runtime: details.runtime,
-		genres: details.genres,
+		genreIds: details.genreIds,
 		directors: details.directors,
 		countries: details.countries,
 		voteAverage: details.voteAverage

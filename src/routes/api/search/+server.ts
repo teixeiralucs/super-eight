@@ -10,10 +10,17 @@ export const GET: RequestHandler = async ({ url, locals, fetch }) => {
 	const page = parseSearchPage(url.searchParams);
 
 	try {
-		return json(await searchPage(locals.user?.id ?? null, q, page, fetch), {
-			// Contém o estado da biblioteca do usuário: nunca em cache compartilhado.
-			headers: { 'cache-control': 'private, no-store' }
-		});
+		return json(
+			await searchPage(locals.user?.id ?? null, q, page, {
+				locale: locals.locale,
+				region: locals.region,
+				fetch
+			}),
+			{
+				// Contém o estado da biblioteca do usuário: nunca em cache compartilhado.
+				headers: { 'cache-control': 'private, no-store' }
+			}
+		);
 	} catch (err) {
 		console.error('[api/search] falha:', err);
 		error(502, 'Busca indisponível no momento.');

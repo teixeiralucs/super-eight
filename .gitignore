@@ -30,3 +30,6 @@ vite.config.ts.timestamp-*
 
 # Backups de biblioteca (dados pessoais) — ver scripts/library-backup.ts
 /backups
+# Paraglide
+src/lib/paraglide
+project.inlang/cache/

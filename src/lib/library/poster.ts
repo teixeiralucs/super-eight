@@ -5,6 +5,7 @@ import type { LibraryItem, LibraryState, MovieCard, PosterMovie } from './types'
 export const posterFromCard = (movie: MovieCard): PosterMovie => ({
 	id: movie.id,
 	title: movie.title,
+	originalTitle: movie.originalTitle,
 	posterPath: movie.posterPath,
 	year: yearOf(movie.releaseDate),
 	directors: movie.directors,

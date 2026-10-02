@@ -18,11 +18,12 @@ import {
 	toggleFavorite
 } from '$lib/server/library-actions';
 import { getMovieFull, TMDbError } from '$lib/server/tmdb';
+import { m } from '$lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
 function parseMovieId(raw: string) {
 	const id = Number(raw);
-	if (!Number.isInteger(id) || id <= 0) error(404, 'Filme não encontrado.');
+	if (!Number.isInteger(id) || id <= 0) error(404, m.error_movie_not_found());
 	return id;
 }
 
@@ -30,8 +31,18 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 	const movieId = parseMovieId(params.id);
 
 	const [movie, userData] = await Promise.all([
-		getMovieFull(movieId, fetch).catch((err) => {
-			if (err instanceof TMDbError && err.status === 404) error(404, 'Filme não encontrado.');
+		getMovieFull(
+			movieId,
+			{ locale: locals.locale, region: locals.region, fetch },
+			{
+				directing: m.crew_directing(),
+				writing: m.crew_writing(),
+				story: m.crew_story(),
+				novel: m.crew_novel(),
+				characters: m.crew_characters()
+			}
+		).catch((err) => {
+			if (err instanceof TMDbError && err.status === 404) error(404, m.error_movie_not_found());
 			throw err;
 		}),
 		locals.user ? getMovieUserData(locals.user.id, movieId) : null

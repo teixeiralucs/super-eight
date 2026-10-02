@@ -28,7 +28,12 @@ const [library, diary, artworks] = await Promise.all([
 ]);
 
 const movieIds = [...new Set([...library, ...diary, ...artworks].map((row) => row.movieId))];
-const movies = await prisma.movie.findMany({ where: { id: { in: movieIds } } });
+// SQL cru: guarda as colunas que existirem (o backup sobrevive a mudanças de schema).
+const movies = movieIds.length
+	? await prisma.$queryRaw<
+			Record<string, unknown>[]
+		>`SELECT * FROM "Movie" WHERE id = ANY(${movieIds})`
+	: [];
 
 const backup: LibraryBackup = {
 	version: 1,

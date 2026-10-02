@@ -1,6 +1,7 @@
 import { prisma } from '$lib/server/db';
 import { getArtworks, withArtwork } from '$lib/server/artwork';
-import { movieCard } from '$lib/server/library';
+import { localizeCard, movieCardSelect } from '$lib/server/movie-locale';
+import type { Locale } from '$lib/i18n';
 import type { DiaryLogEntry } from '$lib/diary/types';
 import type { LibraryState } from '$lib/library/types';
 
@@ -9,7 +10,7 @@ import type { LibraryState } from '$lib/library/types';
  * (data assistida; no mesmo dia, a registrada por último primeiro). Cada filme vem com o
  * DNA visual do usuário e o estado atual na biblioteca.
  */
-export async function getDiary(userId: string): Promise<DiaryLogEntry[]> {
+export async function getDiary(userId: string, locale: Locale): Promise<DiaryLogEntry[]> {
 	const [sessions, library, artworks] = await Promise.all([
 		prisma.diaryEntry.findMany({
 			where: { userId },
@@ -21,7 +22,7 @@ export async function getDiary(userId: string): Promise<DiaryLogEntry[]> {
 				isRewatch: true,
 				note: true,
 				createdAt: true,
-				movie: { select: movieCard }
+				movie: { select: movieCardSelect }
 			}
 		}),
 		prisma.libraryEntry.findMany({
@@ -44,7 +45,7 @@ export async function getDiary(userId: string): Promise<DiaryLogEntry[]> {
 
 	return sessions.map((session) => ({
 		...session,
-		movie: withArtwork(session.movie, artworks),
+		movie: withArtwork(localizeCard(session.movie, locale), artworks),
 		library: states.get(session.movie.id) ?? null
 	}));
 }

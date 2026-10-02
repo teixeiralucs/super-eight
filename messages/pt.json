@@ -1,0 +1,9 @@
+{
+	"$schema": "https://inlang.com/schema/inlang-message-format",
+	"crew_directing": "Direção",
+	"crew_writing": "Roteiro",
+	"crew_story": "História",
+	"crew_novel": "Livro",
+	"crew_characters": "Personagens",
+	"error_movie_not_found": "Filme não encontrado."
+}

@@ -1,6 +1,6 @@
 import { prisma } from '$lib/server/db';
 import { ensureMovie } from '$lib/server/movies';
-import { getNowPlaying, getPopular } from '$lib/server/tmdb';
+import { getNowPlaying, getPopular, type TmdbContext } from '$lib/server/tmdb';
 
 // FERRAMENTA DE DESENVOLVIMENTO: popula a biblioteca do usuário com dados de exemplo
 // para visualizar o dashboard. As actions que chamam isto recusam rodar fora de `dev`.
@@ -13,7 +13,8 @@ function random(seed: number) {
 	return x - Math.floor(x);
 }
 
-export async function seedDemoLibrary(userId: string, fetchFn?: typeof fetch) {
+export async function seedDemoLibrary(userId: string, ctx: TmdbContext) {
+	const fetchFn = ctx.fetch;
 	// Atualiza metadados (direção, país…) dos filmes que já estão na biblioteca.
 	const existing = await prisma.libraryEntry.findMany({
 		where: { userId },
@@ -21,7 +22,7 @@ export async function seedDemoLibrary(userId: string, fetchFn?: typeof fetch) {
 	});
 	for (const { movieId } of existing) await ensureMovie(movieId, fetchFn);
 
-	const [popular, nowPlaying] = await Promise.all([getPopular(fetchFn), getNowPlaying(fetchFn)]);
+	const [popular, nowPlaying] = await Promise.all([getPopular(ctx), getNowPlaying(ctx)]);
 	const picks = [...new Map([...popular, ...nowPlaying].map((m) => [m.id, m])).values()].slice(
 		0,
 		18

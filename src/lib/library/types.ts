@@ -2,12 +2,15 @@
 
 export interface MovieCard {
 	id: number;
+	/** Título no idioma de quem vê (ou o original, sem tradução). */
 	title: string;
+	/** Título original — o destaque na UI (§6.5). */
+	originalTitle: string;
 	posterPath: string | null;
 	backdropPath: string | null;
 	releaseDate: Date | null;
 	runtime: number | null;
-	genres: string[];
+	genreIds: number[];
 	directors: string[];
 	countries: string[];
 }
@@ -24,6 +27,7 @@ export interface DiarySession {
 export interface PosterMovie {
 	id: number;
 	title: string;
+	originalTitle: string;
 	posterPath: string | null;
 	year: number | null;
 	directors: string[];

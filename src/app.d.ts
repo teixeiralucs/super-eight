@@ -9,6 +9,10 @@ declare global {
 			supabase: SupabaseClient;
 			/** Usuário autenticado (JWT verificado via getClaims) ou null. */
 			user: SessionUser | null;
+			/** Idioma da requisição (ver $lib/i18n). */
+			locale: import('$lib/paraglide/runtime').Locale;
+			/** País (ISO 3166-1) para "Em cartaz", populares e estreia local. */
+			region: string;
 		}
 		// interface PageData {}
 		interface PageState {

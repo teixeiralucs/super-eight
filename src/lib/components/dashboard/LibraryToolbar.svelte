@@ -22,7 +22,8 @@
 		counts
 	}: {
 		filters: LibraryFilters;
-		genres: string[];
+		/** Gêneros da biblioteca: valor = ID do TMDb, rótulo traduzido. */
+		genres: { id: number; name: string }[];
 		counts: Record<LibraryView, number>;
 	} = $props();
 
@@ -93,8 +94,8 @@
 			class="rounded-full border border-white/10 bg-background px-4 py-2 text-sm text-white/80 outline-none focus-visible:border-neon-cyan"
 		>
 			<option value="">Todos os gêneros</option>
-			{#each genres as genre (genre)}
-				<option value={genre} selected={filters.genre === genre}>{genre}</option>
+			{#each genres as genre (genre.id)}
+				<option value={genre.id} selected={filters.genre === String(genre.id)}>{genre.name}</option>
 			{/each}
 		</select>
 

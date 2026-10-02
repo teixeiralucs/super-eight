@@ -3,6 +3,42 @@ import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { devLoginUser } from '$lib/server/dev-login';
+import {
+	DEFAULT_REGION,
+	INTL_LOCALE,
+	isRegion,
+	REGION_COOKIE,
+	regionFromAcceptLanguage
+} from '$lib/i18n';
+import { paraglideMiddleware } from '$lib/paraglide/server';
+
+const YEAR_SECONDS = 60 * 60 * 24 * 365;
+
+/**
+ * Idioma (Paraglide: cookie `locale` → idioma do navegador → pt) e região (cookie `region`
+ * → país do `Accept-Language` → padrão do idioma). Na 1ª visita grava os dois cookies,
+ * para servidor e navegador concordarem. Roda primeiro: os demais hooks e os `load`
+ * já executam dentro do idioma da requisição.
+ */
+const i18n: Handle = ({ event, resolve }) =>
+	paraglideMiddleware(event.request, ({ request, locale }) => {
+		const cookie = { path: '/', httpOnly: false, sameSite: 'lax', maxAge: YEAR_SECONDS } as const;
+		if (event.cookies.get('locale') !== locale) event.cookies.set('locale', locale, cookie);
+
+		let region = event.cookies.get(REGION_COOKIE);
+		if (!isRegion(region)) {
+			region =
+				regionFromAcceptLanguage(request.headers.get('accept-language')) ?? DEFAULT_REGION[locale];
+			event.cookies.set(REGION_COOKIE, region, cookie);
+		}
+
+		event.locals.locale = locale;
+		event.locals.region = region;
+		return resolve(
+			{ ...event, request },
+			{ transformPageChunk: ({ html }) => html.replace('%lang%', INTL_LOCALE[locale]) }
+		);
+	});
 
 /** Rotas que exigem login (earlySetup.md §6.1). */
 const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/lists', '/feed'];
@@ -53,4 +89,4 @@ const authGuard: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-export const handle = sequence(supabase, authGuard);
+export const handle = sequence(i18n, supabase, authGuard);

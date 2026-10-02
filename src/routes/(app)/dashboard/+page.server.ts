@@ -5,14 +5,14 @@ import { clearLibrary, seedDemoLibrary } from '$lib/server/dev-seed';
 import { getDashboardOverview, getLibraryGrid, getLibrarySuggestions } from '$lib/server/library';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 	if (!locals.user) error(401);
 
 	const filters = parseLibraryFilters(url.searchParams);
 	const [overview, library, suggestions] = await Promise.all([
-		getDashboardOverview(locals.user.id),
-		getLibraryGrid(locals.user.id, filters),
-		getLibrarySuggestions(locals.user.id)
+		getDashboardOverview(locals.user.id, locals.locale, fetch),
+		getLibraryGrid(locals.user.id, filters, locals.locale),
+		getLibrarySuggestions(locals.user.id, locals.locale)
 	]);
 
 	return { ...overview, library, suggestions, filters, dev };
@@ -24,7 +24,11 @@ export const actions: Actions = {
 		if (!dev) error(404);
 		if (!locals.user) error(401);
 		try {
-			await seedDemoLibrary(locals.user.id, fetch);
+			await seedDemoLibrary(locals.user.id, {
+				locale: locals.locale,
+				region: locals.region,
+				fetch
+			});
 		} catch (err) {
 			console.error('[dev] seed falhou:', err);
 			return fail(500, { message: 'Não foi possível carregar os filmes de exemplo.' });

@@ -16,7 +16,8 @@ export interface LibraryBackup {
 	username: string;
 	/** IDs do TMDb, em ordem de adição — a lista "crua", fácil de reaproveitar. */
 	tmdbIds: number[];
-	movies: Awaited<ReturnType<typeof prisma.movie.findMany>>;
+	/** Linhas do cache `Movie` como estavam no banco (o formato muda entre versões). */
+	movies: Record<string, unknown>[];
 	library: {
 		movieId: number;
 		status: 'WANT_TO_WATCH' | 'WATCHED';

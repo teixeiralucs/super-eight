@@ -1,6 +1,6 @@
 import { prisma } from '$lib/server/db';
 import { getArtworks, withArtwork } from '$lib/server/artwork';
-import { getMovieDetails, getMoviePage } from '$lib/server/tmdb';
+import { getMovieCacheData, getMoviePage, type TmdbContext } from '$lib/server/tmdb';
 import type { Artwork } from '$lib/movie/types';
 import type { LibraryState, SearchItem } from '$lib/library/types';
 
@@ -18,13 +18,13 @@ export async function searchPage(
 	userId: string | null,
 	query: string,
 	page: number,
-	fetchFn?: typeof fetch
+	ctx: TmdbContext
 ): Promise<SearchPage> {
-	const result = await getMoviePage(query, page, fetchFn);
+	const result = await getMoviePage(query, page, ctx);
 	const ids = result.results.map((movie) => movie.id);
 
 	const [details, library, artworks] = await Promise.all([
-		Promise.all(ids.map((id) => getMovieDetails(id, fetchFn).catch(() => null))),
+		Promise.all(ids.map((id) => getMovieCacheData(id, ctx.fetch).catch(() => null))),
 		userId ? getLibraryStates(userId, ids) : new Map<number, LibraryState>(),
 		userId ? getArtworks(userId, ids) : new Map<number, Artwork>()
 	]);
@@ -37,6 +37,7 @@ export async function searchPage(
 				{
 					id: movie.id,
 					title: movie.title,
+					originalTitle: movie.originalTitle,
 					posterPath: movie.posterPath,
 					year: movie.year,
 					directors: details[i]?.directors ?? [],

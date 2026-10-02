@@ -13,11 +13,12 @@ const entry = (id: string, date: string, movieId = 1): DiaryLogEntry => ({
 	movie: {
 		id: movieId,
 		title: `Filme ${movieId}`,
+		originalTitle: `Movie ${movieId}`,
 		posterPath: null,
 		backdropPath: null,
 		releaseDate: null,
 		runtime: null,
-		genres: [],
+		genreIds: [],
 		directors: [],
 		countries: []
 	}
