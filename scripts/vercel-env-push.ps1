@@ -19,6 +19,8 @@ function Invoke-Vercel {
 
 $public = @('PUBLIC_SUPABASE_URL', 'PUBLIC_SUPABASE_ANON_KEY')
 $secret = @('DATABASE_URL', 'TMDB_READ_ACCESS_TOKEN', 'CRON_SECRET')
+# Opcionais: vazias no .env são puladas (CRON_SECRET só será usada pelo cron dos catálogos).
+$optional = @('CRON_SECRET')
 $targets = @('production', 'preview')
 
 if (-not (Test-Path '.env')) { throw 'Arquivo .env não encontrado na pasta atual.' }
@@ -36,10 +38,14 @@ foreach ($line in Get-Content '.env' -Encoding UTF8) {
 	}
 }
 
-$missing = ($public + $secret) | Where-Object { -not $values[$_] }
+$missing = ($public + $secret) | Where-Object { -not $values[$_] -and $optional -notcontains $_ }
 if ($missing) { throw "Sem valor no .env: $($missing -join ', ')" }
 
 foreach ($name in $public + $secret) {
+	if (-not $values[$name]) {
+		Write-Host "--  $name vazia no .env (opcional): pulada"
+		continue
+	}
 	$kind = if ($secret -contains $name) { '--sensitive' } else { '--no-sensitive' }
 	foreach ($target in $targets) {
 		Invoke-Vercel env add $name $target --value $values[$name] --force $kind --yes *> $null
