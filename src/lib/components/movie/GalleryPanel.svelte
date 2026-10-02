@@ -5,6 +5,7 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
 	import ImageLightbox from './ImageLightbox.svelte';
+	import { infiniteScroll } from '$lib/attachments/infinite-scroll';
 	import { backdropUrl } from '$lib/tmdb/images';
 	import type { MovieImage, MovieImages } from '$lib/tmdb/types';
 	import type { Artwork, ArtworkKind } from '$lib/movie/types';
@@ -60,18 +61,34 @@
 	);
 	const customized = $derived(Boolean(artwork?.[field]));
 
-	/** Idiomas presentes, do mais comum ao menos comum ("none" = sem texto). */
+	/** Idiomas presentes com a quantidade, do mais comum ao menos comum ("none" = sem texto). */
 	const languages = $derived.by(() => {
 		const counts: Record<string, number> = {};
 		for (const image of list) {
 			const key = image.language ?? 'none';
 			counts[key] = (counts[key] ?? 0) + 1;
 		}
-		return Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
+		return Object.entries(counts)
+			.sort((a, b) => b[1] - a[1])
+			.map(([key, count]) => ({ key, count }));
 	});
 	const visible = $derived(
 		language === 'all' ? list : list.filter((image) => (image.language ?? 'none') === language)
 	);
+
+	// Desenha aos poucos (há filmes com 400+ pôsteres); volta ao início ao trocar tipo/idioma.
+	const PAGE = 48;
+	let limit = $state(PAGE);
+	$effect(() => {
+		void kind;
+		void language;
+		limit = PAGE;
+	});
+	const shown = $derived(visible.slice(0, limit));
+	let scroller: HTMLDivElement | undefined = $state();
+	/** No desktop a galeria rola por dentro; no celular quem rola é a página. */
+	const scrollRoot = () =>
+		scroller && scroller.scrollHeight > scroller.clientHeight ? scroller : null;
 
 	const languageLabel = (key: string) => (key === 'none' ? m.gallery_no_text() : key.toUpperCase());
 	const src = (image: MovieImage) =>
@@ -114,7 +131,7 @@
 
 		{#if languages.length > 1}
 			<div class="flex min-w-0 gap-1 overflow-x-auto" aria-label={m.gallery_filter_language()}>
-				{#each ['all', ...languages] as key (key)}
+				{#each [{ key: 'all', count: list.length }, ...languages] as { key, count } (key)}
 					<button
 						type="button"
 						aria-pressed={language === key}
@@ -122,7 +139,9 @@
 						class={[
 							chip,
 							language === key ? 'bg-white/15 text-white' : 'text-white/55 hover:text-white'
-						]}>{key === 'all' ? m.gallery_all() : languageLabel(key)}</button
+						]}
+						>{key === 'all' ? m.gallery_all() : languageLabel(key)}
+						<span class="ml-1 tabular-nums opacity-50">{count}</span></button
 					>
 				{/each}
 			</div>
@@ -146,7 +165,7 @@
 		<p class="text-xs text-white/50">{m.gallery_sign_in()}</p>
 	{/if}
 
-	<div class="min-h-0 flex-1 overflow-y-auto pr-1 pb-2">
+	<div bind:this={scroller} class="min-h-0 flex-1 overflow-y-auto pr-1 pb-2">
 		{#if failed}
 			<p class="text-white/50">{m.gallery_error()}</p>
 		{:else if !images}
@@ -181,7 +200,7 @@
 							: 'grid-cols-2 xl:grid-cols-3'
 					]}
 				>
-					{#each visible as image, i (image.path)}
+					{#each shown as image, i (image.path)}
 						{@const selected = (pending ?? current) === image.path}
 						<li class="group relative">
 							<button
@@ -235,6 +254,15 @@
 					{/each}
 				</ul>
 			</form>
+			<!-- Sentinela: carrega o próximo lote ao chegar perto do fim da rolagem da galeria -->
+			{#if limit < visible.length}
+				{#key limit}
+					<div
+						{@attach infiniteScroll(() => (limit += PAGE), '600px', scrollRoot())}
+						class="h-px"
+					></div>
+				{/key}
+			{/if}
 		{/if}
 	</div>
 </div>

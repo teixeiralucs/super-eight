@@ -195,13 +195,14 @@ export async function getMovieFull(
 	return toMovieFull(raw, language.slice(0, 2), ctx.region, labels);
 }
 
-const MAX_IMAGES = 60;
-
-/** Melhores primeiro (votos do TMDb); `language` nulo = imagem sem texto. */
+/**
+ * Todas as imagens, as mais votadas primeiro; `language` nulo = imagem sem texto.
+ * Sem corte: filmes populares passam de 400 pôsteres, e cortar antes do filtro de idioma
+ * escondia, por exemplo, os pôsteres em português. A galeria desenha aos poucos.
+ */
 const toImages = (images: RawImage[]): MovieImage[] =>
 	[...images]
 		.sort((a, b) => b.vote_average - a.vote_average)
-		.slice(0, MAX_IMAGES)
 		.map((image) => ({ path: image.file_path, language: image.iso_639_1 }));
 
 /** Pôsteres e fundos em todos os idiomas — para a galeria e a personalização do filme. */
