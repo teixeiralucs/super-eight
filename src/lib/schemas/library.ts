@@ -18,10 +18,6 @@ const optionalRating = z.preprocess(
 		.nullable()
 );
 
-export const statusSchema = z.object({
-	status: z.enum(['WANT_TO_WATCH', 'WATCHED'], { error: 'Status inválido.' })
-});
-
 export const rateSchema = z.object({ rating: optionalRating });
 
 export const sessionSchema = (now = new Date()) =>

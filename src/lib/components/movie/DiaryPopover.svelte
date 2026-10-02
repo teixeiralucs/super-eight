@@ -134,7 +134,6 @@
 				<StarRating
 					value={rating}
 					mode="pick"
-					size="sm"
 					label="Nota da sessão"
 					onpick={(value) => (rating = value)}
 				/>

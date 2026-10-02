@@ -42,24 +42,19 @@ async function requireWatched(userId: string, movieId: number) {
 		select: { status: true, isFavorite: true }
 	});
 	if (entry?.status !== 'WATCHED') {
-		throw new LibraryRuleError('Marque o filme como assistido primeiro.');
+		throw new LibraryRuleError('Registre uma sessão no diário para avaliar ou favoritar.');
 	}
 	return entry;
 }
 
 /** Define o status. Voltar para "Quero ver" limpa nota e favorito (regra §3.4.4). */
-export async function setStatus(
-	userId: string,
-	movieId: number,
-	status: 'WANT_TO_WATCH' | 'WATCHED',
-	fetchFn?: typeof fetch
-) {
+/** Adiciona como "Quero ver"; se já estiver na biblioteca, não muda nada. */
+export async function addToLibrary(userId: string, movieId: number, fetchFn?: typeof fetch) {
 	await ensureMovie(movieId, fetchFn);
-	const reset = status === 'WANT_TO_WATCH' ? { rating: null, isFavorite: false } : {};
 	await prisma.libraryEntry.upsert({
 		where: key(userId, movieId),
-		create: { userId, movieId, status },
-		update: { status, ...reset }
+		create: { userId, movieId, status: 'WANT_TO_WATCH' },
+		update: {}
 	});
 }
 
@@ -113,8 +108,26 @@ export async function logSession(
 	});
 }
 
+/**
+ * Apaga uma sessão. O estado segue o diário: sem nenhuma sessão restante, o filme volta
+ * a "Quero ver" — e perde nota e favorito, que exigem assistido (§3.4.4).
+ */
 export async function deleteSession(userId: string, sessionId: string) {
-	// deleteMany com userId: nunca apaga sessão de outra pessoa.
-	const { count } = await prisma.diaryEntry.deleteMany({ where: { id: sessionId, userId } });
-	if (!count) throw new LibraryRuleError('Sessão não encontrada.');
+	await prisma.$transaction(async (tx) => {
+		// Filtra por userId: nunca apaga sessão de outra pessoa.
+		const session = await tx.diaryEntry.findFirst({
+			where: { id: sessionId, userId },
+			select: { movieId: true }
+		});
+		if (!session) throw new LibraryRuleError('Sessão não encontrada.');
+
+		await tx.diaryEntry.delete({ where: { id: sessionId } });
+		const remaining = await tx.diaryEntry.count({ where: { userId, movieId: session.movieId } });
+		if (!remaining) {
+			await tx.libraryEntry.updateMany({
+				where: { userId, movieId: session.movieId },
+				data: { status: 'WANT_TO_WATCH', rating: null, isFavorite: false }
+			});
+		}
+	});
 }

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
-	import ArrowLeftRightIcon from '@lucide/svelte/icons/arrow-left-right';
 	import BookmarkIcon from '@lucide/svelte/icons/bookmark';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import HeartIcon from '@lucide/svelte/icons/heart';
@@ -12,8 +11,9 @@
 	import StarRating from './StarRating.svelte';
 
 	/**
-	 * Ações do usuário com o filme. Regra de negócio (§3.4.4): nota e favorito só depois de
-	 * marcado como assistido — a UI desabilita e explica; o servidor e o banco garantem.
+	 * Ações do usuário com o filme. O estado não é escolhido à mão: vem do diário
+	 * (§3.4.3) — com sessão registrada é "Assistido", sem nenhuma é "Quero ver".
+	 * Nota e favorito só para assistidos (§3.4.4): a UI desabilita; servidor e banco garantem.
 	 */
 	let {
 		movieId,
@@ -32,81 +32,34 @@
 
 	let diaryOpen = $state(false);
 	let diaryButton: HTMLButtonElement | undefined = $state();
-
-	// Um único botão mostra o estado atual; clicar troca para o outro.
-	const nextStatus = $derived(library?.status === 'WANT_TO_WATCH' ? 'WATCHED' : 'WANT_TO_WATCH');
-	const statusHint = $derived(
-		!library
-			? 'Adicionar à biblioteca como “Quero ver”'
-			: watched
-				? 'Mudar para “Quero ver” (remove nota e favorito)'
-				: 'Marcar como assistido'
-	);
-
-	const submitStatus: SubmitFunction = (input) => {
-		const losesData = watched && (library?.rating || library?.isFavorite);
-		if (losesData && !confirm('Mudar para “Quero ver” remove sua nota e o favorito. Continuar?')) {
-			input.cancel();
-			return;
-		}
-		return submit(input);
-	};
 </script>
 
 <div class="space-y-6">
-	<!-- Estado atual + favorito -->
-	<div class="flex items-center gap-3">
-		<form method="POST" action="{base}?/status" use:enhance={submitStatus} class="flex-1">
+	<!-- Estado (definido pelo diário) -->
+	{#if library}
+		<p
+			class={[
+				'flex items-center gap-2.5 rounded-full px-5 py-2.5 text-sm font-medium',
+				watched ? 'bg-white text-background' : 'border border-white/20 text-white/85'
+			]}
+		>
+			{#if watched}
+				<EyeIcon class="size-4" aria-hidden="true" /> Assistido
+			{:else}
+				<BookmarkIcon class="size-4 fill-current" aria-hidden="true" /> Quero ver
+			{/if}
+		</p>
+	{:else}
+		<form method="POST" action="{base}?/add" use:enhance={submit}>
 			<button
-				name="status"
-				value={nextStatus}
-				title={statusHint}
-				aria-label="{library
-					? watched
-						? 'Assistido'
-						: 'Quero ver'
-					: 'Fora da biblioteca'}. {statusHint}"
-				class={[
-					'group flex w-full items-center gap-2.5 rounded-full px-5 py-2.5 text-sm font-medium transition',
-					library
-						? 'bg-white text-background hover:bg-white/85'
-						: 'border border-white/20 text-white/85 hover:border-white/50'
-				]}
+				class="flex w-full items-center gap-2.5 rounded-full border border-dashed border-white/25 px-5 py-2.5 text-sm text-white/80 transition hover:border-white/60 hover:text-white"
 			>
-				{#if !library}
-					<PlusIcon class="size-4" aria-hidden="true" /> Quero ver
-				{:else if watched}
-					<EyeIcon class="size-4" aria-hidden="true" /> Assistido
-				{:else}
-					<BookmarkIcon class="size-4 fill-current" aria-hidden="true" /> Quero ver
-				{/if}
-				{#if library}
-					<ArrowLeftRightIcon
-						class="ml-auto size-3.5 opacity-40 transition group-hover:opacity-80"
-						aria-hidden="true"
-					/>
-				{/if}
+				<PlusIcon class="size-4" aria-hidden="true" /> Adicionar em “Quero ver”
 			</button>
 		</form>
+	{/if}
 
-		<form method="POST" action="{base}?/favorite" use:enhance={submit}>
-			<button
-				disabled={!watched}
-				aria-pressed={library?.isFavorite ?? false}
-				aria-label={library?.isFavorite ? 'Remover dos favoritos' : 'Favoritar'}
-				class="grid size-10 place-items-center rounded-full border border-white/15 transition enabled:hover:border-neon-pink disabled:cursor-not-allowed disabled:opacity-40"
-			>
-				<HeartIcon
-					class={[
-						'size-4',
-						library?.isFavorite ? 'fill-neon-pink text-neon-pink' : 'text-white/70'
-					]}
-				/>
-			</button>
-		</form>
-	</div>
-
-	<!-- Nota: 5 estrelas, meia estrela = 1 ponto (1–10) -->
+	<!-- Nota (10 estrelas, 1–10) + favorito -->
 	<div>
 		<div class="mb-2 flex items-baseline justify-between text-xs">
 			<span class="tracking-wider text-white/50 uppercase">Sua nota</span>
@@ -114,11 +67,28 @@
 				<span class="text-white/80 tabular-nums">{library.rating}/10</span>
 			{/if}
 		</div>
-		<form method="POST" action="{base}?/rate" use:enhance={submit}>
-			<StarRating value={library?.rating ?? null} disabled={!watched} />
-		</form>
+		<div class="flex items-center justify-between gap-3">
+			<form method="POST" action="{base}?/rate" use:enhance={submit}>
+				<StarRating value={library?.rating ?? null} disabled={!watched} />
+			</form>
+			<form method="POST" action="{base}?/favorite" use:enhance={submit}>
+				<button
+					disabled={!watched}
+					aria-pressed={library?.isFavorite ?? false}
+					aria-label={library?.isFavorite ? 'Remover dos favoritos' : 'Favoritar'}
+					class="grid size-9 place-items-center rounded-full border border-white/15 transition enabled:hover:border-neon-pink disabled:cursor-not-allowed disabled:opacity-40"
+				>
+					<HeartIcon
+						class={[
+							'size-4',
+							library?.isFavorite ? 'fill-neon-pink text-neon-pink' : 'text-white/70'
+						]}
+					/>
+				</button>
+			</form>
+		</div>
 		{#if !watched}
-			<p class="mt-2 text-xs text-white/45">Marque como assistido para avaliar e favoritar.</p>
+			<p class="mt-2 text-xs text-white/45">Registre uma sessão para avaliar e favoritar.</p>
 		{/if}
 	</div>
 

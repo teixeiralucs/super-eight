@@ -21,7 +21,7 @@ const userData = (library: MovieUserData['library']): MovieUserData => ({
 const submit = () => {};
 
 describe('LibraryControls', () => {
-	it('mostra só o estado atual e desabilita a nota de quem não assistiu', async () => {
+	it('estado é só indicador (vem do diário) e nota/favorito ficam bloqueados', async () => {
 		render(LibraryControls, {
 			movieId: 1,
 			submit,
@@ -33,12 +33,18 @@ describe('LibraryControls', () => {
 			})
 		});
 
-		const status = page.getByRole('button', { name: /^Quero ver\. Marcar como assistido/ });
-		await expect.element(status).toHaveAttribute('value', 'WATCHED');
-		await expect.element(page.getByRole('button', { name: '3,5 estrelas' })).toBeDisabled();
+		await expect.element(page.getByText('Quero ver', { exact: true })).toBeInTheDocument();
+		expect(page.getByRole('button', { name: /Quero ver|Assistido/ }).all()).toHaveLength(0);
+		await expect.element(page.getByRole('button', { name: '7 estrelas' })).toBeDisabled();
+		await expect.element(page.getByRole('button', { name: 'Favoritar' })).toBeDisabled();
 	});
 
-	it('nota em meias estrelas: 7/10 = 3,5 estrelas; clicar na atual remove', async () => {
+	it('fora da biblioteca oferece adicionar em Quero ver', async () => {
+		render(LibraryControls, { movieId: 1, submit, userData: userData(null) });
+		await expect.element(page.getByRole('button', { name: /Adicionar em/ })).toBeInTheDocument();
+	});
+
+	it('nota em 10 estrelas; clicar na atual remove', async () => {
 		render(LibraryControls, {
 			movieId: 1,
 			submit,
@@ -46,11 +52,11 @@ describe('LibraryControls', () => {
 		});
 
 		await expect.element(page.getByText('7/10')).toBeInTheDocument();
-		const current = page.getByRole('button', { name: 'Remover nota (3,5 estrelas)' });
+		const current = page.getByRole('button', { name: 'Remover nota (7 estrelas)' });
 		await expect.element(current).toBeInTheDocument();
 		expect((current.element() as HTMLButtonElement).value).toBe('');
 		await expect
-			.element(page.getByRole('button', { name: '5 estrelas', exact: true }))
+			.element(page.getByRole('button', { name: '10 estrelas' }))
 			.toHaveAttribute('value', '10');
 	});
 

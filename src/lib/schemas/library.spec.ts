@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deleteSessionSchema, rateSchema, sessionSchema, statusSchema } from './library';
+import { deleteSessionSchema, rateSchema, sessionSchema } from './library';
 
 const now = new Date('2026-09-30T15:00:00Z');
 
@@ -13,13 +13,6 @@ describe('rateSchema', () => {
 		expect(rateSchema.safeParse({ rating: '0' }).success).toBe(false);
 		expect(rateSchema.safeParse({ rating: '11' }).success).toBe(false);
 		expect(rateSchema.safeParse({ rating: '7.5' }).success).toBe(false);
-	});
-});
-
-describe('statusSchema', () => {
-	it('aceita só os dois status', () => {
-		expect(statusSchema.safeParse({ status: 'WATCHED' }).success).toBe(true);
-		expect(statusSchema.safeParse({ status: 'ABANDONED' }).success).toBe(false);
 	});
 });
 

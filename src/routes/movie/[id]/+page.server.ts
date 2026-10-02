@@ -4,18 +4,17 @@ import {
 	artworkSchema,
 	deleteSessionSchema,
 	rateSchema,
-	sessionSchema,
-	statusSchema
+	sessionSchema
 } from '$lib/schemas/library';
 import { setArtwork } from '$lib/server/artwork';
 import {
+	addToLibrary,
 	deleteSession,
 	getMovieUserData,
 	LibraryRuleError,
 	logSession,
 	rate,
 	removeFromLibrary,
-	setStatus,
 	toggleFavorite
 } from '$lib/server/library-actions';
 import { getMovieFull, TMDbError } from '$lib/server/tmdb';
@@ -73,9 +72,8 @@ function action<S extends z.ZodType>(
 const empty = z.object({});
 
 export const actions: Actions = {
-	status: action(statusSchema, (userId, movieId, { status }, { fetch }) =>
-		setStatus(userId, movieId, status, fetch)
-	),
+	// O estado não é escolhido à mão: "Assistido" vem de registrar sessão (logSession).
+	add: action(empty, (userId, movieId, _input, { fetch }) => addToLibrary(userId, movieId, fetch)),
 	remove: action(empty, (userId, movieId) => removeFromLibrary(userId, movieId)),
 	rate: action(rateSchema, (userId, movieId, { rating }) => rate(userId, movieId, rating)),
 	favorite: action(empty, (userId, movieId) => toggleFavorite(userId, movieId)),
