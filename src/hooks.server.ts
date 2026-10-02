@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { redirect, type Handle } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
+import { devLoginUser } from '$lib/server/dev-login';
 
 /** Rotas que exigem login (earlySetup.md §6.1). */
 const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/lists', '/feed'];
@@ -29,6 +30,8 @@ const supabase: Handle = async ({ event, resolve }) => {
 	event.locals.user = data?.claims
 		? { id: data.claims.sub, email: data.claims.email as string | undefined }
 		: null;
+	// Só em `npm run dev`: conta de teste para verificações (ver $lib/server/dev-login).
+	event.locals.user ??= await devLoginUser(event.cookies);
 
 	return resolve(event, {
 		filterSerializedResponseHeaders: (name) =>
