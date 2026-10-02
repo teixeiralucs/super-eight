@@ -10,9 +10,8 @@ $ErrorActionPreference = 'Stop'
 
 # Usa o Node 24 do fnm direto (o CLI da Vercel não aceita Node 26, e alguns terminais
 # deste PC não acham o `vercel` no PATH). Sem fnm, cai no `vercel` do PATH.
-$node24 = Join-Path $env:APPDATA 'fnm
-ode-versions24.21.0\installation'
-$vc = Join-Path $node24 'node_modulesercel\distc.js'
+$node24 = Join-Path $env:APPDATA 'fnm\node-versions\v24.21.0\installation'
+$vc = Join-Path $node24 'node_modules\vercel\dist\vc.js'
 function Invoke-Vercel {
 	if (Test-Path $vc) { & (Join-Path $node24 'node.exe') $vc @args }
 	else { & vercel @args }
