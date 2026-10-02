@@ -33,7 +33,9 @@ export async function seedDemoLibrary(userId: string, fetchFn?: typeof fetch) {
 	for (const pick of picks) {
 		const movie = await ensureMovie(pick.id, fetchFn);
 		const i = index++;
-		const watched = i < 12;
+		// Filme que ainda não estreou não pode ter sido assistido (senão a sessão cai no futuro).
+		const released = (movie.releaseDate?.getTime() ?? 0) <= now - DAY;
+		const watched = i < 12 && released;
 		const rating = watched ? 5 + Math.round(random(i) * 5) : null;
 
 		await prisma.libraryEntry.upsert({
@@ -55,8 +57,12 @@ export async function seedDemoLibrary(userId: string, fetchFn?: typeof fetch) {
 		// Sessões entre o lançamento (ou 11 meses atrás) e hoje.
 		const earliest = Math.max(movie.releaseDate?.getTime() ?? 0, now - 330 * DAY);
 		const sessions = random(i + 100) > 0.75 ? 2 : 1;
-		for (let s = 0; s < sessions; s++) {
-			const at = earliest + random(i * 7 + s) * (now - earliest);
+		// Datas em ordem: a revisão vem depois da primeira vez.
+		const dates = Array.from(
+			{ length: sessions },
+			(_, s) => earliest + random(i * 7 + s) * (now - earliest)
+		).sort((a, b) => a - b);
+		for (const [s, at] of dates.entries()) {
 			await prisma.diaryEntry.create({
 				data: {
 					userId,

@@ -5,7 +5,7 @@ import { shuffle } from '$lib/library/shuffle';
 import { computeStats } from '$lib/library/stats';
 import { getArtworks, withArtwork } from '$lib/server/artwork';
 
-const movieCard = {
+export const movieCard = {
 	id: true,
 	title: true,
 	posterPath: true,

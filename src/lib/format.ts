@@ -57,3 +57,12 @@ export function todayIso(offsetDays = 0) {
 	const now = new Date(Date.now() - offsetDays * 86_400_000);
 	return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 }
+
+const weekday = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' });
+const monthName = new Intl.DateTimeFormat('pt-BR', { month: 'long', timeZone: 'UTC' });
+
+/** "domingo" (datas do diário, em UTC). */
+export const formatWeekday = (date: Date) => weekday.format(date);
+/** 8 → "setembro" (mês 0–11). */
+export const formatMonthName = (month: number) =>
+	monthName.format(new Date(Date.UTC(2000, month, 1)));
