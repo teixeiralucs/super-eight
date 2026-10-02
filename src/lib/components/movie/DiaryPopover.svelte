@@ -3,21 +3,16 @@
 	import { m } from '$lib/paraglide/messages';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
-	import { fly } from 'svelte/transition';
-	import { prefersReducedMotion } from 'svelte/motion';
 	import RotateCcwIcon from '@lucide/svelte/icons/rotate-ccw';
 	import Trash2Icon from '@lucide/svelte/icons/trash-2';
-	import XIcon from '@lucide/svelte/icons/x';
+	import AnchoredPopover from '$lib/components/AnchoredPopover.svelte';
 	import RatingBadge from '$lib/components/dashboard/RatingBadge.svelte';
 	import { formatLongDate, todayIso } from '$lib/format';
 	import type { DiarySessionRow } from '$lib/movie/types';
 	import DateField from './DateField.svelte';
 	import StarRating from './StarRating.svelte';
 
-	/**
-	 * Diário do filme num pop-up ao lado do botão "Registrar sessão" (no celular, painel
-	 * inferior). Fica por cima do painel de detalhes: Esc e clique fora fecham só ele.
-	 */
+	/** Diário do filme num pop-up ao lado do botão "Registrar sessão" (ver AnchoredPopover). */
 	let {
 		movieId,
 		sessions,
@@ -32,42 +27,9 @@
 		onClose: () => void;
 	} = $props();
 
-	let panel: HTMLElement | undefined = $state();
-	let position = $state<{ top: number; right: number } | null>(null);
-
 	let watchedAt = $state(todayIso());
 	let rating = $state<number | null>(null);
 	let saved = $state(false);
-
-	const GAP = 16;
-
-	/** No desktop, encosta à esquerda do botão e centraliza na vertical sem sair da tela. */
-	function place() {
-		if (!panel || !matchMedia('(min-width: 1024px)').matches) {
-			position = null;
-			return;
-		}
-		const rect = anchor.getBoundingClientRect();
-		const height = panel.offsetHeight;
-		const centered = rect.top + rect.height / 2 - height / 2;
-		position = {
-			top: Math.min(Math.max(centered, GAP), window.innerHeight - height - GAP),
-			right: window.innerWidth - rect.left + GAP
-		};
-	}
-
-	$effect(() => {
-		if (!panel) return;
-		const observer = new ResizeObserver(place);
-		observer.observe(panel);
-		panel.querySelector<HTMLInputElement>('input[inputmode="numeric"]')?.focus();
-		return () => observer.disconnect();
-	});
-
-	function onPointerDown(event: PointerEvent) {
-		const target = event.target as Node;
-		if (!panel?.contains(target) && !anchor.contains(target)) onClose();
-	}
 
 	/** Usa o tratamento comum (estado/erros) e, se deu certo, limpa o formulário. */
 	const submitSession: SubmitFunction = async (input) => {
@@ -88,39 +50,13 @@
 		'w-full border-b border-white/15 bg-transparent py-2 text-sm outline-none transition-colors focus:border-neon-cyan';
 </script>
 
-<svelte:window
-	onresize={place}
-	onpointerdown={onPointerDown}
-	onkeydown={(event) => event.key === 'Escape' && onClose()}
-/>
-
-<!-- data-nested-dialog: o painel de detalhes por baixo ignora o Esc enquanto este estiver aberto -->
-<div
-	bind:this={panel}
-	data-nested-dialog
-	role="dialog"
-	aria-label={m.diary_movie()}
-	class={[
-		'fixed z-[70] flex max-h-[min(640px,calc(100svh-2rem))] flex-col overflow-hidden border border-white/10 bg-background/95 shadow-2xl shadow-black/60',
-		'inset-x-0 bottom-0 rounded-t-3xl lg:inset-x-auto lg:bottom-auto lg:w-[380px] lg:rounded-3xl',
-		!position && 'lg:invisible'
-	]}
-	style:top={position ? `${position.top}px` : undefined}
-	style:right={position ? `${position.right}px` : undefined}
-	transition:fly={{ x: prefersReducedMotion.current ? 0 : 12, duration: 200 }}
+<AnchoredPopover
+	{anchor}
+	label={m.diary_movie()}
+	heading={m.diary()}
+	closeLabel={m.close_diary()}
+	{onClose}
 >
-	<header class="flex items-center justify-between px-6 pt-5">
-		<h2 class="text-xs font-semibold tracking-[0.2em] text-white/60 uppercase">{m.diary()}</h2>
-		<button
-			type="button"
-			onclick={onClose}
-			class="-mr-2 grid size-8 place-items-center rounded-full text-white/60 transition hover:text-white"
-			aria-label={m.close_diary()}
-		>
-			<XIcon class="size-4" />
-		</button>
-	</header>
-
 	<form
 		method="POST"
 		action="/movie/{movieId}?/logSession"
@@ -200,4 +136,4 @@
 			{/each}
 		</ol>
 	</div>
-</div>
+</AnchoredPopover>

@@ -41,7 +41,9 @@ const i18n: Handle = ({ event, resolve }) =>
 	});
 
 /** Rotas que exigem login (earlySetup.md §6.1). */
-const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/lists', '/feed', '/settings'];
+const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/feed', '/settings'];
+/** Protegidas só na rota exata: `/lists/[id]` público abre para qualquer pessoa. */
+const PROTECTED_EXACT = ['/lists'];
 /** Rotas que não fazem sentido para quem já está logado. */
 const GUEST_ONLY_PREFIXES = ['/login', '/signup'];
 
@@ -78,7 +80,9 @@ const supabase: Handle = async ({ event, resolve }) => {
 const authGuard: Handle = async ({ event, resolve }) => {
 	const { pathname, search } = event.url;
 
-	if (!event.locals.user && matches(pathname, PROTECTED_PREFIXES)) {
+	const isProtected =
+		matches(pathname, PROTECTED_PREFIXES) || PROTECTED_EXACT.includes(pathname.replace(/\/$/, ''));
+	if (!event.locals.user && isProtected) {
 		redirect(303, `/login?next=${encodeURIComponent(pathname + search)}`);
 	}
 

@@ -94,6 +94,7 @@
 		{id}
 		type="text"
 		inputmode="numeric"
+		data-autofocus
 		autocomplete="off"
 		placeholder={m.date_format()}
 		value={text}

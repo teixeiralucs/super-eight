@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { plural } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
@@ -9,6 +10,8 @@
 	import PlusIcon from '@lucide/svelte/icons/plus';
 	import type { MovieUserData } from '$lib/movie/types';
 	import DiaryPopover from './DiaryPopover.svelte';
+	import ListsPopover from './ListsPopover.svelte';
+	import ListVideoIcon from '@lucide/svelte/icons/list-video';
 	import StarRating from './StarRating.svelte';
 
 	/**
@@ -33,6 +36,9 @@
 
 	let diaryOpen = $state(false);
 	let diaryButton: HTMLButtonElement | undefined = $state();
+	let listsOpen = $state(false);
+	let listsButton: HTMLButtonElement | undefined = $state();
+	const inLists = $derived(userData.lists.filter((list) => list.contains).length);
 </script>
 
 <div class="space-y-6">
@@ -94,22 +100,41 @@
 		{/if}
 	</div>
 
-	<button
-		bind:this={diaryButton}
-		type="button"
-		onclick={() => (diaryOpen = !diaryOpen)}
-		aria-expanded={diaryOpen}
-		aria-haspopup="dialog"
-		class="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
-	>
-		<NotebookPenIcon class="size-4" aria-hidden="true" />
-		{m.log_session()}
-		{#if userData.sessions.length}
-			<span class="rounded-full bg-black/15 px-2 py-0.5 text-xs tabular-nums"
-				>{userData.sessions.length}</span
-			>
-		{/if}
-	</button>
+	<div class="flex flex-col gap-2">
+		<button
+			bind:this={diaryButton}
+			type="button"
+			onclick={() => {
+				listsOpen = false;
+				diaryOpen = !diaryOpen;
+			}}
+			aria-expanded={diaryOpen}
+			aria-haspopup="dialog"
+			class="flex w-full items-center justify-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
+		>
+			<NotebookPenIcon class="size-4" aria-hidden="true" />
+			{m.log_session()}
+			{#if userData.sessions.length}
+				<span class="rounded-full bg-black/15 px-2 py-0.5 text-xs tabular-nums"
+					>{userData.sessions.length}</span
+				>
+			{/if}
+		</button>
+		<button
+			bind:this={listsButton}
+			type="button"
+			onclick={() => {
+				diaryOpen = false;
+				listsOpen = !listsOpen;
+			}}
+			aria-expanded={listsOpen}
+			aria-haspopup="dialog"
+			class="flex w-full items-center justify-center gap-2 rounded-full border border-white/15 px-5 py-2.5 text-sm text-white/85 transition hover:border-white/40"
+		>
+			<ListVideoIcon class="size-4" aria-hidden="true" />
+			{inLists ? plural(inLists, m.lists_in_count_one, m.lists_in_count_other) : m.lists_button()}
+		</button>
+	</div>
 
 	{#if library}
 		<form method="POST" action="{base}?/remove" use:enhance={submit} class="text-center">
@@ -121,6 +146,16 @@
 		</form>
 	{/if}
 </div>
+
+{#if listsOpen && listsButton}
+	<ListsPopover
+		{movieId}
+		lists={userData.lists}
+		{submit}
+		anchor={listsButton}
+		onClose={() => (listsOpen = false)}
+	/>
+{/if}
 
 {#if diaryOpen && diaryButton}
 	<DiaryPopover

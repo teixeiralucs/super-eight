@@ -7,6 +7,7 @@ import LibraryControls from './LibraryControls.svelte';
 const userData = (library: MovieUserData['library']): MovieUserData => ({
 	library,
 	artwork: null,
+	lists: [],
 	sessions: [
 		{
 			id: '00000000-0000-4000-8000-000000000001',

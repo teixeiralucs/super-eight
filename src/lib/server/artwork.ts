@@ -2,7 +2,7 @@ import { prisma } from '$lib/server/db';
 import { m } from '$lib/paraglide/messages';
 import { ensureMovie } from '$lib/server/movies';
 import { getMovieImages } from '$lib/server/tmdb';
-import { LibraryRuleError } from '$lib/server/library-actions';
+import { LibraryRuleError } from '$lib/server/errors';
 import type { Artwork, ArtworkKind } from '$lib/movie/types';
 
 /**

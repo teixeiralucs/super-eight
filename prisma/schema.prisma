@@ -12,6 +12,12 @@ enum WatchStatus {
   WATCHED
 }
 
+/// Ranking = numerada, ordem manual; Coleção = sem números, ordenada por quem vê.
+enum ListKind {
+  RANKED
+  COLLECTION
+}
+
 enum CatalogType {
   POPULAR
   NOW_PLAYING
@@ -130,6 +136,7 @@ model List {
   userId      String   @db.Uuid
   title       String
   description String?
+  kind        ListKind @default(COLLECTION)
   isPublic    Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

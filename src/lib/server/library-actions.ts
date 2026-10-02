@@ -5,17 +5,14 @@ import type { SessionInput } from '$lib/schemas/library';
 import type { LibraryState } from '$lib/library/types';
 import type { DiarySessionRow, MovieUserData } from '$lib/movie/types';
 
-/** Violação de regra de negócio (vira `fail(400)` na action). */
-export class LibraryRuleError extends Error {
-	constructor(message: string) {
-		super(message);
-		this.name = 'LibraryRuleError';
-	}
-}
+import { LibraryRuleError } from '$lib/server/errors';
+import { getListMemberships } from '$lib/server/lists';
+
+export { LibraryRuleError };
 
 /** Estado do usuário com um filme: biblioteca + todas as sessões do diário. */
 export async function getMovieUserData(userId: string, movieId: number): Promise<MovieUserData> {
-	const [entry, sessions, artwork] = await Promise.all([
+	const [entry, sessions, artwork, lists] = await Promise.all([
 		prisma.libraryEntry.findUnique({
 			where: { userId_movieId: { userId, movieId } },
 			select: { status: true, rating: true, isFavorite: true }
@@ -28,11 +25,12 @@ export async function getMovieUserData(userId: string, movieId: number): Promise
 		prisma.movieArtwork.findUnique({
 			where: { userId_movieId: { userId, movieId } },
 			select: { posterPath: true, backdropPath: true }
-		})
+		}),
+		getListMemberships(userId, movieId)
 	]);
 
 	const library: LibraryState | null = entry ? { ...entry, watchCount: sessions.length } : null;
-	return { library, sessions: sessions satisfies DiarySessionRow[], artwork };
+	return { library, sessions: sessions satisfies DiarySessionRow[], artwork, lists };
 }
 
 const key = (userId: string, movieId: number) => ({ userId_movieId: { userId, movieId } });

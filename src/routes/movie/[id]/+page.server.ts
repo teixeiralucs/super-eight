@@ -7,6 +7,8 @@ import {
 	sessionSchema
 } from '$lib/schemas/library';
 import { setArtwork } from '$lib/server/artwork';
+import { quickListSchema, listIdSchema } from '$lib/schemas/lists';
+import { addToList, createList, toggleInList } from '$lib/server/lists';
 import {
 	addToLibrary,
 	deleteSession,
@@ -96,5 +98,18 @@ export const actions: Actions = {
 	),
 	artwork: action(artworkSchema, (userId, movieId, { kind, path }, { fetch }) =>
 		setArtwork(userId, movieId, kind, path, fetch)
-	)
+	),
+	toggleList: action(listIdSchema, (userId, movieId, { listId }, { fetch }) =>
+		toggleInList(userId, listId, movieId, fetch)
+	),
+	/** Cria uma coleção privada com o título dado e já põe o filme nela. */
+	quickList: action(quickListSchema, async (userId, movieId, { title }, { fetch }) => {
+		const list = await createList(userId, {
+			title,
+			description: null,
+			kind: 'COLLECTION',
+			isPublic: false
+		});
+		await addToList(userId, list.id, movieId, fetch);
+	})
 };
