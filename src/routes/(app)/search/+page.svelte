@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
@@ -7,6 +8,7 @@
 	import MoviePosterCard from '$lib/components/MoviePosterCard.svelte';
 	import { infiniteScroll } from '$lib/attachments/infinite-scroll';
 	import type { SearchItem } from '$lib/library/types';
+	import { MAX_QUERY_LENGTH } from '$lib/search';
 	import type { SearchPage } from '$lib/server/search';
 	import type { PageData } from './$types';
 
@@ -18,7 +20,21 @@
 	let loaded = $derived({ items: data.items, page: data.page, totalPages: data.totalPages });
 	let loadingMore = $state(false);
 	let loadError = $state(false);
-	let term = $derived(data.q);
+	// O campo é de quem digita: NÃO derivar de `data.q`, senão a resposta de uma busca antiga
+	// ("The") sobrescreve o que já foi digitado depois ("Avengers").
+	let term = $state(untrack(() => data.q));
+	// Último termo que este campo pediu; a URL só manda no campo quando muda por fora
+	// (voltar/avançar, link da barra do topo).
+	let requested = untrack(() => data.q);
+	$effect(() => {
+		const q = data.q;
+		untrack(() => {
+			if (q !== requested) {
+				requested = q;
+				term = q;
+			}
+		});
+	});
 
 	const hasMore = $derived(loaded.page < loaded.totalPages);
 	const signedIn = $derived(data.profile !== null);
@@ -57,6 +73,7 @@
 		clearTimeout(timer);
 		timer = setTimeout(() => {
 			const q = value.trim();
+			requested = q;
 			// eslint-disable-next-line svelte/no-navigation-without-resolve -- caminho vem de resolve(); a regra não suporta query string
 			goto(q ? `${resolve('/search')}?q=${encodeURIComponent(q)}` : resolve('/search'), {
 				replaceState: true,
@@ -97,6 +114,7 @@
 					oninput={() => search(term)}
 					placeholder="Que filme você procura?"
 					autocomplete="off"
+					maxlength={MAX_QUERY_LENGTH}
 					class="w-full bg-transparent font-display text-[clamp(1.75rem,4vw,3.5rem)] leading-tight font-semibold tracking-[-0.03em] outline-none placeholder:text-white/25 [&::-webkit-search-cancel-button]:hidden"
 				/>
 				{#if term}
