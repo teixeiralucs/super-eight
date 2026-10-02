@@ -7,3 +7,6 @@ bun.lockb
 
 # Miscellaneous
 /static/
+
+# Gerado/gerenciado pelo inlang (Paraglide)
+/project.inlang/
