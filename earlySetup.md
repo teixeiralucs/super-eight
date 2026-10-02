@@ -482,15 +482,4 @@ model CatalogEntry {
   - Validação do schema (`prisma validate`).
   - Testes unitários (Vitest) nas regras de negócio de `src/lib/server/`.
 - 7.4.3. Deploy Automático: ao fazer merge ou _push_ na `main`, a Vercel instala as dependências, roda o `prisma generate` e publica o site. As migrações de produção (`prisma migrate deploy`) rodam em etapa controlada, não automaticamente a cada build de preview.
-
-# **8. Roadmap**
-
-- **Fase 1 — MVP**
-  1. Setup do projeto (SvelteKit, Tailwind, Shadcn-Svelte, Prisma, Supabase, Vercel, CI).
-  2. Autenticação (cadastro, login, trigger de sincronização do `User`).
-  3. Busca (`/search`) e detalhes do filme (`/movie/[id]`).
-  4. Biblioteca (`/dashboard` em grade), status, nota 1–10, favorito e diário.
-  5. Listas personalizadas.
-- **Fase 2 — Descoberta:** Landing Page com catálogos alimentados pelo cron (`CatalogEntry`).
-- **Fase 3 — Social:** perfis públicos, follow, reviews com likes e comentários, likes em listas e feed.
-- **Fase 4 — Expansão:** avaliação do suporte a séries.
+- 7.4.4. Estado atual: repositório público `teixeiralucs/super-eight`; projeto Vercel `super-eight` (time `lulu27`) ligado ao GitHub — todo push na `main` publica em **https://super-eight-liart.vercel.app**. Produção usa o **mesmo projeto Supabase** do desenvolvimento (decisão consciente; separar depois). Variáveis na Vercel (Production e Preview): `PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`, `DATABASE_URL`, `TMDB_READ_ACCESS_TOKEN` (`CRON_SECRET` entra com o cron). `npm ci` roda `svelte-kit sync` antes do `prisma generate` (o Prisma lê o `tsconfig.json`, que estende `.svelte-kit/tsconfig.json`). Os testes de componente fixam o idioma em pt (o navegador do CI é em inglês).
