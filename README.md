@@ -1,42 +1,44 @@
-# sv
+# Super Eight
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Seu diário de cinema: registre, avalie e organize os filmes que você assiste — biblioteca,
+diário, listas e comunidade, em português, inglês e espanhol.
 
-## Creating a project
+A especificação completa (modelo de dados, regras de negócio, rotas e decisões) está em
+[`earlySetup.md`](earlySetup.md).
 
-If you're seeing this, you've probably already done this step. Congrats!
+## Stack
 
-```sh
-# create a new project
-npx sv create my-app
-```
+- **SvelteKit 2 + Svelte 5** (runes), **Tailwind CSS v4**, componentes no estilo shadcn-svelte
+- **Supabase** (Auth e Postgres) com **Prisma 7**
+- **TMDb** para dados e imagens dos filmes
+- **Paraglide JS** para i18n (pt, en, es-MX)
+- Deploy na **Vercel** (adapter-vercel, Node 24)
 
-To recreate this project with the same configuration:
+## Rodando localmente
 
-```sh
-# recreate this project
-npx sv@0.17.1 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" tailwindcss="plugins:none" sveltekit-adapter="adapter:vercel" --no-download-check --install npm .
-```
+Requisitos: Node 24 e um projeto no Supabase.
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+```bash
+npm ci
+cp .env.example .env   # preencha as variáveis (veja os comentários no arquivo)
+npm run db:deploy      # aplica as migrações
 npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
 ```
 
-## Building
+## Scripts úteis
 
-To create a production version of your app:
+| Comando                                     | O que faz                                                     |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| `npm run check`                             | compila as mensagens e checa tipos (svelte-check)             |
+| `npm run lint`                              | Prettier + ESLint                                             |
+| `npm test`                                  | testes (Vitest: servidor e componentes no Chromium)           |
+| `npm run build` / `npm run preview`         | build de produção e prévia local                              |
+| `npm run db:deploy`                         | aplica migrações pendentes (ver `earlySetup.md` §7.2.4)       |
+| `npm run movies:backfill-i18n`              | (re)preenche títulos e pôsteres traduzidos do cache de filmes |
+| `npm run library:backup -- <username>`      | exporta a biblioteca de um usuário para `backups/`            |
+| `npm run library:restore -- <arquivo.json>` | restaura um backup                                            |
 
-```sh
-npm run build
-```
+## Créditos
 
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Dados e imagens de filmes fornecidos pelo [TMDB](https://www.themoviedb.org/). Este produto usa
+a API do TMDB, mas não é endossado nem certificado pelo TMDB.

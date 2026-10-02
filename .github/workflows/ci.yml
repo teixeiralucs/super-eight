@@ -1,0 +1,42 @@
+# CI (earlySetup.md §7.4.2): checa tipos, lint, testes e build a cada push e pull request.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Valores fictícios: o build só precisa que as variáveis existam ($env/static).
+    # Nenhum teste fala com o banco ou com o TMDb de verdade.
+    env:
+      PUBLIC_SUPABASE_URL: https://example.supabase.co
+      PUBLIC_SUPABASE_ANON_KEY: ci-anon-key
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+      TMDB_READ_ACCESS_TOKEN: ci-token
+      CRON_SECRET: ci-secret
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Chromium (testes de componente)
+        run: npx playwright install --with-deps chromium
+
+      - run: npm run check
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
