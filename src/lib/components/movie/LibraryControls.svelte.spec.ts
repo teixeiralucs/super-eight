@@ -1,5 +1,6 @@
 import { page } from 'vitest/browser';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
+import { setLocale } from '$lib/paraglide/runtime';
 import { render } from 'vitest-browser-svelte';
 import type { MovieUserData } from '$lib/movie/types';
 import LibraryControls from './LibraryControls.svelte';
@@ -20,6 +21,9 @@ const userData = (library: MovieUserData['library']): MovieUserData => ({
 });
 
 const submit = () => {};
+
+// Idioma fixo: sem isso o app segue o idioma do navegador do teste (inglês no CI).
+beforeAll(() => setLocale('pt', { reload: false }));
 
 describe('LibraryControls', () => {
 	it('estado é só indicador (vem do diário) e nota/favorito ficam bloqueados', async () => {
