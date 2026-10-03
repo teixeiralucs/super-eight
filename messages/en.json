@@ -606,8 +606,10 @@
 	"collection_empty_filter": "No films in this collection match that filter.",
 	"collection_empty_title": "You don't have any films from this collection yet",
 	"collection_empty_text": "Add a film from the saga to your library and it shows up here.",
-	"collection_readonly": "Collections come from TMDb and show only the films in your library.",
+	"collection_readonly": "Collections come from TMDb. Faded films are the ones missing from your library: use + to add them.",
 	"collection_back": "Collections",
 	"error_collection_not_found": "Collection not found.",
-	"fact_collection": "Collection"
+	"fact_collection": "Collection",
+	"collection_view_missing": "Missing",
+	"collection_missing_label": "{title} — not in your library"
 }

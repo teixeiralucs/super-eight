@@ -90,7 +90,7 @@ O Super Eight se apoia no conceito de Tracking de Filmes, semelhante ao Letterbo
 ## **3.6-A. Entidade: Collection (Coleção do TMDb)**
 
 - _Objetivo: cache das sagas do TMDb (ex.: "Star Wars"), só leitura._
-- 3.6-A.1. Campos: `id` (Int, = ID da coleção no TMDb), `namePt`/`nameEn`/`nameEs` (nome por idioma; pt/es nulos = sem tradução, a UI cai no inglês), `posterPath`, `backdropPath`, `partIds` (todos os filmes da coleção, por lançamento — o "3 de 8"), `updatedAt`. `Movie.collectionId` aponta para ela (`belongs_to_collection` do TMDb; `ON DELETE SET NULL`).
+- 3.6-A.1. Campos: `id` (Int, = ID da coleção no TMDb), `namePt`/`nameEn`/`nameEs` (nome por idioma; pt/es nulos = sem tradução, a UI cai no inglês), `posterPath`, `backdropPath`, `partIds` (todos os filmes da coleção, por lançamento — o "3 de 8"), `parts` (JSON com título por idioma, pôster e data de cada parte, para os fantasmas), `updatedAt`. `Movie.collectionId` aponta para ela (`belongs_to_collection` do TMDb; `ON DELETE SET NULL`).
 - 3.6-A.2. Preenchimento: `ensureMovie` grava a coleção na primeira vez que um filme dela entra no cache; `npm run movies:backfill-i18n` renova filmes e coleções.
 
 ## **3.7. Entidade: ListMovie (Tabela Pivô)**
@@ -465,7 +465,8 @@ model CatalogEntry {
 ## **6.8. Coleções do TMDb**
 
 - 6.8.1. Aba **Coleções** em `/lists`: uma por saga com pelo menos um filme na biblioteca do usuário, com o fundo da coleção, o nome no idioma de quem vê e o progresso ("3 de 8", barra que fica rosa ao completar). Ordem: as mais completas primeiro.
-- 6.8.2. `/lists/collections/[id]` (Protegida): só os filmes da coleção que estão na biblioteca, com o estado de cada um. **Não se edita** (nada a adicionar, remover ou arrastar): filtros Todos/Assistidos/Quero ver/Favoritos e ordenação (ordem da saga — padrão —, título, sua nota, última vez assistido), sem salvar. Filmes que faltam aparecem só no contador.
+- 6.8.2. `/lists/collections/[id]` (Protegida): os filmes da coleção que estão na biblioteca, com o estado de cada um, e os que faltam como **fantasmas** (apagados e sem cor; ganham cor ao passar o mouse; o "+" adiciona em Quero ver e a página recarrega). **Não se edita** (nada a remover ou arrastar): filtros Todos/Assistidos/Quero ver/Favoritos/Faltam e ordenação (ordem da saga — padrão —, título, sua nota, última vez assistido), sem salvar. Na ordem da saga os fantasmas ficam intercalados pela data de lançamento; nas outras, vão para o fim, também por lançamento.
+- 6.8.4. Escopo: são as coleções do TMDb (`belongs_to_collection`), que por regra do TMDb só agrupam franquias/sequências. Filmografias de diretor, box sets de estúdio e curadorias (ex.: listas oficiais do Trakt) não existem como coleção no TMDb.
 - 6.8.3. Detalhes do filme: o campo **Coleção** na barra lateral leva à coleção (logado).
 
 # **7. Deploy, Infraestrutura e CI/CD**

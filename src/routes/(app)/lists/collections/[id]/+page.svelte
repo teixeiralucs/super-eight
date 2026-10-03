@@ -1,13 +1,16 @@
 <script lang="ts">
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import InfoIcon from '@lucide/svelte/icons/info';
 	import MoviePosterCard from '$lib/components/MoviePosterCard.svelte';
+	import { yearOf } from '$lib/format';
 	import { intlLocale } from '$lib/i18n';
 	import { posterFromCard } from '$lib/library/poster';
 	import {
 		COLLECTION_VIEWS,
 		SAGA_SORTS,
+		type CollectionGhost,
 		type CollectionItem,
 		type CollectionView,
 		type SagaSort
@@ -17,8 +20,9 @@
 	import type { PageData } from './$types';
 
 	/**
-	 * Coleção do TMDb (earlySetup.md §6.8): só os filmes da saga que estão na biblioteca.
-	 * Não se edita: dá para filtrar e mudar a ordenação (sem salvar; começa na ordem da saga).
+	 * Coleção do TMDb (earlySetup.md §6.8): os filmes da saga que estão na biblioteca e, apagados
+	 * no meio deles pela ordem de lançamento, os que faltam ("fantasmas", com o "+" para
+	 * adicionar). Não se edita: dá para filtrar e mudar a ordenação (sem salvar).
 	 */
 	let { data }: { data: PageData } = $props();
 
@@ -31,7 +35,8 @@
 			all: m.collection_view_all,
 			watched: m.collection_view_watched,
 			watchlist: m.collection_view_watchlist,
-			favorites: m.collection_view_favorites
+			favorites: m.collection_view_favorites,
+			missing: m.collection_view_missing
 		})[value]();
 	const sortLabel = (value: SagaSort) =>
 		({
@@ -46,14 +51,16 @@
 		(value === 'watched' && item.library.status === 'WATCHED') ||
 		(value === 'watchlist' && item.library.status === 'WANT_TO_WATCH') ||
 		(value === 'favorites' && item.library.isFavorite);
-	const counts = $derived(
-		Object.fromEntries(
+	const counts = $derived({
+		...(Object.fromEntries(
 			COLLECTION_VIEWS.map((value) => [
 				value,
 				collection.items.filter((item) => matches(item, value)).length
 			])
-		) as Record<CollectionView, number>
-	);
+		) as Record<CollectionView, number>),
+		all: collection.items.length + collection.missing.length,
+		missing: collection.missing.length
+	});
 
 	/** Datas e notas ausentes sempre no fim; empate desfaz pela ordem da saga. */
 	const time = (date: Date | null) => date?.getTime() ?? null;
@@ -62,7 +69,17 @@
 	const desc = (a: number | null, b: number | null) =>
 		a === b ? 0 : a === null ? 1 : b === null ? -1 : b - a;
 
-	const shown = $derived.by(() => {
+	type Entry =
+		| { ghost: false; id: number; release: Date | null; item: CollectionItem }
+		| { ghost: true; id: number; release: Date | null; movie: CollectionGhost };
+	const byRelease = (a: Entry, b: Entry) =>
+		(time(a.release) ?? Infinity) - (time(b.release) ?? Infinity);
+
+	/**
+	 * Fantasmas só em "Todos" e "Faltam". Na ordem da saga eles se intercalam pelo lançamento;
+	 * nas outras ordenações (título, nota, assistido) vão para o fim, ainda por lançamento.
+	 */
+	const shown = $derived.by((): Entry[] => {
 		const items = collection.items.filter((item) => matches(item, view));
 		const compare: Record<SagaSort, (a: CollectionItem, b: CollectionItem) => number> = {
 			saga: bySaga,
@@ -70,7 +87,33 @@
 			rating: (a, b) => desc(a.library.rating, b.library.rating) || bySaga(a, b),
 			watched: (a, b) => desc(time(a.lastWatched), time(b.lastWatched)) || bySaga(a, b)
 		};
-		return items.sort(compare[sort]);
+		const owned: Entry[] = items
+			.sort(compare[sort])
+			.map((item) => ({ ghost: false, id: item.movie.id, release: item.movie.releaseDate, item }));
+		const ghosts: Entry[] =
+			view === 'all' || view === 'missing'
+				? collection.missing.map((movie) => ({
+						ghost: true,
+						id: movie.id,
+						release: movie.releaseDate,
+						movie
+					}))
+				: [];
+		return sort === 'saga'
+			? [...owned, ...ghosts].sort(byRelease)
+			: [...owned, ...ghosts.sort(byRelease)];
+	});
+
+	/** Fantasma no formato do card de pôster (sem equipe nem duração: só título e ano). */
+	const ghostPoster = (movie: CollectionGhost) => ({
+		id: movie.id,
+		title: movie.title,
+		originalTitle: movie.originalTitle,
+		posterPath: movie.posterPath,
+		year: yearOf(movie.releaseDate),
+		directors: [],
+		countries: [],
+		runtime: null
 	});
 
 	const chip = 'shrink-0 rounded-full px-4 py-1.5 text-xs transition';
@@ -135,7 +178,14 @@
 		</p>
 	</header>
 
-	{#if collection.items.length}
+	{#if !collection.items.length}
+		<section class="rounded-3xl border border-white/10 px-6 py-10 text-center">
+			<p class="font-display text-xl font-semibold">{m.collection_empty_title()}</p>
+			<p class="mt-2 text-sm text-muted-foreground">{m.collection_empty_text()}</p>
+		</section>
+	{/if}
+
+	{#if counts.all}
 		<div class="flex flex-wrap items-center justify-between gap-4">
 			<div
 				class="flex min-w-0 gap-1 overflow-x-auto"
@@ -177,17 +227,34 @@
 			<ul
 				class="grid grid-cols-2 gap-x-4 gap-y-10 sm:grid-cols-3 md:grid-cols-4 md:gap-x-6 xl:grid-cols-6"
 			>
-				{#each shown as item (item.movie.id)}
-					<li><MoviePosterCard movie={posterFromCard(item.movie)} library={item.library} /></li>
+				{#each shown as entry (entry.id)}
+					{#if entry.ghost}
+						<!-- Fantasma: apagado e sem cor até passar o mouse; o "+" adiciona em Quero ver -->
+						<li
+							class="opacity-45 grayscale transition duration-300 focus-within:opacity-100 focus-within:grayscale-0 hover:opacity-100 hover:grayscale-0"
+						>
+							<span class="sr-only">
+								{m.collection_missing_label({ title: entry.movie.originalTitle })}
+							</span>
+							<MoviePosterCard
+								movie={ghostPoster(entry.movie)}
+								library={null}
+								add={{ action: '?/add', signedIn: true, loginHref: '' }}
+								onadded={() => invalidateAll()}
+							/>
+						</li>
+					{:else}
+						<li>
+							<MoviePosterCard
+								movie={posterFromCard(entry.item.movie)}
+								library={entry.item.library}
+							/>
+						</li>
+					{/if}
 				{/each}
 			</ul>
 		{:else}
 			<p class="py-10 text-center text-sm text-muted-foreground">{m.collection_empty_filter()}</p>
 		{/if}
-	{:else}
-		<section class="rounded-3xl border border-white/10 px-6 py-16 text-center">
-			<p class="font-display text-xl font-semibold">{m.collection_empty_title()}</p>
-			<p class="mt-2 text-sm text-muted-foreground">{m.collection_empty_text()}</p>
-		</section>
 	{/if}
 </main>

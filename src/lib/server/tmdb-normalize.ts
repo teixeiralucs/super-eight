@@ -209,7 +209,13 @@ export interface RawCollection {
 	name: string;
 	poster_path: string | null;
 	backdrop_path: string | null;
-	parts: { id: number; release_date?: string }[];
+	parts: {
+		id: number;
+		title: string;
+		original_title: string;
+		poster_path: string | null;
+		release_date?: string;
+	}[];
 }
 
 /** Coleção nos três idiomas → cache `Collection`. Partes por lançamento (sem data no fim). */
@@ -218,14 +224,47 @@ export function toCollection(raw: Localized<RawCollection>): CollectionData {
 	const parts = [...raw.en.parts].sort((a, b) => release(a).localeCompare(release(b)));
 	// Nome igual ao inglês não acrescenta nada (o TMDb repete o inglês sem tradução).
 	const translated = (name: string) => (name && name !== raw.en.name ? name : null);
+	const byId = (locale: 'pt' | 'es') => new Map(raw[locale].parts.map((part) => [part.id, part]));
+	const pt = byId('pt');
+	const es = byId('es');
 	return {
 		id: raw.en.id,
 		names: { pt: translated(raw.pt.name), en: raw.en.name, es: translated(raw.es.name) },
 		posterPath: raw.pt.poster_path ?? raw.en.poster_path,
 		backdropPath: raw.en.backdrop_path,
-		partIds: parts.map((part) => part.id)
+		partIds: parts.map((part) => part.id),
+		parts: parts.map((part) => {
+			const original = part.original_title || part.title;
+			const distinct = (title: string | undefined) => (title && title !== original ? title : null);
+			return {
+				id: part.id,
+				originalTitle: original,
+				titles: {
+					pt: distinct(pt.get(part.id)?.title),
+					en: distinct(part.title),
+					es: distinct(es.get(part.id)?.title)
+				},
+				posters: {
+					pt: pt.get(part.id)?.poster_path ?? part.poster_path,
+					en: part.poster_path,
+					es: es.get(part.id)?.poster_path ?? part.poster_path
+				},
+				releaseDate: part.release_date || null
+			};
+		})
 	};
 }
+
+/** Colunas do cache `Collection` (servidor e script de backfill gravam igual). */
+export const collectionFields = (data: CollectionData) => ({
+	namePt: data.names.pt,
+	nameEn: data.names.en,
+	nameEs: data.names.es,
+	posterPath: data.posterPath,
+	backdropPath: data.backdropPath,
+	partIds: data.partIds,
+	parts: data.parts
+});
 
 // ─── Detalhes completos (página /movie/[id]) ─────────────────────────
 const unique = (items: string[]) => [...new Set(items)];

@@ -606,8 +606,10 @@
 	"collection_empty_filter": "Nenhum filme da coleção com esse filtro.",
 	"collection_empty_title": "Você ainda não tem filmes desta coleção",
 	"collection_empty_text": "Adicione um filme da saga à sua biblioteca e ele aparece aqui.",
-	"collection_readonly": "Coleções vêm do TMDb e mostram só os filmes da sua biblioteca.",
+	"collection_readonly": "Coleções vêm do TMDb. Os filmes apagados são os que faltam na sua biblioteca: use o + para adicionar.",
 	"collection_back": "Coleções",
 	"error_collection_not_found": "Coleção não encontrada.",
-	"fact_collection": "Coleção"
+	"fact_collection": "Coleção",
+	"collection_view_missing": "Faltam",
+	"collection_missing_label": "{title} — fora da sua biblioteca"
 }

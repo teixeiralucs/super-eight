@@ -104,6 +104,8 @@ model Collection {
   backdropPath String?
   /// Todos os filmes da coleção no TMDb, por ordem de lançamento ("3 de 8").
   partIds      Int[]    @default([])
+  /// Dados de cada parte para os "fantasmas" (filmes que o usuário não tem): ver CollectionPart.
+  parts        Json     @default("[]")
   updatedAt    DateTime @updatedAt
 
   movies Movie[]

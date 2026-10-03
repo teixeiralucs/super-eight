@@ -7,6 +7,7 @@
  */
 import { prisma } from './db';
 import {
+	collectionFields,
 	localizedLogos,
 	toCollection,
 	toImages,
@@ -55,15 +56,7 @@ function saveCollection(id: number) {
 					tmdb<RawCollection>(`/collection/${id}`, { language })
 				)
 			);
-			const data = toCollection({ pt, en, es });
-			const fields = {
-				namePt: data.names.pt,
-				nameEn: data.names.en,
-				nameEs: data.names.es,
-				posterPath: data.posterPath,
-				backdropPath: data.backdropPath,
-				partIds: data.partIds
-			};
+			const fields = collectionFields(toCollection({ pt, en, es }));
 			await prisma.collection.upsert({ where: { id }, create: { id, ...fields }, update: fields });
 			return id;
 		})().catch((err) => {

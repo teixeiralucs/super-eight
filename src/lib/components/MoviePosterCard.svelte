@@ -22,12 +22,15 @@
 	let {
 		movie,
 		library,
-		add
+		add,
+		onadded
 	}: {
 		movie: PosterMovie;
 		library: LibraryState | null;
 		/** Habilita o botão "+". `action` é a form action; sem login, o botão leva ao login. */
 		add?: { action: string; signedIn: boolean; loginHref: string };
+		/** Depois de adicionar (ex.: a coleção recarrega e o fantasma vira filme da biblioteca). */
+		onadded?: () => void;
 	} = $props();
 
 	// Estado adicionado localmente (sem recarregar a página nem perder a rolagem infinita).
@@ -124,7 +127,10 @@
 							// Não recarrega os dados da página: atualiza só este card.
 							return async ({ result }) => {
 								adding = false;
-								if (result.type === 'success') addedLocally = true;
+								if (result.type === 'success') {
+									addedLocally = true;
+									onadded?.();
+								}
 							};
 						},
 						{ success: m.toast_added_named({ title: movie.originalTitle }) }

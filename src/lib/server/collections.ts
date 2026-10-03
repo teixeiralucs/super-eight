@@ -3,6 +3,7 @@ import { getArtworks, withArtwork } from '$lib/server/artwork';
 import { localizeCard, movieCardSelect } from '$lib/server/movie-locale';
 import type { Locale } from '$lib/i18n';
 import type { CollectionDetail, CollectionSummary } from '$lib/lists/types';
+import type { CollectionPart } from '$lib/tmdb/types';
 
 /**
  * Coleções do TMDb (earlySetup.md §6.8): sagas importadas do TMDb, só leitura. Cada usuário
@@ -68,7 +69,7 @@ export async function getUserCollection(
 ): Promise<CollectionDetail | null> {
 	const row = await prisma.collection.findUnique({
 		where: { id: collectionId },
-		select: collectionSelect
+		select: { ...collectionSelect, parts: true }
 	});
 	if (!row) return null;
 
@@ -92,6 +93,7 @@ export async function getUserCollection(
 		getArtworks(userId, movieIds)
 	]);
 	const diary = new Map(sessions.map((s) => [s.movieId, s]));
+	const owned = new Set(movieIds);
 
 	return {
 		id: row.id,
@@ -107,6 +109,16 @@ export async function getUserCollection(
 				watchCount: diary.get(entry.movie.id)?._count._all ?? 0
 			},
 			lastWatched: diary.get(entry.movie.id)?._max.watchedAt ?? null
-		}))
+		})),
+		// JSON gravado por `collectionFields` (formato CollectionPart).
+		missing: (row.parts as unknown as CollectionPart[])
+			.filter((part) => !owned.has(part.id))
+			.map((part) => ({
+				id: part.id,
+				title: part.titles[locale] ?? part.originalTitle,
+				originalTitle: part.originalTitle,
+				posterPath: part.posters[locale] ?? part.posters.en,
+				releaseDate: part.releaseDate ? new Date(`${part.releaseDate}T00:00:00Z`) : null
+			}))
 	};
 }

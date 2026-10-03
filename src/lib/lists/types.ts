@@ -69,15 +69,27 @@ export interface CollectionItem {
 	lastWatched: Date | null;
 }
 
+/** Filme da coleção que o usuário não tem ("fantasma"), no idioma de quem vê. */
+export interface CollectionGhost {
+	id: number;
+	title: string;
+	originalTitle: string;
+	posterPath: string | null;
+	releaseDate: Date | null;
+}
+
 export interface CollectionDetail {
 	id: number;
 	name: string;
 	total: number;
 	backdropPath: string | null;
 	items: CollectionItem[];
+	/** Os que faltam, por lançamento. */
+	missing: CollectionGhost[];
 }
 
-export const COLLECTION_VIEWS = ['all', 'watched', 'watchlist', 'favorites'] as const;
+/** `missing` = só os fantasmas (filmes da coleção fora da biblioteca). */
+export const COLLECTION_VIEWS = ['all', 'watched', 'watchlist', 'favorites', 'missing'] as const;
 export type CollectionView = (typeof COLLECTION_VIEWS)[number];
 
 /** Ordenações de uma coleção do TMDb ("saga" = ordem de lançamento). */

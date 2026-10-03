@@ -104,4 +104,17 @@ export interface CollectionData {
 	backdropPath: string | null;
 	/** Todos os filmes, por lançamento. */
 	partIds: number[];
+	parts: CollectionPart[];
 }
+
+/** Filme de uma coleção (mesma ordem de `partIds`), para mostrar os que o usuário não tem. */
+// `type` (não `interface`): o Prisma aceita como JSON.
+export type CollectionPart = {
+	id: number;
+	originalTitle: string;
+	/** Título por idioma; nulo = igual ao original. */
+	titles: Localized<string | null>;
+	posters: Localized<string | null>;
+	/** YYYY-MM-DD; nulo = sem data (anunciado). */
+	releaseDate: string | null;
+};

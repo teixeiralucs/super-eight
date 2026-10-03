@@ -26,6 +26,7 @@ import {
 
 export {
 	isShowcaseable,
+	collectionFields,
 	localizedLogos,
 	pickLogo,
 	pickTranslation,

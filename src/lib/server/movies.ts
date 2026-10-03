@@ -1,5 +1,11 @@
 import { prisma } from '$lib/server/db';
-import { getCollection, getMovieCacheData, getMovieImages, localizedLogos } from '$lib/server/tmdb';
+import {
+	collectionFields,
+	getCollection,
+	getMovieCacheData,
+	getMovieImages,
+	localizedLogos
+} from '$lib/server/tmdb';
 
 /**
  * Garante a coleção (saga) no cache `Collection`. Já existente não é buscada de novo (o
@@ -8,15 +14,7 @@ import { getCollection, getMovieCacheData, getMovieImages, localizedLogos } from
 async function ensureCollection(id: number, fetchFn?: typeof fetch): Promise<number | null> {
 	if (await prisma.collection.findUnique({ where: { id }, select: { id: true } })) return id;
 	try {
-		const data = await getCollection(id, fetchFn);
-		const fields = {
-			namePt: data.names.pt,
-			nameEn: data.names.en,
-			nameEs: data.names.es,
-			posterPath: data.posterPath,
-			backdropPath: data.backdropPath,
-			partIds: data.partIds
-		};
+		const fields = collectionFields(await getCollection(id, fetchFn));
 		await prisma.collection.upsert({ where: { id }, create: { id, ...fields }, update: fields });
 		return id;
 	} catch (err) {
