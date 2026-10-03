@@ -1,7 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { listFieldsSchema } from '$lib/schemas/lists';
-import { getUserCollections } from '$lib/server/collections';
+import { getUserCollections, setCollectionHidden } from '$lib/server/collections';
 import { countTraktPending, syncTraktForUser } from '$lib/server/trakt';
 import { createList, getUserLists } from '$lib/server/lists';
 import type { Actions, PageServerLoad } from './$types';
@@ -17,6 +17,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
+	hide: setCollectionHidden,
 	/** Um lote da busca de listas oficiais do Trakt (a aba Coleções chama até acabar). */
 	syncTrakt: async ({ locals, fetch }) => {
 		if (!locals.user) error(401);

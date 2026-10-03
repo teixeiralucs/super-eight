@@ -1,9 +1,9 @@
 import { error } from '@sveltejs/kit';
-import { addMissing, getUserTraktList } from '$lib/server/collections';
+import { addMissing, setCollectionHidden, getUserTraktList } from '$lib/server/collections';
 import { m } from '$lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
-// Lista oficial do Trakt (earlySetup.md §6.8.5): só leitura; a única action adiciona um fantasma.
+// Lista oficial do Trakt (earlySetup.md §6.8.5): só leitura. Actions: adicionar um fantasma e ocultar/mostrar.
 export const load: PageServerLoad = async ({ params, locals }) => {
 	if (!locals.user) error(401);
 	const id = Number(params.id);
@@ -15,4 +15,4 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	return { collection };
 };
 
-export const actions: Actions = { add: addMissing };
+export const actions: Actions = { add: addMissing, hide: setCollectionHidden };

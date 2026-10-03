@@ -619,5 +619,14 @@
 	"collections_filter_label": "Filtrar colecciones",
 	"collections_trakt_syncing": "Buscando listas oficiales en Trakt… faltan {count} películas",
 	"collections_trakt_waiting": "Trakt pidió una pausa; sigo en {seconds}s (faltan {count} películas)",
-	"collection_readonly_trakt": "Las listas oficiales vienen de Trakt. Las películas atenuadas son las que faltan en tu biblioteca: usa + para agregarlas."
+	"collection_readonly_trakt": "Las listas oficiales vienen de Trakt. Las películas atenuadas son las que faltan en tu biblioteca: usa + para agregarlas.",
+	"collection_hide": "Ocultar colección",
+	"collection_hide_named": "Ocultar la colección {name}",
+	"collection_show": "Mostrar de nuevo",
+	"collection_show_named": "Mostrar de nuevo la colección {name}",
+	"collection_hidden_note": "Esta colección está oculta en la pestaña Colecciones.",
+	"collections_hidden_title": "Colecciones ocultas ({count})",
+	"collections_hidden_hint": "No aparecen arriba. Puedes volver a mostrarlas cuando quieras.",
+	"toast_collection_hidden": "Colección ocultada",
+	"toast_collection_shown": "La colección volvió a la pestaña"
 }

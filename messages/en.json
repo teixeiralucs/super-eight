@@ -619,5 +619,14 @@
 	"collections_filter_label": "Filter collections",
 	"collections_trakt_syncing": "Looking for Trakt official lists… {count} films left",
 	"collections_trakt_waiting": "Trakt asked for a pause; resuming in {seconds}s ({count} films left)",
-	"collection_readonly_trakt": "Official lists come from Trakt. Faded films are the ones missing from your library: use + to add them."
+	"collection_readonly_trakt": "Official lists come from Trakt. Faded films are the ones missing from your library: use + to add them.",
+	"collection_hide": "Hide collection",
+	"collection_hide_named": "Hide the {name} collection",
+	"collection_show": "Show again",
+	"collection_show_named": "Show the {name} collection again",
+	"collection_hidden_note": "This collection is hidden from the Collections tab.",
+	"collections_hidden_title": "Hidden collections ({count})",
+	"collections_hidden_hint": "They don't show up above. You can show them again anytime.",
+	"toast_collection_hidden": "Collection hidden",
+	"toast_collection_shown": "Collection is back in the tab"
 }

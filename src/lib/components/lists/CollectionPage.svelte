@@ -1,8 +1,12 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
+	import EyeIcon from '@lucide/svelte/icons/eye';
+	import EyeOffIcon from '@lucide/svelte/icons/eye-off';
 	import InfoIcon from '@lucide/svelte/icons/info';
+	import { withFeedback } from '$lib/feedback/submit';
 	import MoviePosterCard from '$lib/components/MoviePosterCard.svelte';
 	import GhostCard from './GhostCard.svelte';
 	import { intlLocale } from '$lib/i18n';
@@ -171,6 +175,34 @@
 			<InfoIcon class="size-4 shrink-0" aria-hidden="true" />
 			{collection.source === 'trakt' ? m.collection_readonly_trakt() : m.collection_readonly()}
 		</p>
+
+		<!-- Ocultar da aba Coleções (só para este usuário) -->
+		<form
+			method="POST"
+			action="?/hide"
+			use:enhance={withFeedback(undefined, {
+				success: collection.hidden ? m.toast_collection_shown() : m.toast_collection_hidden()
+			})}
+			class="mt-5 flex flex-wrap items-center gap-3"
+		>
+			<input type="hidden" name="source" value={collection.source} />
+			<input type="hidden" name="id" value={collection.id} />
+			<input type="hidden" name="hidden" value={collection.hidden ? 'false' : 'true'} />
+			<button
+				class="inline-flex items-center gap-2 rounded-full border border-white/20 bg-background/40 px-4 py-2 text-sm transition hover:border-white/50"
+			>
+				{#if collection.hidden}
+					<EyeIcon class="size-4" aria-hidden="true" />
+					{m.collection_show()}
+				{:else}
+					<EyeOffIcon class="size-4" aria-hidden="true" />
+					{m.collection_hide()}
+				{/if}
+			</button>
+			{#if collection.hidden}
+				<span class="text-xs text-white/55">{m.collection_hidden_note()}</span>
+			{/if}
+		</form>
 	</header>
 
 	{#if !collection.items.length}

@@ -64,6 +64,8 @@ export interface CollectionSummary {
 	/** Filmes da coleção no TMDb. */
 	total: number;
 	backdropPath: string | null;
+	/** Escondida pelo usuário: fica na seção "Ocultas" da aba. */
+	hidden: boolean;
 }
 
 export interface CollectionItem {
@@ -88,6 +90,7 @@ export interface CollectionDetail {
 	id: number;
 	name: string;
 	description: string | null;
+	hidden: boolean;
 	total: number;
 	backdropPath: string | null;
 	items: CollectionItem[];

@@ -44,7 +44,7 @@ export async function getUserCollections(
 	const library = new Map(entries.map(({ movie }) => [movie.id, movie]));
 
 	const collectionIds = [...new Set(entries.flatMap(({ movie }) => movie.collectionId ?? []))];
-	const [sagas, lists, artworks] = await Promise.all([
+	const [sagas, lists, artworks, hiddenRows] = await Promise.all([
 		prisma.collection.findMany({
 			where: { id: { in: collectionIds } },
 			select: {
@@ -61,8 +61,13 @@ export async function getUserCollections(
 			orderBy: { id: 'asc' },
 			select: { id: true, name: true, partIds: true }
 		}),
-		getArtworks(userId)
+		getArtworks(userId),
+		prisma.hiddenCollection.findMany({
+			where: { userId },
+			select: { source: true, collectionId: true }
+		})
 	]);
+	const hidden = new Set(hiddenRows.map((row) => `${row.source}:${row.collectionId}`));
 
 	const summaries: CollectionSummary[] = sagas.map((row) => {
 		const owned = entries.filter(({ movie }) => movie.collectionId === row.id).length;
@@ -73,7 +78,8 @@ export async function getUserCollections(
 			owned,
 			// A biblioteca pode ter um filme que saiu da coleção no TMDb: nunca "5 de 4".
 			total: Math.max(row.partIds.length, owned),
-			backdropPath: row.backdropPath
+			backdropPath: row.backdropPath,
+			hidden: hidden.has(`TMDB:${row.id}`)
 		};
 	});
 
@@ -97,7 +103,8 @@ export async function getUserCollections(
 			name: list.name,
 			owned: owned.length,
 			total: list.partIds.length,
-			backdropPath: cover.backdropPath
+			backdropPath: cover.backdropPath,
+			hidden: hidden.has(`TRAKT:${list.id}`)
 		});
 	}
 
@@ -136,14 +143,24 @@ async function buildDetail(
 		}
 	});
 	const movieIds = entries.map((entry) => entry.movie.id);
-	const [sessions, artworks] = await Promise.all([
+	const [sessions, artworks, hidden] = await Promise.all([
 		prisma.diaryEntry.groupBy({
 			by: ['movieId'],
 			where: { userId, movieId: { in: movieIds } },
 			_count: { _all: true },
 			_max: { watchedAt: true }
 		}),
-		getArtworks(userId, movieIds)
+		getArtworks(userId, movieIds),
+		prisma.hiddenCollection.findUnique({
+			where: {
+				userId_source_collectionId: {
+					userId,
+					source: base.source === 'trakt' ? 'TRAKT' : 'TMDB',
+					collectionId: base.id
+				}
+			},
+			select: { userId: true }
+		})
 	]);
 	const diary = new Map(sessions.map((s) => [s.movieId, s]));
 	const owned = new Set(movieIds);
@@ -167,6 +184,7 @@ async function buildDetail(
 		id: base.id,
 		name: base.name,
 		description: base.description,
+		hidden: Boolean(hidden),
 		total: Math.max(base.partIds.length, entries.length),
 		backdropPath: base.backdropPath ?? firstOwned?.movie.backdropPath ?? null,
 		items,
@@ -222,4 +240,32 @@ export async function addMissing({ request, locals, fetch }: RequestEvent) {
 	if (!parsed.success) return fail(400, { message: m.error_invalid_movie() });
 	await addToLibrary(locals.user.id, parsed.data.movieId, fetch);
 	return { added: parsed.data.movieId };
+}
+
+const hideSchema = z.object({
+	source: z.enum(['tmdb', 'trakt']),
+	id: z.coerce.number().int().positive(),
+	hidden: z.enum(['true', 'false']).transform((value) => value === 'true')
+});
+
+/** Action: esconde ou volta a mostrar uma coleção na aba Coleções (só para o usuário). */
+export async function setCollectionHidden({ request, locals }: RequestEvent) {
+	if (!locals.user) return fail(401, { message: m.error_sign_in_to_save() });
+	const parsed = hideSchema.safeParse(Object.fromEntries(await request.formData()));
+	if (!parsed.success) return fail(400, { message: m.error_invalid_data() });
+	const key = {
+		userId: locals.user.id,
+		source: parsed.data.source === 'trakt' ? ('TRAKT' as const) : ('TMDB' as const),
+		collectionId: parsed.data.id
+	};
+	if (parsed.data.hidden) {
+		await prisma.hiddenCollection.upsert({
+			where: { userId_source_collectionId: key },
+			create: key,
+			update: {}
+		});
+	} else {
+		await prisma.hiddenCollection.deleteMany({ where: key });
+	}
+	return { hidden: parsed.data.hidden };
 }

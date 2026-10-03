@@ -4,6 +4,7 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
+	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 	import LibraryBigIcon from '@lucide/svelte/icons/library-big';
 	import ListVideoIcon from '@lucide/svelte/icons/list-video';
@@ -28,13 +29,16 @@
 
 	// ── Coleções: filtro por origem ──
 	let source = $state<'all' | 'tmdb' | 'trakt'>('all');
+	// Ocultas pelo usuário ficam numa seção à parte, no fim.
+	const visible = $derived(data.collections.filter((c) => !c.hidden));
+	const hiddenCollections = $derived(data.collections.filter((c) => c.hidden));
 	const sourceCounts = $derived({
-		all: data.collections.length,
-		tmdb: data.collections.filter((c) => c.source === 'tmdb').length,
-		trakt: data.collections.filter((c) => c.source === 'trakt').length
+		all: visible.length,
+		tmdb: visible.filter((c) => c.source === 'tmdb').length,
+		trakt: visible.filter((c) => c.source === 'trakt').length
 	});
 	const shownCollections = $derived(
-		source === 'all' ? data.collections : data.collections.filter((c) => c.source === source)
+		source === 'all' ? visible : visible.filter((c) => c.source === source)
 	);
 	const sourceLabel = {
 		all: m.collections_filter_all,
@@ -99,7 +103,7 @@
 		{
 			id: 'collections',
 			label: m.lists_tab_collections(),
-			count: data.collections.length,
+			count: visible.length,
 			href: `${resolve('/(app)/lists')}?tab=collections`
 		}
 	]);
@@ -210,13 +214,13 @@
 				{/each}
 			</div>
 		{/if}
-		{#if data.collections.length}
+		{#if visible.length}
 			<ul class="grid gap-6 md:grid-cols-2">
 				{#each shownCollections as collection (`${collection.source}:${collection.id}`)}
 					<li><CollectionCard {collection} /></li>
 				{/each}
 			</ul>
-		{:else}
+		{:else if !hiddenCollections.length}
 			<section
 				class="flex flex-col items-center gap-4 rounded-3xl border border-white/10 px-6 py-20 text-center"
 			>
@@ -224,6 +228,23 @@
 				<h2 class="font-display text-2xl font-semibold">{m.collections_empty_title()}</h2>
 				<p class="max-w-md text-sm text-muted-foreground">{m.collections_empty_text()}</p>
 			</section>
+		{/if}
+
+		{#if hiddenCollections.length}
+			<details class="group mt-4 border-t border-white/10 pt-6">
+				<summary
+					class="flex cursor-pointer list-none items-center gap-2 text-sm text-white/60 transition hover:text-white"
+				>
+					<ChevronRightIcon class="size-4 transition group-open:rotate-90" aria-hidden="true" />
+					{m.collections_hidden_title({ count: hiddenCollections.length })}
+				</summary>
+				<p class="mt-2 text-xs text-muted-foreground">{m.collections_hidden_hint()}</p>
+				<ul class="mt-5 grid gap-6 opacity-70 md:grid-cols-2">
+					{#each hiddenCollections as collection (`${collection.source}:${collection.id}`)}
+						<li><CollectionCard {collection} /></li>
+					{/each}
+				</ul>
+			</details>
 		{/if}
 	{/if}
 </main>

@@ -39,16 +39,17 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  library     LibraryEntry[]
-  artworks    MovieArtwork[]
-  diary       DiaryEntry[]
-  lists       List[]
-  reviews     Review[]
-  comments    Comment[]
-  reviewLikes ReviewLike[]
-  listLikes   ListLike[]
-  following   Follow[]       @relation("follower")
-  followers   Follow[]       @relation("following")
+  library           LibraryEntry[]
+  artworks          MovieArtwork[]
+  hiddenCollections HiddenCollection[]
+  diary             DiaryEntry[]
+  lists             List[]
+  reviews           Review[]
+  comments          Comment[]
+  reviewLikes       ReviewLike[]
+  listLikes         ListLike[]
+  following         Follow[]           @relation("follower")
+  followers         Follow[]           @relation("following")
 }
 
 model Movie {
@@ -129,6 +130,23 @@ model TraktList {
   updatedAt   DateTime @updatedAt
 
   @@index([partIds], type: Gin)
+}
+
+/// Coleção que o usuário escondeu da aba Coleções (saga do TMDb ou lista oficial do Trakt).
+model HiddenCollection {
+  userId       String           @db.Uuid
+  source       CollectionSource
+  collectionId Int
+  createdAt    DateTime         @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, source, collectionId])
+}
+
+enum CollectionSource {
+  TMDB
+  TRAKT
 }
 
 model LibraryEntry {

@@ -619,5 +619,14 @@
 	"collections_filter_label": "Filtrar coleções",
 	"collections_trakt_syncing": "Procurando listas oficiais no Trakt… {count} filmes restantes",
 	"collections_trakt_waiting": "O Trakt pediu uma pausa; continuo em {seconds}s ({count} filmes restantes)",
-	"collection_readonly_trakt": "Listas oficiais vêm do Trakt. Os filmes apagados são os que faltam na sua biblioteca: use o + para adicionar."
+	"collection_readonly_trakt": "Listas oficiais vêm do Trakt. Os filmes apagados são os que faltam na sua biblioteca: use o + para adicionar.",
+	"collection_hide": "Ocultar coleção",
+	"collection_hide_named": "Ocultar a coleção {name}",
+	"collection_show": "Mostrar de novo",
+	"collection_show_named": "Mostrar de novo a coleção {name}",
+	"collection_hidden_note": "Esta coleção está oculta na aba Coleções.",
+	"collections_hidden_title": "Coleções ocultas ({count})",
+	"collections_hidden_hint": "Elas não aparecem acima. Você pode mostrar de novo quando quiser.",
+	"toast_collection_hidden": "Coleção ocultada",
+	"toast_collection_shown": "Coleção de volta na aba"
 }
