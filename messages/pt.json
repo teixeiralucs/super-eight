@@ -586,7 +586,7 @@
 	"lists_tab_lists": "Listas",
 	"lists_tab_collections": "Coleções",
 	"lists_tabs_label": "Listas e coleções",
-	"collections_intro": "Sagas do TMDb com os filmes que você tem na biblioteca. Elas se montam sozinhas conforme você adiciona filmes.",
+	"collections_intro": "Sagas do TMDb e listas oficiais do Trakt com os filmes que você tem na biblioteca. Elas se montam sozinhas conforme você adiciona filmes.",
 	"collections_empty_title": "Nenhuma coleção ainda",
 	"collections_empty_text": "Quando você adicionar um filme que faz parte de uma saga (Star Wars, O Senhor dos Anéis…), a coleção aparece aqui.",
 	"collection_kicker": "Coleção · TMDb",
@@ -611,5 +611,13 @@
 	"error_collection_not_found": "Coleção não encontrada.",
 	"fact_collection": "Coleção",
 	"collection_view_missing": "Faltam",
-	"collection_missing_label": "{title} — fora da sua biblioteca"
+	"collection_missing_label": "{title} — fora da sua biblioteca",
+	"collection_kicker_trakt": "Lista oficial · Trakt",
+	"collections_filter_all": "Todas",
+	"collections_filter_tmdb": "Sagas · TMDb",
+	"collections_filter_trakt": "Listas oficiais · Trakt",
+	"collections_filter_label": "Filtrar coleções",
+	"collections_trakt_syncing": "Procurando listas oficiais no Trakt… {count} filmes restantes",
+	"collections_trakt_waiting": "O Trakt pediu uma pausa; continuo em {seconds}s ({count} filmes restantes)",
+	"collection_readonly_trakt": "Listas oficiais vêm do Trakt. Os filmes apagados são os que faltam na sua biblioteca: use o + para adicionar."
 }

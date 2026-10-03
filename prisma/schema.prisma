@@ -79,6 +79,10 @@ model Movie {
   voteAverage      Float?
   /// Coleção do TMDb (saga) a que o filme pertence; nula = nenhuma.
   collectionId     Int?
+  /// ID do IMDb (o Trakt aceita para descobrir listas oficiais).
+  imdbId           String?
+  /// Quando as listas oficiais do Trakt com este filme foram buscadas; nulo = ainda não.
+  traktCheckedAt   DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -109,6 +113,22 @@ model Collection {
   updatedAt    DateTime @updatedAt
 
   movies Movie[]
+}
+
+/// Lista oficial do Trakt (curadoria: box sets, estúdios…), exibida como coleção (§6.8).
+/// Os filmes ficam em `partIds` (IDs do TMDb): a coleção aparece para quem tem algum deles.
+model TraktList {
+  id          Int      @id // ID do Trakt
+  slug        String
+  name        String
+  description String?
+  /// Filmes da lista com ID do TMDb, em ordem de lançamento.
+  partIds     Int[]    @default([])
+  /// Título (inglês, do Trakt) e data de cada filme, para os fantasmas (ver CollectionPart).
+  parts       Json     @default("[]")
+  updatedAt   DateTime @updatedAt
+
+  @@index([partIds], type: Gin)
 }
 
 model LibraryEntry {

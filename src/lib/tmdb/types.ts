@@ -93,6 +93,8 @@ export interface MovieCacheData {
 	voteAverage: number;
 	/** Coleção (saga) do TMDb; nula = nenhuma. */
 	collectionId: number | null;
+	/** ID do IMDb (ex.: "tt0114709"), para o Trakt. */
+	imdbId: string | null;
 }
 
 /** Coleção do TMDb para o cache `Collection`. */

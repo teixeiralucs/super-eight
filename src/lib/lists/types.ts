@@ -52,7 +52,11 @@ export type CollectionSort = (typeof COLLECTION_SORTS)[number];
 // ─── Coleções do TMDb (§6.8) ─────────────────────────────────────────
 // Só leitura: mostram os filmes da saga que o usuário tem na biblioteca.
 
+/** De onde vem a coleção: saga do TMDb ou lista oficial do Trakt (curadoria). */
+export type CollectionSource = 'tmdb' | 'trakt';
+
 export interface CollectionSummary {
+	source: CollectionSource;
 	id: number;
 	name: string;
 	/** Filmes da coleção na biblioteca do usuário. */
@@ -74,13 +78,16 @@ export interface CollectionGhost {
 	id: number;
 	title: string;
 	originalTitle: string;
+	/** Nulo nas listas do Trakt: o card busca no TMDb quando aparece. */
 	posterPath: string | null;
 	releaseDate: Date | null;
 }
 
 export interface CollectionDetail {
+	source: CollectionSource;
 	id: number;
 	name: string;
+	description: string | null;
 	total: number;
 	backdropPath: string | null;
 	items: CollectionItem[];

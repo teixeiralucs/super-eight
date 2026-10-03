@@ -43,6 +43,7 @@ export interface RawMovieDetails extends Omit<RawMovie, 'genre_ids'> {
 	genres: { id: number; name: string }[];
 	origin_country?: string[];
 	production_countries?: { iso_3166_1: string }[];
+	imdb_id?: string | null;
 	/** Saga do TMDb (ex.: "Star Wars Collection"), no idioma pedido. */
 	belongs_to_collection?: { id: number; name: string } | null;
 	credits?: {
@@ -199,7 +200,8 @@ export function toMovieCache(raw: RawMovieForCache): MovieCacheData {
 		directors: directorsOf(raw),
 		countries: countriesOf(raw),
 		voteAverage: Math.round(raw.vote_average * 10) / 10,
-		collectionId: raw.belongs_to_collection?.id ?? null
+		collectionId: raw.belongs_to_collection?.id ?? null,
+		imdbId: raw.imdb_id || null
 	};
 }
 

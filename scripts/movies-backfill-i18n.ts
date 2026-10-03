@@ -100,6 +100,7 @@ await Promise.all(
 						directors: data.directors,
 						countries: data.countries,
 						runtime: data.runtime,
+						imdbId: data.imdbId,
 						collectionId
 					}
 				});

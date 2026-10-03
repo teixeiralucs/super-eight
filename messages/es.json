@@ -586,7 +586,7 @@
 	"lists_tab_lists": "Listas",
 	"lists_tab_collections": "Colecciones",
 	"lists_tabs_label": "Listas y colecciones",
-	"collections_intro": "Sagas de TMDb con las películas de tu biblioteca. Se arman solas a medida que agregas películas.",
+	"collections_intro": "Sagas de TMDb y listas oficiales de Trakt con las películas de tu biblioteca. Se arman solas a medida que agregas películas.",
 	"collections_empty_title": "Aún no hay colecciones",
 	"collections_empty_text": "Cuando agregues una película que forma parte de una saga (Star Wars, El Señor de los Anillos…), la colección aparece aquí.",
 	"collection_kicker": "Colección · TMDb",
@@ -611,5 +611,13 @@
 	"error_collection_not_found": "Colección no encontrada.",
 	"fact_collection": "Colección",
 	"collection_view_missing": "Faltan",
-	"collection_missing_label": "{title} — fuera de tu biblioteca"
+	"collection_missing_label": "{title} — fuera de tu biblioteca",
+	"collection_kicker_trakt": "Lista oficial · Trakt",
+	"collections_filter_all": "Todas",
+	"collections_filter_tmdb": "Sagas · TMDb",
+	"collections_filter_trakt": "Listas oficiales · Trakt",
+	"collections_filter_label": "Filtrar colecciones",
+	"collections_trakt_syncing": "Buscando listas oficiales en Trakt… faltan {count} películas",
+	"collections_trakt_waiting": "Trakt pidió una pausa; sigo en {seconds}s (faltan {count} películas)",
+	"collection_readonly_trakt": "Las listas oficiales vienen de Trakt. Las películas atenuadas son las que faltan en tu biblioteca: usa + para agregarlas."
 }

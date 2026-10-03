@@ -93,6 +93,11 @@ O Super Eight se apoia no conceito de Tracking de Filmes, semelhante ao Letterbo
 - 3.6-A.1. Campos: `id` (Int, = ID da coleção no TMDb), `namePt`/`nameEn`/`nameEs` (nome por idioma; pt/es nulos = sem tradução, a UI cai no inglês), `posterPath`, `backdropPath`, `partIds` (todos os filmes da coleção, por lançamento — o "3 de 8"), `parts` (JSON com título por idioma, pôster e data de cada parte, para os fantasmas), `updatedAt`. `Movie.collectionId` aponta para ela (`belongs_to_collection` do TMDb; `ON DELETE SET NULL`).
 - 3.6-A.2. Preenchimento: `ensureMovie` grava a coleção na primeira vez que um filme dela entra no cache; `npm run movies:backfill-i18n` renova filmes e coleções.
 
+## **3.6-B. Entidade: TraktList (Lista oficial do Trakt)**
+
+- _Objetivo: cache das listas oficiais do Trakt (curadoria: box sets, filmografias, estúdios), exibidas como coleções (§6.8.5)._
+- 3.6-B.1. Campos: `id` (Int, = ID do Trakt), `slug`, `name`, `description` (nula se repete o nome), `partIds` (IDs do TMDb, por lançamento; índice GIN para `hasSome`), `parts` (JSON no formato de `Collection.parts`, só com o título em inglês do Trakt), `updatedAt`. `Movie.imdbId` e `Movie.traktCheckedAt` (nulo = ainda não verificado) controlam a descoberta.
+
 ## **3.7. Entidade: ListMovie (Tabela Pivô)**
 
 - 3.7.1. Campos: `position` (Int — ordem do filme na lista, permite reordenação), `note` (texto opcional), `addedAt`.
@@ -466,6 +471,7 @@ model CatalogEntry {
 
 - 6.8.1. Aba **Coleções** em `/lists`: uma por saga com pelo menos um filme na biblioteca do usuário, com o fundo da coleção, o nome no idioma de quem vê e o progresso ("3 de 8", barra que fica rosa ao completar). Ordem: as mais completas primeiro.
 - 6.8.2. `/lists/collections/[id]` (Protegida): os filmes da coleção que estão na biblioteca, com o estado de cada um, e os que faltam como **fantasmas** (apagados e sem cor; ganham cor ao passar o mouse; o "+" adiciona em Quero ver e a página recarrega). **Não se edita** (nada a remover ou arrastar): filtros Todos/Assistidos/Quero ver/Favoritos/Faltam e ordenação (ordem da saga — padrão —, título, sua nota, última vez assistido), sem salvar. Na ordem da saga os fantasmas ficam intercalados pela data de lançamento; nas outras, vão para o fim, também por lançamento.
+- 6.8.5. **Listas oficiais do Trakt** (`TRAKT_CLIENT_ID`; ausente = desligado): descobertas por filme (`GET /movies/:imdb/lists/official`, com os itens de cada lista nova em `GET /lists/:id/items/movie?extended=full`). Para respeitar o limite do Trakt (~1000 chamadas/5 min), a descoberta **não** acontece ao adicionar filmes: a aba Coleções chama a action `syncTrakt` em lotes (até ~8 s cada, filmes mais recentes primeiro) até verificar toda a biblioteca, pausando quando o Trakt pede (`Retry-After`). Na aba, um filtro separa Sagas · TMDb e Listas oficiais · Trakt. Listas do Trakt com 80%+ dos filmes de uma saga do TMDb (ex.: "Toy Story Collection") ou de outra lista do Trakt não aparecem. Página: `/lists/collections/trakt/[id]`, igual à das sagas; o fundo é o do 1º filme da lista que o usuário tem, e os fantasmas buscam pôster e título traduzido em `GET /api/movie/[id]/card` quando entram na tela.
 - 6.8.4. Escopo: são as coleções do TMDb (`belongs_to_collection`), que por regra do TMDb só agrupam franquias/sequências. Filmografias de diretor, box sets de estúdio e curadorias (ex.: listas oficiais do Trakt) não existem como coleção no TMDb.
 - 6.8.3. Detalhes do filme: o campo **Coleção** na barra lateral leva à coleção (logado).
 

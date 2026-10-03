@@ -4,14 +4,23 @@
 	import { m } from '$lib/paraglide/messages';
 	import { backdropUrl } from '$lib/tmdb/images';
 
-	/** Card de coleção do TMDb: fundo da saga, nome e quantos filmes dela o usuário tem. */
+	/**
+	 * Card de coleção (saga do TMDb ou lista oficial do Trakt): fundo, nome e quantos filmes
+	 * dela o usuário tem.
+	 */
 	let { collection }: { collection: CollectionSummary } = $props();
+
+	const href = $derived(
+		collection.source === 'trakt'
+			? resolve('/(app)/lists/collections/trakt/[id]', { id: String(collection.id) })
+			: resolve('/(app)/lists/collections/[id]', { id: String(collection.id) })
+	);
 
 	const complete = $derived(collection.owned >= collection.total);
 </script>
 
 <a
-	href={resolve('/(app)/lists/collections/[id]', { id: String(collection.id) })}
+	{href}
 	aria-label={m.collection_open({ name: collection.name })}
 	class="group relative isolate flex aspect-[16/8] flex-col justify-end overflow-hidden rounded-3xl bg-white/[0.03] p-6 ring-1 ring-white/10 transition duration-300 hover:ring-2 hover:ring-neon-pink md:p-8"
 >
@@ -38,7 +47,7 @@
 	></div>
 
 	<p class="text-[11px] font-semibold tracking-[0.2em] text-neon-cyan uppercase">
-		{m.collection_kicker()}
+		{collection.source === 'trakt' ? m.collection_kicker_trakt() : m.collection_kicker()}
 	</p>
 	<div class="mt-2 flex items-end justify-between gap-6">
 		<h2

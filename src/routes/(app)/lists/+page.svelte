@@ -1,6 +1,10 @@
 <script lang="ts">
+	import { deserialize } from '$app/forms';
+	import { invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { untrack } from 'svelte';
+	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
 	import LibraryBigIcon from '@lucide/svelte/icons/library-big';
 	import ListVideoIcon from '@lucide/svelte/icons/list-video';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -13,13 +17,74 @@
 
 	/**
 	 * Duas divisões (earlySetup.md §6.1.7, §6.8): **Listas**, criadas e editadas pelo usuário,
-	 * e **Coleções**, sagas do TMDb montadas a partir da biblioteca (só leitura).
+	 * e **Coleções**, sagas do TMDb e listas oficiais do Trakt montadas a partir da biblioteca
+	 * (só leitura).
 	 */
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
 	const tab = $derived(
 		page.url.searchParams.get('tab') === 'collections' ? 'collections' : 'lists'
 	);
+
+	// ── Coleções: filtro por origem ──
+	let source = $state<'all' | 'tmdb' | 'trakt'>('all');
+	const sourceCounts = $derived({
+		all: data.collections.length,
+		tmdb: data.collections.filter((c) => c.source === 'tmdb').length,
+		trakt: data.collections.filter((c) => c.source === 'trakt').length
+	});
+	const shownCollections = $derived(
+		source === 'all' ? data.collections : data.collections.filter((c) => c.source === source)
+	);
+	const sourceLabel = {
+		all: m.collections_filter_all,
+		tmdb: m.collections_filter_tmdb,
+		trakt: m.collections_filter_trakt
+	};
+
+	// ── Busca das listas oficiais do Trakt em lotes (limite de chamadas do Trakt) ──
+	let pending = $derived(data.traktPending);
+	let waiting = $state<number | null>(null);
+	let syncing = false;
+
+	async function syncTrakt(stopped: () => boolean) {
+		if (syncing) return;
+		syncing = true;
+		while (!stopped() && pending) {
+			const response = await fetch('?/syncTrakt', {
+				method: 'POST',
+				body: new FormData(),
+				headers: { 'x-sveltekit-action': 'true' }
+			}).catch(() => null);
+			const result = response ? deserialize(await response.text()) : null;
+			if (result?.type !== 'success' || !result.data) break;
+			const { remaining, retryAfter } = result.data as {
+				remaining: number;
+				retryAfter: number | null;
+			};
+			const progressed = remaining < pending;
+			pending = remaining;
+			// Novas coleções podem ter aparecido.
+			if (progressed) await invalidateAll();
+			if (retryAfter && remaining) {
+				for (waiting = retryAfter; waiting > 0 && !stopped(); waiting--) {
+					await new Promise((done) => setTimeout(done, 1000));
+				}
+				waiting = null;
+			}
+		}
+		syncing = false;
+	}
+
+	// Só depende da aba: `untrack` evita que o próprio progresso (`pending`) reinicie a busca.
+	$effect(() => {
+		if (tab !== 'collections') return;
+		let stopped = false;
+		untrack(() => syncTrakt(() => stopped));
+		return () => {
+			stopped = true;
+		};
+	});
 
 	// Reabre o formulário se a criação voltou com erro de validação.
 	let creating = $derived(Boolean(form?.errors));
@@ -119,9 +184,35 @@
 		{/if}
 	{:else}
 		<p class="max-w-2xl text-sm text-muted-foreground">{m.collections_intro()}</p>
+		{#if pending}
+			<p role="status" class="flex items-center gap-2 text-xs text-white/60">
+				<LoaderCircleIcon class="size-3.5 animate-spin" aria-hidden="true" />
+				{waiting
+					? m.collections_trakt_waiting({ seconds: waiting, count: pending })
+					: m.collections_trakt_syncing({ count: pending })}
+			</p>
+		{/if}
+		{#if sourceCounts.tmdb && sourceCounts.trakt}
+			<div class="flex gap-1" role="group" aria-label={m.collections_filter_label()}>
+				{#each ['all', 'tmdb', 'trakt'] as const as value (value)}
+					<button
+						type="button"
+						aria-pressed={source === value}
+						onclick={() => (source = value)}
+						class={[
+							'rounded-full px-4 py-1.5 text-xs transition',
+							source === value ? 'bg-white/15 text-white' : 'text-white/60 hover:text-white'
+						]}
+					>
+						{sourceLabel[value]()}
+						<span class="ml-1 tabular-nums opacity-60">{sourceCounts[value]}</span>
+					</button>
+				{/each}
+			</div>
+		{/if}
 		{#if data.collections.length}
 			<ul class="grid gap-6 md:grid-cols-2">
-				{#each data.collections as collection (collection.id)}
+				{#each shownCollections as collection (`${collection.source}:${collection.id}`)}
 					<li><CollectionCard {collection} /></li>
 				{/each}
 			</ul>

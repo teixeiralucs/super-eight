@@ -586,7 +586,7 @@
 	"lists_tab_lists": "Lists",
 	"lists_tab_collections": "Collections",
 	"lists_tabs_label": "Lists and collections",
-	"collections_intro": "TMDb sagas with the films in your library. They build themselves as you add films.",
+	"collections_intro": "TMDb sagas and Trakt official lists with the films in your library. They build themselves as you add films.",
 	"collections_empty_title": "No collections yet",
 	"collections_empty_text": "When you add a film that belongs to a saga (Star Wars, The Lord of the Rings…), its collection shows up here.",
 	"collection_kicker": "Collection · TMDb",
@@ -611,5 +611,13 @@
 	"error_collection_not_found": "Collection not found.",
 	"fact_collection": "Collection",
 	"collection_view_missing": "Missing",
-	"collection_missing_label": "{title} — not in your library"
+	"collection_missing_label": "{title} — not in your library",
+	"collection_kicker_trakt": "Official list · Trakt",
+	"collections_filter_all": "All",
+	"collections_filter_tmdb": "Sagas · TMDb",
+	"collections_filter_trakt": "Official lists · Trakt",
+	"collections_filter_label": "Filter collections",
+	"collections_trakt_syncing": "Looking for Trakt official lists… {count} films left",
+	"collections_trakt_waiting": "Trakt asked for a pause; resuming in {seconds}s ({count} films left)",
+	"collection_readonly_trakt": "Official lists come from Trakt. Faded films are the ones missing from your library: use + to add them."
 }
