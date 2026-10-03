@@ -4,7 +4,8 @@ import { syncPreferencesOnLogin } from '$lib/server/preferences';
 import type { RequestHandler } from './$types';
 
 // Exceção permitida à regra de Form Actions (earlySetup.md §5.1.4):
-// o Supabase redireciona o navegador para cá após o OAuth / confirmação de e-mail.
+// o Supabase redireciona o navegador para cá após o OAuth, a confirmação de e-mail e o link
+// de recuperação de senha (este com `next=/reset-password`).
 export const GET: RequestHandler = async ({ url, locals, cookies }) => {
 	const code = url.searchParams.get('code');
 	const next = safeRedirectPath(url.searchParams.get('next'));
@@ -20,5 +21,7 @@ export const GET: RequestHandler = async ({ url, locals, cookies }) => {
 		}
 	}
 
+	// Link de recuperação vencido/usado: volta para pedir outro.
+	if (next === '/reset-password') redirect(303, '/forgot-password?expired=1');
 	redirect(303, '/login?error=callback');
 };

@@ -22,5 +22,17 @@ export const signupSchema = z.object({
 		})
 });
 
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z
+	.object({
+		password: z.string().min(8, { error: () => m.error_password_short() }),
+		confirm: z.string()
+	})
+	.refine((value) => value.password === value.confirm, {
+		path: ['confirm'],
+		error: () => m.error_passwords_differ()
+	});
+
 export type LoginInput = z.infer<typeof loginSchema>;
 export type SignupInput = z.infer<typeof signupSchema>;

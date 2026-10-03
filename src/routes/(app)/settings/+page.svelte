@@ -102,6 +102,11 @@
 			>
 				{m.settings_save_profile()}
 			</button>
+			<a
+				href={resolve('/reset-password')}
+				class="text-sm text-white/60 underline-offset-4 transition hover:text-white hover:underline"
+				>{m.settings_change_password()}</a
+			>
 		</div>
 	</form>
 

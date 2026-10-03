@@ -41,11 +41,11 @@ const i18n: Handle = ({ event, resolve }) =>
 	});
 
 /** Rotas que exigem login (earlySetup.md §6.1). */
-const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/feed', '/settings'];
+const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/feed', '/settings', '/reset-password'];
 /** Protegidas só na rota exata: `/lists/[id]` público abre para qualquer pessoa. */
 const PROTECTED_EXACT = ['/lists'];
 /** Rotas que não fazem sentido para quem já está logado. */
-const GUEST_ONLY_PREFIXES = ['/login', '/signup'];
+const GUEST_ONLY_PREFIXES = ['/login', '/signup', '/forgot-password'];
 
 const matches = (pathname: string, prefixes: string[]) =>
 	prefixes.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));

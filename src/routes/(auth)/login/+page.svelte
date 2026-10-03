@@ -78,5 +78,10 @@
 		required
 		error={errors?.password?.[0]}
 	/>
+	<a
+		href={resolve('/forgot-password')}
+		class="-mt-3 self-end text-xs text-white/55 underline-offset-4 transition hover:text-white hover:underline"
+		>{m.login_forgot()}</a
+	>
 	<SubmitButton {submitting} label={m.auth_sign_in()} busyLabel={m.signing_in()} />
 </form>
