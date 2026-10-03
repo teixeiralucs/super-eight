@@ -31,8 +31,6 @@ export interface PosterMovie {
 	title: string;
 	originalTitle: string;
 	posterPath: string | null;
-	/** Logo do título; ausente/nulo = título em texto (ex.: resultados da busca). */
-	logoPath?: string | null;
 	year: number | null;
 	directors: string[];
 	countries: string[];
