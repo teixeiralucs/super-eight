@@ -411,6 +411,7 @@ model CatalogEntry {
 - 6.1.8. `/list/[id]`: lista pública ou privada (conforme `isPublic`); se privada, apenas o dono acessa.
 - 6.1.9. `/u/[username]`: perfil (aberto a visitantes): avatar, nome, @, bio, desde quando, números (assistidos, reviews, listas, seguidores, seguindo) e Seguir/Deixar de seguir (ou "Editar perfil" no próprio). Seções: favoritos, assistiu recentemente (datas e notas — **anotações do diário nunca aparecem**), reviews e listas públicas. Perfil privado de outra pessoa: só cabeçalho, números e listas públicas.
 - 6.1.10. `/feed` (Protegida): sessões assistidas por quem o usuário segue (perfis privados ficam de fora; sem anotações), agrupadas por dia (Hoje/Ontem/data), com pôster, título original e traduzido, nota e quando foi registrada. Feed vazio leva à busca de pessoas.
+- 6.1.11. `/settings/import` (Protegida): importador do Letterboxd (§6.7).
 
 ## **6.6. Comunidade**
 
@@ -447,6 +448,12 @@ model CatalogEntry {
 - 6.5.3. Preferências: `/settings` (logado) e o seletor de idioma do rodapé/telas de login (visitantes) enviam para `POST /preferences`, que grava cookies e, se logado, `User.locale`/`User.region`, e recarrega a página. No login (senha, Google, cadastro) o perfil vale para outros dispositivos; o que o perfil não tem é preenchido com o que o navegador já usa.
 - 6.5.4. Títulos: **o original em destaque e, embaixo, a tradução** no idioma de quem vê (cards, detalhes, diário, carrosséis); a linha da tradução existe sempre nos cards para manter a grade alinhada. Onde há **logo** do TMDb (página do filme e carrossel de sugestões do dashboard), ela substitui o título original e o título em texto fica embaixo; na página do filme, o título original e o traduzido ficam no topo da barra lateral (a logo pode estar em outro idioma). Os cards de pôster (biblioteca, listas, perfil, busca) e o diário seguem em texto. A biblioteca ordena por título original.
 - 6.5.5. Formatação: datas, meses, nomes de países e de idiomas via `Intl` no idioma atual (`$lib/format`). O campo de data do diário segue o idioma (pt/es dd/mm/aaaa; en mm/dd/yyyy).
+
+## **6.7. Importar do Letterboxd**
+
+- 6.7.1. Entrada: o .zip de Settings → Data → Export Your Data do Letterboxd, lido **no navegador** (`fflate` + leitor de CSV próprio em `$lib/import`). Pastas `deleted/` e `orphaned/` são ignoradas.
+- 6.7.2. Mapeamento: `diary.csv` → sessões (data assistida, nota ×2 na escala de 10, rewatch); o texto de `reviews.csv` da mesma sessão vira a anotação (até 500 caracteres) e a review mais recente de cada filme vira a review da comunidade (só se ainda não houver). `watched.csv` sem sessão → uma sessão na data em que foi marcado (Assistido exige diário, §3.4.3). `ratings.csv` → nota atual; `likes/films.csv` → favorito (só assistidos); `watchlist.csv` → Quero ver; `lists/*.csv` → listas privadas, tipo coleção, na ordem original. Como o diário e as reviews trazem o URI da sessão (não do filme), a chave é nome + ano.
+- 6.7.3. Envio em lotes por Form Actions da página (`resolve` → `films` → `list`, JSON no campo `payload`): nome + ano → ID do TMDb (`findMovieId`: ano exato, depois lançamento no ano, ano vizinho), depois biblioteca/diário/reviews e por fim as listas (em partes de 50 filmes). Cada chamada é curta (limite de tempo da Vercel) e repetível: sessões na mesma data são ignoradas; nota, favorito e review existentes são mantidos; lista com o mesmo nome é completada em vez de duplicada. Filmes não encontrados aparecem no fim, com link para a busca.
 
 # **7. Deploy, Infraestrutura e CI/CD**
 

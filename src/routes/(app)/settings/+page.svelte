@@ -3,6 +3,7 @@
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import { countryName } from '$lib/format';
 	import { LOCALE_NAMES, locales, REGIONS } from '$lib/i18n';
@@ -109,6 +110,18 @@
 			>
 		</div>
 	</form>
+
+	<!-- Importar do Letterboxd (§6.7) -->
+	<a
+		href={resolve('/settings/import')}
+		class="{card} flex-row items-center justify-between transition hover:border-white/25"
+	>
+		<span>
+			<span class="block {label}">{m.settings_import()}</span>
+			<span class="mt-1 block text-sm text-muted-foreground">{m.settings_import_hint()}</span>
+		</span>
+		<ArrowRightIcon class="size-5 shrink-0 text-white/60" aria-hidden="true" />
+	</a>
 
 	<h2 class="mt-4 font-display text-2xl font-semibold tracking-[-0.02em]">{m.settings_title()}</h2>
 

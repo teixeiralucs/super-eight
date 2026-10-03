@@ -209,3 +209,53 @@ export function getMovieImages(id: number, fetchFn?: typeof fetch): Promise<Movi
 		};
 	});
 }
+
+type SearchHit = Pick<RawMovie, 'id' | 'release_date'>;
+
+/** TMDb limita por segundo: uma nova tentativa depois de uma pausa quando responde 429. */
+async function withRetry<T>(load: () => Promise<T>, attempts = 3): Promise<T> {
+	for (let attempt = 1; ; attempt++) {
+		try {
+			return await load();
+		} catch (err) {
+			if (!(err instanceof TMDbError) || err.status !== 429 || attempt >= attempts) throw err;
+			await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+		}
+	}
+}
+
+/**
+ * ID do TMDb de um filme pelo título e ano (importador do Letterboxd, que não exporta o ID).
+ * Ordem: estreia no ano exato → lançado naquele ano em algum país → ano vizinho → sem ano.
+ * Entre os resultados, o TMDb já ordena por relevância/popularidade.
+ */
+export function findMovieId(
+	title: string,
+	year: number | null,
+	fetchFn?: typeof fetch
+): Promise<number | null> {
+	const key = `find:${title.toLowerCase()}:${year ?? ''}`;
+	return cached(key, GENRES_TTL_MS, async () => {
+		const search = async (params: Record<string, string | number>) =>
+			(
+				await withRetry(() =>
+					tmdbFetch<RawPage<SearchHit>>(
+						'/search/movie',
+						{ query: title, include_adult: 'false', ...params },
+						fetchFn
+					)
+				)
+			).results;
+
+		if (year) {
+			const exact = await search({ primary_release_year: year });
+			if (exact[0]) return exact[0].id;
+			const released = await search({ year });
+			if (released[0]) return released[0].id;
+		}
+		const any = await search({});
+		if (!year) return any[0]?.id ?? null;
+		const near = any.find((hit) => Math.abs(Number(hit.release_date?.slice(0, 4)) - year) <= 1);
+		return near?.id ?? null;
+	});
+}
