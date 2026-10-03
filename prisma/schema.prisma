@@ -65,6 +65,10 @@ model Movie {
   posterPt         String?
   posterEn         String?
   posterEs         String?
+  /// Logo padrão do título para cada idioma de quem vê (ver pickLogo); o DNA do usuário tem prioridade.
+  logoPt           String?
+  logoEn           String?
+  logoEs           String?
   backdropPath     String?
   releaseDate      DateTime? @db.Date
   runtime          Int?

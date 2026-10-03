@@ -56,7 +56,7 @@ O Super Eight se apoia no conceito de Tracking de Filmes, semelhante ao Letterbo
 ## **3.3. Entidade: Movie (Filme — Cache Local do TMDb)**
 
 - _Objetivo: evitar chamadas excessivas à API do TMDb, garantir integridade referencial e permitir renderizar a grade sem consultar a API._
-- 3.3.1. Campos: `id` (Int, = ID do TMDb), `originalTitle` e `originalLanguage` (o título no idioma original — português, inglês, russo, chinês… — é o **destaque** na UI), `titlePt`/`titleEn`/`titleEs` (traduções; nulo = sem tradução ou igual ao original), `posterPt`/`posterEn`/`posterEs` (o texto do pôster muda por idioma), `backdropPath`, `releaseDate`, `runtime`, `genreIds` (IDs do TMDb; o nome é traduzido na hora), `directors`, `countries`, `voteAverage`, `createdAt`, `updatedAt` (data da última sincronização).
+- 3.3.1. Campos: `id` (Int, = ID do TMDb), `originalTitle` e `originalLanguage` (o título no idioma original — português, inglês, russo, chinês… — é o **destaque** na UI), `titlePt`/`titleEn`/`titleEs` (traduções; nulo = sem tradução ou igual ao original), `posterPt`/`posterEn`/`posterEs` (o texto do pôster muda por idioma), `logoPt`/`logoEn`/`logoEs` (logo padrão do título para cada idioma de quem vê, escolhida como na página do filme), `backdropPath`, `releaseDate`, `runtime`, `genreIds` (IDs do TMDb; o nome é traduzido na hora), `directors`, `countries`, `voteAverage`, `createdAt`, `updatedAt` (data da última sincronização).
 - 3.3.1-A. Traduções vêm de `append_to_response=translations` (pt-BR > pt-PT; en-US > en-GB; es-MX > outros países latinos > es-ES) e pôsteres de `images` (mais votado por idioma). `npm run movies:backfill-i18n` (re)preenche os filmes já cacheados.
 - 3.3.2. Informações técnicas mais pesadas (elenco, equipe, trailers) **não** são persistidas: são buscadas no TMDb sob demanda, com cache HTTP (ver 4.3.3).
 
@@ -161,6 +161,9 @@ model Movie {
   posterPt         String?
   posterEn         String?
   posterEs         String?
+  logoPt           String?
+  logoEn           String?
+  logoEs           String?
   backdropPath     String?
   releaseDate      DateTime? @db.Date
   runtime          Int?
@@ -442,7 +445,7 @@ model CatalogEntry {
 - 6.5.1. Idiomas: **português (base), inglês e espanhol (América Latina)**, com **Paraglide JS** (`messages/{pt,en,es}.json`). Menus, textos, mensagens de validação e erros do servidor são traduzidos. Rótulos usados fora de componentes (navegação, ordenações, abas) são **funções**, nunca constantes de módulo — no servidor, uma constante ficaria presa ao idioma da primeira requisição. Mensagens do Zod usam `error: () => m.chave()`.
 - 6.5.2. Escolha do idioma: sem prefixo na URL. Ordem: cookie `locale` → idioma do navegador → pt. A região é independente: cookie `region` → país do `Accept-Language` → padrão do idioma (pt→BR, en→US, es→MX). O hook `i18n` resolve os dois, grava os cookies na primeira visita e expõe `locals.locale`/`locals.region`; `<html lang>` acompanha.
 - 6.5.3. Preferências: `/settings` (logado) e o seletor de idioma do rodapé/telas de login (visitantes) enviam para `POST /preferences`, que grava cookies e, se logado, `User.locale`/`User.region`, e recarrega a página. No login (senha, Google, cadastro) o perfil vale para outros dispositivos; o que o perfil não tem é preenchido com o que o navegador já usa.
-- 6.5.4. Títulos: **o original em destaque e, embaixo, a tradução** no idioma de quem vê (cards, detalhes, diário, carrosséis); a linha da tradução existe sempre nos cards para manter a grade alinhada. A biblioteca ordena por título original.
+- 6.5.4. Títulos: **o original em destaque e, embaixo, a tradução** no idioma de quem vê (cards, detalhes, diário, carrosséis); a linha da tradução existe sempre nos cards para manter a grade alinhada. Onde há **logo** do TMDb (página do filme, cards de pôster da biblioteca/listas/perfil e carrossel de sugestões), ela substitui o título original e o título em texto fica embaixo; na página do filme, o título original e o traduzido ficam no topo da barra lateral (a logo pode estar em outro idioma). Busca e diário seguem em texto. A biblioteca ordena por título original.
 - 6.5.5. Formatação: datas, meses, nomes de países e de idiomas via `Intl` no idioma atual (`$lib/format`). O campo de data do diário segue o idioma (pt/es dd/mm/aaaa; en mm/dd/yyyy).
 
 # **7. Deploy, Infraestrutura e CI/CD**

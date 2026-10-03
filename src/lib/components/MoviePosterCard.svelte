@@ -84,7 +84,12 @@
 			{/if}
 		</div>
 
-		<CardTitle title={movie.title} originalTitle={movie.originalTitle} year={movie.year} />
+		<CardTitle
+			title={movie.title}
+			originalTitle={movie.originalTitle}
+			year={movie.year}
+			logoPath={movie.logoPath}
+		/>
 		<MovieMetaLine
 			{meta}
 			class="mt-0.5 text-xs text-muted-foreground"

@@ -2,6 +2,7 @@
 // também nos scripts de linha de comando (ver scripts/movies-backfill-i18n.ts).
 import type {
 	CrewMember,
+	Localized,
 	MovieCacheData,
 	MovieImage,
 	TMDbMovie,
@@ -273,6 +274,22 @@ export function pickLogo(
 	}
 	return logos[0]?.path ?? null;
 }
+
+/** Logo padrão para cada idioma do app, para o cache `Movie` (cards). */
+export const localizedLogos = (
+	logos: MovieImage[],
+	originalLanguage: string | null
+): Localized<string | null> => ({
+	pt: pickLogo(logos, originalLanguage, 'pt'),
+	en: pickLogo(logos, originalLanguage, 'en'),
+	es: pickLogo(logos, originalLanguage, 'es')
+});
+
+/** Imagens cruas → as mais votadas primeiro; `language` nulo = sem texto. */
+export const toImages = (images: RawImage[]): MovieImage[] =>
+	[...images]
+		.sort((a, b) => b.vote_average - a.vote_average)
+		.map((image) => ({ path: image.file_path, language: image.iso_639_1 }));
 
 /**
  * `trailerLanguage`: ISO 639-1 de quem vê (trailer e logo preferidos).

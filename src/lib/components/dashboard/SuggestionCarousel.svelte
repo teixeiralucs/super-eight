@@ -7,9 +7,10 @@
 	import ChevronLeftIcon from '@lucide/svelte/icons/chevron-left';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import MovieMetaLine from '$lib/components/MovieMetaLine.svelte';
+	import MovieLogo from '$lib/components/movie/MovieLogo.svelte';
 	import { movieMeta, yearOf } from '$lib/format';
 	import type { MovieCard } from '$lib/library/types';
-	import { backdropSrcset, backdropUrl } from '$lib/tmdb/images';
+	import { backdropSrcset, backdropUrl, logoUrl } from '$lib/tmdb/images';
 	import { trackVisibility } from '$lib/attachments/visibility';
 
 	// Filmes aleatórios da própria biblioteca (assistidos ou não). O card inteiro leva ao filme.
@@ -23,13 +24,21 @@
 	const current = $derived(movies[index]);
 	const pad = (n: number) => String(n).padStart(2, '0');
 
-	/** Só troca depois que o próximo backdrop baixou (evita tela escura em rede lenta). */
+	/** Só troca depois que o próximo backdrop e a logo baixaram (evita tela escura em rede lenta). */
 	async function goTo(next: number) {
 		const target = (next + movies.length) % movies.length;
 		const path = movies[target]?.backdropPath;
 		if (path) {
 			const img = new Image();
 			img.src = backdropUrl(path, 'w1280')!;
+			await img.decode().catch(() => {});
+		}
+		// A logo também (mesmo modo CORS do <img> da logo, para reaproveitar o cache).
+		const logo = logoUrl(movies[target]?.logoPath ?? null);
+		if (logo) {
+			const img = new Image();
+			img.crossOrigin = 'anonymous';
+			img.src = logo;
 			await img.decode().catch(() => {});
 		}
 		index = target;
@@ -93,13 +102,25 @@
 				<div in:fade={{ duration: prefersReducedMotion.current ? 0 : 500, delay: 150 }}>
 					<div class="flex items-end justify-between gap-6">
 						<div class="min-w-0">
-							<h2
-								class="font-display text-[clamp(2rem,4vw,3.5rem)] leading-[0.95] font-semibold tracking-[-0.03em]"
-							>
-								{current.originalTitle}
-							</h2>
-							{#if current.title !== current.originalTitle}
+							{#if current.logoPath}
+								<!-- Logo no lugar do título; embaixo, o título no idioma de quem vê -->
+								<h2>
+									<span class="sr-only">{current.originalTitle}</span>
+									<MovieLogo
+										path={current.logoPath}
+										class="h-[clamp(4rem,9vw,7.5rem)] w-auto max-w-[min(100%,28rem)] object-contain object-left-bottom"
+									/>
+								</h2>
 								<p class="mt-2 text-sm text-white/60">{current.title}</p>
+							{:else}
+								<h2
+									class="font-display text-[clamp(2rem,4vw,3.5rem)] leading-[0.95] font-semibold tracking-[-0.03em]"
+								>
+									{current.originalTitle}
+								</h2>
+								{#if current.title !== current.originalTitle}
+									<p class="mt-2 text-sm text-white/60">{current.title}</p>
+								{/if}
 							{/if}
 						</div>
 						{#if yearOf(current.releaseDate)}

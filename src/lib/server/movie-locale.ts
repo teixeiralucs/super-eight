@@ -12,6 +12,9 @@ export const movieCardSelect = {
 	posterPt: true,
 	posterEn: true,
 	posterEs: true,
+	logoPt: true,
+	logoEn: true,
+	logoEs: true,
 	backdropPath: true,
 	releaseDate: true,
 	runtime: true,
@@ -24,6 +27,7 @@ export type MovieCardRow = Prisma.MovieGetPayload<{ select: typeof movieCardSele
 
 const TITLE = { pt: 'titlePt', en: 'titleEn', es: 'titleEs' } as const;
 const POSTER = { pt: 'posterPt', en: 'posterEn', es: 'posterEs' } as const;
+const LOGO = { pt: 'logoPt', en: 'logoEn', es: 'logoEs' } as const;
 
 /**
  * Linha do cache → card no idioma de quem vê. `title` é a tradução (ou o original, se não
@@ -37,6 +41,7 @@ export function localizeCard(row: MovieCardRow, locale: Locale): MovieCard {
 		originalTitle,
 		posterPath: row[POSTER[locale]] ?? row.posterEn ?? row.posterPt ?? row.posterEs,
 		backdropPath: row.backdropPath,
+		logoPath: row[LOGO[locale]],
 		releaseDate: row.releaseDate,
 		runtime: row.runtime,
 		genreIds: row.genreIds,

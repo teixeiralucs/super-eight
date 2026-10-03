@@ -1,20 +1,14 @@
 import { TMDB_READ_ACCESS_TOKEN } from '$env/static/private';
 import { TMDB_LANGUAGE, type Locale } from '$lib/i18n';
-import type {
-	MovieCacheData,
-	MovieImage,
-	MovieImages,
-	TMDbMovie,
-	TMDbMovieFull
-} from '$lib/tmdb/types';
+import type { MovieCacheData, MovieImages, TMDbMovie, TMDbMovieFull } from '$lib/tmdb/types';
 import {
 	isShowcaseable,
 	toMovie,
 	toMovieCache,
 	toMovieFull,
+	toImages,
 	type CrewLabels,
 	type RawGenreList,
-	type RawImage,
 	type RawImages,
 	type RawMovie,
 	type RawMovieForCache,
@@ -24,6 +18,7 @@ import {
 
 export {
 	isShowcaseable,
+	localizedLogos,
 	pickLogo,
 	pickTranslation,
 	pickTrailer,
@@ -200,15 +195,8 @@ export async function getMovieFull(
 	return toMovieFull(raw, language.slice(0, 2), ctx.region, labels, images?.logos);
 }
 
-/**
- * Todas as imagens, as mais votadas primeiro; `language` nulo = imagem sem texto.
- * Sem corte: filmes populares passam de 400 pôsteres, e cortar antes do filtro de idioma
- * escondia, por exemplo, os pôsteres em português. A galeria desenha aos poucos.
- */
-const toImages = (images: RawImage[]): MovieImage[] =>
-	[...images]
-		.sort((a, b) => b.vote_average - a.vote_average)
-		.map((image) => ({ path: image.file_path, language: image.iso_639_1 }));
+// Imagens sem corte: filmes populares passam de 400 pôsteres, e cortar antes do filtro de
+// idioma escondia, por exemplo, os pôsteres em português. A galeria desenha aos poucos.
 
 /** Pôsteres, fundos e logos em todos os idiomas — para a galeria e a personalização do filme. */
 export function getMovieImages(id: number, fetchFn?: typeof fetch): Promise<MovieImages> {

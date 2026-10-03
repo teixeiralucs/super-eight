@@ -7,6 +7,7 @@ export const posterFromCard = (movie: MovieCard): PosterMovie => ({
 	title: movie.title,
 	originalTitle: movie.originalTitle,
 	posterPath: movie.posterPath,
+	logoPath: movie.logoPath,
 	year: yearOf(movie.releaseDate),
 	directors: movie.directors,
 	countries: movie.countries,

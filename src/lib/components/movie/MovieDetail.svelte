@@ -180,6 +180,7 @@
 	);
 
 	const sectionLabel = 'mb-3 text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase';
+	const factLabel = 'text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase';
 </script>
 
 <article class="relative isolate text-foreground lg:h-svh">
@@ -311,9 +312,6 @@
 				{/if}
 				<div class={['collapsible', compact && 'is-collapsed']}>
 					<div class="min-h-0 overflow-hidden" aria-hidden={compact}>
-						{#if movie.title !== movie.originalTitle}
-							<p class="pt-3 text-lg text-white/65">{movie.title}</p>
-						{/if}
 						{#if movie.tagline}
 							<p class="pt-4 font-serif text-2xl text-white/80 italic">{movie.tagline}</p>
 						{/if}
@@ -407,12 +405,29 @@
 			class="flex flex-col gap-7 border-white/10 bg-background/70 px-5 py-8 md:px-10 lg:min-h-0 lg:overflow-y-auto lg:border-l lg:px-8 lg:pt-20"
 			aria-label={m.sidebar_label()}
 		>
+			<!-- Títulos em texto: a logo do título pode estar em outro idioma -->
+			<dl class="space-y-3">
+				<div>
+					<dt class={factLabel}>{m.fact_original_title()}</dt>
+					<dd
+						class="mt-1 font-display text-xl leading-tight font-semibold tracking-[-0.02em] text-balance"
+						lang={movie.originalLanguage ?? undefined}
+					>
+						{movie.originalTitle}
+					</dd>
+				</div>
+				{#if movie.title !== movie.originalTitle}
+					<div>
+						<dt class={factLabel}>{m.fact_translated_title()}</dt>
+						<dd class="mt-1 text-base leading-snug text-white/90">{movie.title}</dd>
+					</div>
+				{/if}
+			</dl>
+
 			<dl class="grid grid-cols-2 gap-x-6 gap-y-4">
 				{#each facts as fact (fact.label)}
 					<div class={[fact.wide && 'col-span-2']}>
-						<dt class="text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase">
-							{fact.label}
-						</dt>
+						<dt class={factLabel}>{fact.label}</dt>
 						<dd class="mt-1 text-sm text-white/90">{fact.value}</dd>
 					</div>
 				{/each}

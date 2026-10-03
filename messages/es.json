@@ -507,5 +507,7 @@
 	"gallery_use_logo": "Usar este logo ({language})",
 	"lightbox_use_logo": "Usar este logo",
 	"lightbox_preview_logo": "Ver en el título",
-	"toast_logo_updated": "Logo actualizado"
+	"toast_logo_updated": "Logo actualizado",
+	"fact_original_title": "Título original",
+	"fact_translated_title": "Título en español"
 }

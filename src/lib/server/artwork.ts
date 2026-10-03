@@ -17,7 +17,7 @@ export async function getArtworks(userId: string, movieIds?: number[]) {
 	return new Map<number, Artwork>(rows.map(({ movieId, ...art }) => [movieId, art]));
 }
 
-/** Troca pôster/fundo pelos escolhidos (o que não foi personalizado fica como está). */
+/** Troca pôster/fundo/logo pelos escolhidos (o que não foi personalizado fica como está). */
 export function withArtwork<T extends { id: number; posterPath: string | null }>(
 	movie: T,
 	artworks: Map<number, Artwork>
@@ -27,7 +27,8 @@ export function withArtwork<T extends { id: number; posterPath: string | null }>
 	return {
 		...movie,
 		posterPath: art.posterPath ?? movie.posterPath,
-		...('backdropPath' in movie && { backdropPath: art.backdropPath ?? movie.backdropPath })
+		...('backdropPath' in movie && { backdropPath: art.backdropPath ?? movie.backdropPath }),
+		...('logoPath' in movie && { logoPath: art.logoPath ?? movie.logoPath })
 	};
 }
 
