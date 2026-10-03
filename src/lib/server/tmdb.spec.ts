@@ -4,6 +4,7 @@ vi.mock('$env/static/private', () => ({ TMDB_READ_ACCESS_TOKEN: 'test-token' }))
 
 const {
 	isShowcaseable,
+	pickLogo,
 	pickTranslation,
 	pickTrailer,
 	regionalRelease,
@@ -236,5 +237,25 @@ describe('toMovieFull', () => {
 		expect(movie.composers).toEqual(['M']);
 		expect(movie.cast.map((c) => c.name)).toEqual(['A', 'B']);
 		expect(movie.trailer).toBeNull();
+		expect(movie.logoPath).toBeNull();
+	});
+});
+
+describe('pickLogo', () => {
+	const logos = [
+		{ path: '/en.png', language: 'en' },
+		{ path: '/pt.png', language: 'pt' },
+		{ path: '/ja.png', language: 'ja' }
+	];
+
+	it('prefere o idioma original, depois o de quem vê, depois inglês', () => {
+		expect(pickLogo(logos, 'ja', 'pt')).toBe('/ja.png');
+		expect(pickLogo(logos, 'ko', 'pt')).toBe('/pt.png');
+		expect(pickLogo(logos, 'ko', 'es')).toBe('/en.png');
+	});
+
+	it('cai na mais votada, ou em nulo sem logos', () => {
+		expect(pickLogo([{ path: '/zh.png', language: 'zh' }], 'ko', 'es')).toBe('/zh.png');
+		expect(pickLogo([], 'en', 'pt')).toBeNull();
 	});
 });

@@ -38,6 +38,8 @@ export interface MovieImage {
 export interface MovieImages {
 	backdrops: MovieImage[];
 	posters: MovieImage[];
+	/** Logos do título (PNG transparente ou SVG). */
+	logos: MovieImage[];
 }
 
 export interface Trailer {
@@ -65,6 +67,8 @@ export interface TMDbMovieFull extends TMDbMovie {
 	studios: string[];
 	cast: CastMember[];
 	trailer: Trailer | null;
+	/** Logo padrão do título; nulo = sem logo (o título vai em texto). */
+	logoPath: string | null;
 }
 
 export type Localized<T> = { pt: T; en: T; es: T };

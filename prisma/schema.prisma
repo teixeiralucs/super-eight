@@ -107,6 +107,7 @@ model MovieArtwork {
   movieId      Int
   posterPath   String?
   backdropPath String?
+  logoPath     String?
   updatedAt    DateTime @updatedAt
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -14,6 +14,7 @@
 	import {
 		DETAIL_TABS,
 		tabLabel,
+		type ArtworkKind,
 		type DetailTab,
 		type MovieDetailData,
 		type MovieUserData
@@ -23,6 +24,7 @@
 	import GalleryPanel from './GalleryPanel.svelte';
 	import LibraryControls from './LibraryControls.svelte';
 	import MovieBackdrop from './MovieBackdrop.svelte';
+	import MovieLogo from './MovieLogo.svelte';
 	import PersonCard from './PersonCard.svelte';
 	import ReviewsPanel from '$lib/components/social/ReviewsPanel.svelte';
 	import TrailerModal from './TrailerModal.svelte';
@@ -44,6 +46,8 @@
 
 	// Fundo: o escolhido pelo usuário (DNA do filme) ou o padrão; sem login, a galeria só faz prévia.
 	let backdrop = $derived(userData?.artwork?.backdropPath ?? movie.backdropPath);
+	// Título: a logo escolhida, a padrão ou (sem logo no TMDb) o texto.
+	let logo = $derived(userData?.artwork?.logoPath ?? movie.logoPath);
 
 	let trailerOpen = $state(false);
 
@@ -116,9 +120,13 @@
 				return m.toast_session_deleted();
 			case 'artwork':
 				if (!form.get('path')) return m.toast_artwork_restored();
-				return form.get('kind') === 'poster'
-					? m.toast_poster_updated()
-					: m.toast_backdrop_updated();
+				return (
+					{
+						poster: m.toast_poster_updated,
+						backdrop: m.toast_backdrop_updated,
+						logo: m.toast_logo_updated
+					}[form.get('kind') as ArtworkKind]?.() ?? null
+				);
 			case 'toggleList': {
 				const target = list(form.get('listId'));
 				if (!target) return null;
@@ -279,15 +287,28 @@
 						</p>
 					</div>
 				</div>
-				<h1
-					class={[
-						'max-w-5xl font-display leading-[0.9] font-bold tracking-[-0.045em] text-balance transition-[font-size] duration-500 ease-out',
-						compact ? 'text-[clamp(2.25rem,4.5vw,4.25rem)]' : 'text-[clamp(2.75rem,7vw,7rem)]'
-					]}
-					lang={movie.originalLanguage ?? undefined}
-				>
-					{movie.originalTitle}
-				</h1>
+				{#if logo}
+					<h1 lang={movie.originalLanguage ?? undefined}>
+						<span class="sr-only">{movie.originalTitle}</span>
+						<MovieLogo
+							path={logo}
+							class={[
+								'block w-auto max-w-[min(100%,40rem)] object-contain object-left-bottom transition-[height] duration-500 ease-out',
+								compact ? 'h-[clamp(3.5rem,7vw,5.5rem)]' : 'h-[clamp(6rem,15vw,12rem)]'
+							]}
+						/>
+					</h1>
+				{:else}
+					<h1
+						class={[
+							'max-w-5xl font-display leading-[0.9] font-bold tracking-[-0.045em] text-balance transition-[font-size] duration-500 ease-out',
+							compact ? 'text-[clamp(2.25rem,4.5vw,4.25rem)]' : 'text-[clamp(2.75rem,7vw,7rem)]'
+						]}
+						lang={movie.originalLanguage ?? undefined}
+					>
+						{movie.originalTitle}
+					</h1>
+				{/if}
 				<div class={['collapsible', compact && 'is-collapsed']}>
 					<div class="min-h-0 overflow-hidden" aria-hidden={compact}>
 						{#if movie.title !== movie.originalTitle}
@@ -361,9 +382,16 @@
 								movieId={movie.id}
 								signedIn={data.signedIn}
 								artwork={userData?.artwork ?? null}
-								defaults={{ posterPath: movie.posterPath, backdropPath: movie.backdropPath }}
-								preview={backdrop}
-								onpreview={(path) => (backdrop = path)}
+								defaults={{
+									posterPath: movie.posterPath,
+									backdropPath: movie.backdropPath,
+									logoPath: movie.logoPath
+								}}
+								preview={{ backdropPath: backdrop, logoPath: logo }}
+								onpreview={(kind, path) => {
+									if (kind === 'logo') logo = path;
+									else backdrop = path;
+								}}
 								{submit}
 							/>
 						{:else if tab === 'reviews'}
@@ -453,7 +481,8 @@
 
 	@media (prefers-reduced-motion: reduce) {
 		.collapsible,
-		h1 {
+		h1,
+		h1 :global(img) {
 			transition: none;
 		}
 	}

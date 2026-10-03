@@ -9,12 +9,13 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import { m } from '$lib/paraglide/messages';
 	import type { ArtworkKind } from '$lib/movie/types';
-	import { backdropUrl, posterUrl } from '$lib/tmdb/images';
+	import { backdropUrl, logoUrl, posterUrl } from '$lib/tmdb/images';
+	import MovieLogo from './MovieLogo.svelte';
 	import type { MovieImage } from '$lib/tmdb/types';
 
 	/**
-	 * Imagem da galeria em tela cheia, para comparar antes de escolher: setas (â† â†’, deslizar
-	 * no celular) e o botÃ£o de usar a imagem ali mesmo. Esc fecha sÃ³ o visualizador.
+	 * Imagem da galeria em tela cheia, para comparar antes de escolher: setas (← →, deslizar
+	 * no celular) e o botão de usar a imagem ali mesmo. Esc fecha só o visualizador.
 	 */
 	let {
 		images,
@@ -25,19 +26,22 @@
 		movieId,
 		submit,
 		languageLabel,
+		stage,
 		onpreview,
 		onClose
 	}: {
 		images: MovieImage[];
 		index: number;
 		kind: ArtworkKind;
-		/** Imagem em uso (ou em prÃ©via, sem login). */
+		/** Imagem em uso (ou em prévia, sem login). */
 		selectedPath: string | null;
 		signedIn: boolean;
 		movieId: number;
 		submit: SubmitFunction;
 		languageLabel: (key: string) => string;
-		onpreview: (path: string) => void;
+		/** Fundo atrás das logos (o do filme). */
+		stage: string | null;
+		onpreview: (kind: Exclude<ArtworkKind, 'poster'>, path: string) => void;
 		onClose: () => void;
 	} = $props();
 
@@ -45,17 +49,21 @@
 	const poster = $derived(kind === 'poster');
 	const inUse = $derived(image?.path === selectedPath);
 
-	/** Miniatura (jÃ¡ em cache) por baixo enquanto a versÃ£o grande carrega. */
+	/** Miniatura (já em cache) por baixo enquanto a versão grande carrega. */
 	const thumb = (img: MovieImage) =>
 		poster ? posterUrl(img.path, 'w342') : backdropUrl(img.path, 'w780');
 	const large = (img: MovieImage) =>
-		poster ? posterUrl(img.path, 'w780') : backdropUrl(img.path, 'w1280');
+		kind === 'logo'
+			? logoUrl(img.path)
+			: poster
+				? posterUrl(img.path, 'w780')
+				: backdropUrl(img.path, 'w1280');
 
 	const go = (step: number) => {
 		index = (index + step + images.length) % images.length;
 	};
 
-	// PrÃ©-carrega as vizinhas: navegar fica instantÃ¢neo.
+	// Pré-carrega as vizinhas: navegar fica instantâneo.
 	$effect(() => {
 		for (const step of [1, -1]) {
 			const neighbor = images[(index + step + images.length) % images.length];
@@ -102,7 +110,7 @@
 		touchX = null;
 	}}
 >
-	<!-- Topo: posiÃ§Ã£o, idioma e fechar -->
+	<!-- Topo: posição, idioma e fechar -->
 	<header class="flex items-center justify-between gap-4 px-5 py-4 md:px-8">
 		<p class="flex items-center gap-3 text-sm text-white/70">
 			<span class="tabular-nums">
@@ -125,18 +133,29 @@
 	<!-- Imagem -->
 	<div class="relative flex min-h-0 flex-1 items-center justify-center px-4 md:px-24">
 		{#key image.path}
-			<div
-				class={[
-					'relative max-h-full overflow-hidden rounded-xl bg-cover bg-center shadow-2xl ring-1 shadow-black/60 ring-white/10',
-					poster
-						? 'aspect-2/3 h-full max-w-full'
-						: 'aspect-video w-full max-w-[min(100%,calc((100svh-12rem)*16/9))]'
-				]}
-				style:background-image="url({thumb(image)})"
-				in:fade={{ duration: 150 }}
-			>
-				<img src={large(image)} alt="" class="size-full object-contain" />
-			</div>
+			{#if kind === 'logo'}
+				<div
+					class="relative aspect-video w-full max-w-[min(100%,calc((100svh-12rem)*16/9))] overflow-hidden rounded-xl bg-white/5 bg-cover bg-center shadow-2xl ring-1 shadow-black/60 ring-white/10"
+					style:background-image={stage ? `url(${stage})` : undefined}
+					in:fade={{ duration: 150 }}
+				>
+					<div class="absolute inset-0 bg-background/55" aria-hidden="true"></div>
+					<MovieLogo path={image.path} class="absolute inset-0 size-full object-contain p-[8%]" />
+				</div>
+			{:else}
+				<div
+					class={[
+						'relative max-h-full overflow-hidden rounded-xl bg-cover bg-center shadow-2xl ring-1 shadow-black/60 ring-white/10',
+						poster
+							? 'aspect-2/3 h-full max-w-full'
+							: 'aspect-video w-full max-w-[min(100%,calc((100svh-12rem)*16/9))]'
+					]}
+					style:background-image="url({thumb(image)})"
+					in:fade={{ duration: 150 }}
+				>
+					<img src={large(image)} alt="" class="size-full object-contain" />
+				</div>
+			{/if}
 		{/key}
 
 		{#if images.length > 1}
@@ -159,7 +178,7 @@
 		{/if}
 	</div>
 
-	<!-- AÃ§Ã£o -->
+	<!-- Ação -->
 	<footer class="flex flex-col items-center gap-2 px-5 py-5">
 		{#if inUse}
 			<span
@@ -176,17 +195,21 @@
 					value={image.path}
 					class="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition hover:brightness-110"
 				>
-					{poster ? m.lightbox_use_poster() : m.lightbox_use_backdrop()}
+					{{
+						poster: m.lightbox_use_poster,
+						backdrop: m.lightbox_use_backdrop,
+						logo: m.lightbox_use_logo
+					}[kind]()}
 				</button>
 			</form>
-		{:else if !poster}
+		{:else if kind !== 'poster'}
 			<button
 				type="button"
-				onclick={() => onpreview(image.path)}
+				onclick={() => onpreview(kind, image.path)}
 				class="inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-2.5 text-sm transition hover:border-white/50"
 			>
 				<EyeIcon class="size-4" aria-hidden="true" />
-				{m.lightbox_preview_backdrop()}
+				{kind === 'logo' ? m.lightbox_preview_logo() : m.lightbox_preview_backdrop()}
 			</button>
 		{:else}
 			<p class="text-xs text-white/50">{m.gallery_sign_in()}</p>

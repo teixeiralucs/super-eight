@@ -24,6 +24,7 @@ import {
 
 export {
 	isShowcaseable,
+	pickLogo,
 	pickTranslation,
 	pickTrailer,
 	regionalRelease,
@@ -181,18 +182,22 @@ export async function getMovieFull(
 	labels: CrewLabels
 ): Promise<TMDbMovieFull> {
 	const language = TMDB_LANGUAGE[ctx.locale];
-	const raw = await cached(`movie-full:${id}:${ctx.locale}`, CATALOG_TTL_MS, () =>
-		tmdbFetch<RawMovieFull>(
-			`/movie/${id}`,
-			{
-				language,
-				append_to_response: 'credits,videos,release_dates',
-				include_video_language: `${language.slice(0, 2)},en,null`
-			},
-			ctx.fetch
-		)
-	);
-	return toMovieFull(raw, language.slice(0, 2), ctx.region, labels);
+	const [raw, images] = await Promise.all([
+		cached(`movie-full:${id}:${ctx.locale}`, CATALOG_TTL_MS, () =>
+			tmdbFetch<RawMovieFull>(
+				`/movie/${id}`,
+				{
+					language,
+					append_to_response: 'credits,videos,release_dates',
+					include_video_language: `${language.slice(0, 2)},en,null`
+				},
+				ctx.fetch
+			)
+		),
+		// Só para a logo do título: se falhar, o título vai em texto.
+		getMovieImages(id, ctx.fetch).catch(() => null)
+	]);
+	return toMovieFull(raw, language.slice(0, 2), ctx.region, labels, images?.logos);
 }
 
 /**
@@ -205,10 +210,14 @@ const toImages = (images: RawImage[]): MovieImage[] =>
 		.sort((a, b) => b.vote_average - a.vote_average)
 		.map((image) => ({ path: image.file_path, language: image.iso_639_1 }));
 
-/** Pôsteres e fundos em todos os idiomas — para a galeria e a personalização do filme. */
+/** Pôsteres, fundos e logos em todos os idiomas — para a galeria e a personalização do filme. */
 export function getMovieImages(id: number, fetchFn?: typeof fetch): Promise<MovieImages> {
 	return cached(`movie-images:${id}`, CATALOG_TTL_MS, async () => {
 		const raw = await tmdbFetch<RawImages>(`/movie/${id}/images`, {}, fetchFn);
-		return { backdrops: toImages(raw.backdrops), posters: toImages(raw.posters) };
+		return {
+			backdrops: toImages(raw.backdrops),
+			posters: toImages(raw.posters),
+			logos: toImages(raw.logos ?? [])
+		};
 	});
 }

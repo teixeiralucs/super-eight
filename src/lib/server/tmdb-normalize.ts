@@ -3,6 +3,7 @@
 import type {
 	CrewMember,
 	MovieCacheData,
+	MovieImage,
 	TMDbMovie,
 	TMDbMovieFull,
 	Trailer
@@ -93,6 +94,7 @@ export interface RawImage {
 export interface RawImages {
 	backdrops: RawImage[];
 	posters: RawImage[];
+	logos?: RawImage[];
 }
 
 /** Detalhes "neutros" para o cache local: traduções e pôsteres de todos os idiomas. */
@@ -255,12 +257,33 @@ export function regionalRelease(raw: RawReleaseDates | undefined, region: string
 	return best ? best.release_date.slice(0, 10) : null;
 }
 
-/** `trailerLanguage`: ISO 639-1 de quem vê (trailer preferido). */
+/**
+ * Logo padrão do título. O título original é o destaque da página, então vale a logo no
+ * idioma original; depois a de quem vê, a em inglês e a mais votada. `logos` já vem
+ * ordenada por votos.
+ */
+export function pickLogo(
+	logos: MovieImage[],
+	originalLanguage: string | null,
+	viewerLanguage: string
+): string | null {
+	for (const language of [originalLanguage, viewerLanguage, 'en']) {
+		const match = logos.find((logo) => language && logo.language === language);
+		if (match) return match.path;
+	}
+	return logos[0]?.path ?? null;
+}
+
+/**
+ * `trailerLanguage`: ISO 639-1 de quem vê (trailer e logo preferidos).
+ * `logos`: logos do filme (ver `getMovieImages`); vazio = título em texto.
+ */
 export function toMovieFull(
 	raw: RawMovieFull,
 	trailerLanguage: string,
 	region: string,
-	labels: CrewLabels
+	labels: CrewLabels,
+	logos: MovieImage[] = []
 ): TMDbMovieFull {
 	const crew = raw.credits?.crew ?? [];
 	const genreNames = new Map(raw.genres.map((genre) => [genre.id, genre.name]));
@@ -298,6 +321,7 @@ export function toMovieFull(
 				character: member.character,
 				profilePath: member.profile_path
 			})),
-		trailer: pickTrailer(raw.videos?.results ?? [], trailerLanguage)
+		trailer: pickTrailer(raw.videos?.results ?? [], trailerLanguage),
+		logoPath: pickLogo(logos, raw.original_language ?? null, trailerLanguage)
 	};
 }

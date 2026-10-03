@@ -169,7 +169,7 @@
 	"gallery_filter_language": "Filter by language",
 	"gallery_all": "All",
 	"gallery_restore": "Restore default",
-	"gallery_sign_in": "Sign in to customize this movie's poster and backdrop.",
+	"gallery_sign_in": "Sign in to customize this movie's poster, backdrop and logo.",
 	"gallery_error": "Couldn't load the images.",
 	"gallery_empty": "No images available.",
 	"gallery_use_poster": "Use this poster ({language})",
@@ -502,5 +502,10 @@
 	"lightbox_use_backdrop": "Use this backdrop",
 	"lightbox_use_poster": "Use this poster",
 	"lightbox_preview_backdrop": "Preview as backdrop",
-	"lightbox_keys_hint": "← → to browse · Esc to close"
+	"lightbox_keys_hint": "← → to browse · Esc to close",
+	"gallery_logos": "Logos",
+	"gallery_use_logo": "Use this logo ({language})",
+	"lightbox_use_logo": "Use this logo",
+	"lightbox_preview_logo": "Preview in title",
+	"toast_logo_updated": "Logo updated"
 }

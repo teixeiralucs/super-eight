@@ -5,15 +5,16 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import ZoomInIcon from '@lucide/svelte/icons/zoom-in';
 	import ImageLightbox from './ImageLightbox.svelte';
+	import MovieLogo from './MovieLogo.svelte';
 	import { infiniteScroll } from '$lib/attachments/infinite-scroll';
 	import { backdropUrl } from '$lib/tmdb/images';
 	import type { MovieImage, MovieImages } from '$lib/tmdb/types';
-	import type { Artwork, ArtworkKind } from '$lib/movie/types';
+	import { artworkField, type Artwork, type ArtworkKind } from '$lib/movie/types';
 
 	/**
-	 * Galeria com pôsteres e fundos de todos os idiomas. Logado, escolher uma imagem a salva
-	 * como o "DNA" do filme (vale no dashboard, na busca e nas listas); sem login, os fundos
-	 * só mudam o fundo desta página.
+	 * Galeria com pôsteres, fundos e logos de todos os idiomas. Logado, escolher uma imagem a
+	 * salva como o "DNA" do filme (pôster e fundo valem no dashboard, na busca e nas listas; a
+	 * logo, no título); sem login, fundos e logos só mudam esta página.
 	 */
 	let {
 		movieId,
@@ -29,9 +30,9 @@
 		artwork: Artwork | null;
 		/** Imagens padrão do TMDb. */
 		defaults: Artwork;
-		/** Fundo mostrado na página (prévia sem login). */
-		preview: string | null;
-		onpreview: (path: string) => void;
+		/** Fundo e logo mostrados na página (prévia sem login; o fundo também fica atrás das logos). */
+		preview: Pick<Artwork, 'backdropPath' | 'logoPath'>;
+		onpreview: (kind: Exclude<ArtworkKind, 'poster'>, path: string) => void;
 		submit: SubmitFunction;
 	} = $props();
 
@@ -54,10 +55,16 @@
 		return () => controller.abort();
 	});
 
-	const list = $derived(images ? (kind === 'poster' ? images.posters : images.backdrops) : []);
-	const field = $derived(kind === 'poster' ? 'posterPath' : 'backdropPath');
+	const list = $derived(
+		images ? { poster: images.posters, backdrop: images.backdrops, logo: images.logos }[kind] : []
+	);
+	const field = $derived(artworkField(kind));
 	const current = $derived(
-		signedIn ? (artwork?.[field] ?? defaults[field]) : kind === 'backdrop' ? preview : null
+		signedIn
+			? (artwork?.[field] ?? defaults[field])
+			: kind === 'poster'
+				? null
+				: preview[artworkField(kind)]
 	);
 	const customized = $derived(Boolean(artwork?.[field]));
 
@@ -95,6 +102,27 @@
 		kind === 'poster'
 			? `https://image.tmdb.org/t/p/w342${image.path}`
 			: backdropUrl(image.path, 'w780');
+	/** Logos aparecem sobre o fundo do filme, como no título. */
+	const logoStage = $derived(
+		preview.backdropPath ? backdropUrl(preview.backdropPath, 'w300') : null
+	);
+
+	const kinds = [
+		['backdrop', m.gallery_backdrops],
+		['poster', m.gallery_posters],
+		['logo', m.gallery_logos]
+	] as const;
+	const grid = $derived(
+		kind === 'poster' ? 'grid-cols-3 sm:grid-cols-4 xl:grid-cols-6' : 'grid-cols-2 xl:grid-cols-3'
+	);
+	const useLabel = (image: MovieImage) => {
+		const language = languageLabel(image.language ?? 'none');
+		return {
+			poster: m.gallery_use_poster,
+			backdrop: m.gallery_use_backdrop,
+			logo: m.gallery_use_logo
+		}[kind]({ language });
+	};
 
 	const submitArtwork: SubmitFunction = (input) => {
 		pending = (input.formData.get('path') as string) || null;
@@ -113,7 +141,7 @@
 <div class="flex h-full min-h-0 flex-col gap-4">
 	<div class="flex flex-wrap items-center gap-x-6 gap-y-3">
 		<div class="flex gap-1 rounded-full border border-white/10 bg-background/60 p-1">
-			{#each [['backdrop', m.gallery_backdrops()], ['poster', m.gallery_posters()]] as const as [value, label] (value)}
+			{#each kinds as [value, label] (value)}
 				<button
 					type="button"
 					aria-pressed={kind === value}
@@ -124,7 +152,7 @@
 					class={[
 						'rounded-full px-4 py-1.5 text-xs font-medium tracking-[0.15em] uppercase transition',
 						kind === value ? 'bg-white text-background' : 'text-white/70 hover:text-white'
-					]}>{label}</button
+					]}>{label()}</button
 				>
 			{/each}
 		</div>
@@ -169,15 +197,7 @@
 		{#if failed}
 			<p class="text-white/50">{m.gallery_error()}</p>
 		{:else if !images}
-			<ul
-				class={[
-					'grid gap-3',
-					kind === 'poster'
-						? 'grid-cols-3 sm:grid-cols-4 xl:grid-cols-6'
-						: 'grid-cols-2 xl:grid-cols-3'
-				]}
-				aria-hidden="true"
-			>
+			<ul class={['grid gap-3', grid]} aria-hidden="true">
 				{#each Array.from({ length: 6 }, (_, i) => i) as i (i)}
 					<li
 						class={[
@@ -192,14 +212,7 @@
 		{:else}
 			<form method="POST" action="/movie/{movieId}?/artwork" use:enhance={submitArtwork}>
 				<input type="hidden" name="kind" value={kind} />
-				<ul
-					class={[
-						'grid gap-3',
-						kind === 'poster'
-							? 'grid-cols-3 sm:grid-cols-4 xl:grid-cols-6'
-							: 'grid-cols-2 xl:grid-cols-3'
-					]}
-				>
+				<ul class={['grid gap-3', grid]}>
 					{#each shown as image, i (image.path)}
 						{@const selected = (pending ?? current) === image.path}
 						<li class="group relative">
@@ -208,11 +221,9 @@
 								name={signedIn ? 'path' : undefined}
 								value={signedIn ? image.path : undefined}
 								disabled={!signedIn && kind === 'poster'}
-								onclick={() => !signedIn && onpreview(image.path)}
+								onclick={() => !signedIn && kind !== 'poster' && onpreview(kind, image.path)}
 								aria-pressed={selected}
-								aria-label={kind === 'poster'
-									? m.gallery_use_poster({ language: languageLabel(image.language ?? 'none') })
-									: m.gallery_use_backdrop({ language: languageLabel(image.language ?? 'none') })}
+								aria-label={useLabel(image)}
 								class={[
 									'block w-full overflow-hidden rounded-xl bg-white/5 ring-1 transition',
 									kind === 'poster' ? 'aspect-2/3' : 'aspect-video',
@@ -221,13 +232,26 @@
 										: 'ring-white/10 enabled:hover:ring-neon-pink/70'
 								]}
 							>
-								<img
-									src={src(image)}
-									alt=""
-									loading="lazy"
-									decoding="async"
-									class="size-full object-cover"
-								/>
+								{#if kind === 'logo'}
+									<span
+										class="block size-full bg-cover bg-center shadow-[inset_0_0_0_100vmax_rgb(0_0_0/0.55)]"
+										style:background-image={logoStage ? `url(${logoStage})` : undefined}
+									>
+										<MovieLogo
+											path={image.path}
+											loading="lazy"
+											class="size-full object-contain p-[10%_12%]"
+										/>
+									</span>
+								{:else}
+									<img
+										src={src(image)}
+										alt=""
+										loading="lazy"
+										decoding="async"
+										class="size-full object-cover"
+									/>
+								{/if}
 							</button>
 							<!-- Ampliar (não escolhe: só abre o visualizador) -->
 							<button
@@ -277,6 +301,7 @@
 		{movieId}
 		submit={submitArtwork}
 		{languageLabel}
+		stage={backdropUrl(preview.backdropPath, 'w1280')}
 		{onpreview}
 		onClose={() => (zoomed = null)}
 	/>

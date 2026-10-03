@@ -24,7 +24,7 @@ export async function getMovieUserData(userId: string, movieId: number): Promise
 		}),
 		prisma.movieArtwork.findUnique({
 			where: { userId_movieId: { userId, movieId } },
-			select: { posterPath: true, backdropPath: true }
+			select: { posterPath: true, backdropPath: true, logoPath: true }
 		}),
 		getListMemberships(userId, movieId)
 	]);

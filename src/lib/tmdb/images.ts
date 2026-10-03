@@ -10,6 +10,10 @@ export const posterUrl = (path: string | null, size: PosterSize = 'w500') =>
 export const backdropUrl = (path: string | null, size: BackdropSize = 'w1280') =>
 	path ? `${IMAGE_BASE}/${size}${path}` : null;
 
+/** Logo do título: SVG vai no original (vetor, leve); PNG no w500. */
+export const logoUrl = (path: string | null) =>
+	path ? `${IMAGE_BASE}/${path.endsWith('.svg') ? 'original' : 'w500'}${path}` : null;
+
 /** srcset para pôsteres responsivos. */
 export const posterSrcset = (path: string | null) =>
 	path

@@ -169,7 +169,7 @@
 	"gallery_filter_language": "Filtrar por idioma",
 	"gallery_all": "Todos",
 	"gallery_restore": "Restaurar predeterminado",
-	"gallery_sign_in": "Inicia sesión para personalizar el póster y el fondo de esta película.",
+	"gallery_sign_in": "Inicia sesión para personalizar el póster, el fondo y el logo de esta película.",
 	"gallery_error": "No fue posible cargar las imágenes.",
 	"gallery_empty": "No hay imágenes disponibles.",
 	"gallery_use_poster": "Usar este póster ({language})",
@@ -502,5 +502,10 @@
 	"lightbox_use_backdrop": "Usar este fondo",
 	"lightbox_use_poster": "Usar este póster",
 	"lightbox_preview_backdrop": "Ver como fondo",
-	"lightbox_keys_hint": "← → para navegar · Esc para cerrar"
+	"lightbox_keys_hint": "← → para navegar · Esc para cerrar",
+	"gallery_logos": "Logos",
+	"gallery_use_logo": "Usar este logo ({language})",
+	"lightbox_use_logo": "Usar este logo",
+	"lightbox_preview_logo": "Ver en el título",
+	"toast_logo_updated": "Logo actualizado"
 }

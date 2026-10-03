@@ -3,7 +3,7 @@ import { m } from '$lib/paraglide/messages';
 import { ensureMovie } from '$lib/server/movies';
 import { getMovieImages } from '$lib/server/tmdb';
 import { LibraryRuleError } from '$lib/server/errors';
-import type { Artwork, ArtworkKind } from '$lib/movie/types';
+import { artworkField, type Artwork, type ArtworkKind } from '$lib/movie/types';
 
 /**
  * "DNA" visual dos filmes: pôster/fundo que o usuário escolheu na galeria.
@@ -12,7 +12,7 @@ import type { Artwork, ArtworkKind } from '$lib/movie/types';
 export async function getArtworks(userId: string, movieIds?: number[]) {
 	const rows = await prisma.movieArtwork.findMany({
 		where: { userId, ...(movieIds && { movieId: { in: movieIds } }) },
-		select: { movieId: true, posterPath: true, backdropPath: true }
+		select: { movieId: true, posterPath: true, backdropPath: true, logoPath: true }
 	});
 	return new Map<number, Artwork>(rows.map(({ movieId, ...art }) => [movieId, art]));
 }
@@ -31,7 +31,7 @@ export function withArtwork<T extends { id: number; posterPath: string | null }>
 	};
 }
 
-/** Define (ou, com `path` nulo, restaura) o pôster/fundo do filme para o usuário. */
+/** Define (ou, com `path` nulo, restaura) o pôster/fundo/logo do filme para o usuário. */
 export async function setArtwork(
 	userId: string,
 	movieId: number,
@@ -41,20 +41,27 @@ export async function setArtwork(
 ) {
 	if (path) {
 		const images = await getMovieImages(movieId, fetchFn);
-		const options = kind === 'poster' ? images.posters : images.backdrops;
+		const options = { poster: images.posters, backdrop: images.backdrops, logo: images.logos }[
+			kind
+		];
 		if (!options.some((image) => image.path === path)) {
 			throw new LibraryRuleError(m.error_image_not_found());
 		}
 	}
 
-	const field = kind === 'poster' ? 'posterPath' : 'backdropPath';
 	const current = await prisma.movieArtwork.findUnique({
 		where: { userId_movieId: { userId, movieId } },
-		select: { posterPath: true, backdropPath: true }
+		select: { posterPath: true, backdropPath: true, logoPath: true }
 	});
-	const next = { posterPath: null, backdropPath: null, ...current, [field]: path };
+	const next: Artwork = {
+		posterPath: null,
+		backdropPath: null,
+		logoPath: null,
+		...current,
+		[artworkField(kind)]: path
+	};
 
-	if (!next.posterPath && !next.backdropPath) {
+	if (!next.posterPath && !next.backdropPath && !next.logoPath) {
 		await prisma.movieArtwork.deleteMany({ where: { userId, movieId } });
 		return;
 	}

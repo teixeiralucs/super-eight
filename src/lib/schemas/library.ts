@@ -43,7 +43,7 @@ export const sessionSchema = (now = new Date()) =>
 
 /** Caminho de imagem do TMDb (ex.: "/abc123.jpg"); vazio = restaurar o padrão. */
 export const artworkSchema = z.object({
-	kind: z.enum(['poster', 'backdrop'], { error: () => m.error_invalid_image_kind() }),
+	kind: z.enum(['poster', 'backdrop', 'logo'], { error: () => m.error_invalid_image_kind() }),
 	path: z.preprocess(
 		(value) => (value === '' ? null : value),
 		z

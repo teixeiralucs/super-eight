@@ -11,13 +11,17 @@ export interface DiarySessionRow {
 	note: string | null;
 }
 
-/** Pôster/fundo escolhidos pelo usuário; nulo = padrão do TMDb. */
+/** Pôster/fundo/logo escolhidos pelo usuário; nulo = padrão do TMDb. */
 export interface Artwork {
 	posterPath: string | null;
 	backdropPath: string | null;
+	logoPath: string | null;
 }
 
-export type ArtworkKind = 'poster' | 'backdrop';
+export type ArtworkKind = 'poster' | 'backdrop' | 'logo';
+
+/** Campo de `Artwork` de cada tipo de imagem. */
+export const artworkField = <K extends ArtworkKind>(kind: K) => `${kind}Path` as `${K}Path`;
 
 export interface MovieUserData {
 	library: LibraryState | null;
