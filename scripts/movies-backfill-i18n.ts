@@ -1,6 +1,6 @@
 /**
  * Preenche/atualiza o cache `Movie` com título original, traduções pt/en/es, pôster e logo
- * por idioma e IDs de gênero (earlySetup.md §3.3). Rode depois da migração i18n e sempre que
+ * por idioma, IDs de gênero e a coleção (saga), renovando também o cache `Collection` (earlySetup.md §3.3). Rode depois da migração i18n e sempre que
  * quiser renovar os metadados:
  *
  *   npm run movies:backfill-i18n
@@ -8,8 +8,10 @@
 import { prisma } from './db';
 import {
 	localizedLogos,
+	toCollection,
 	toImages,
 	toMovieCache,
+	type RawCollection,
 	type RawImages,
 	type RawMovieForCache
 } from '../src/lib/server/tmdb-normalize';
@@ -41,6 +43,38 @@ async function fetchMovie(id: number) {
 	return { ...data, logos: localizedLogos(toImages(images.logos ?? []), data.originalLanguage) };
 }
 
+/** Coleções já renovadas nesta execução (vários filmes da mesma saga). */
+const collections = new Map<number, Promise<number | null>>();
+
+function saveCollection(id: number) {
+	let saved = collections.get(id);
+	if (!saved) {
+		saved = (async () => {
+			const [pt, en, es] = await Promise.all(
+				['pt-BR', 'en-US', 'es-MX'].map((language) =>
+					tmdb<RawCollection>(`/collection/${id}`, { language })
+				)
+			);
+			const data = toCollection({ pt, en, es });
+			const fields = {
+				namePt: data.names.pt,
+				nameEn: data.names.en,
+				nameEs: data.names.es,
+				posterPath: data.posterPath,
+				backdropPath: data.backdropPath,
+				partIds: data.partIds
+			};
+			await prisma.collection.upsert({ where: { id }, create: { id, ...fields }, update: fields });
+			return id;
+		})().catch((err) => {
+			console.error(`coleção ${id}:`, String(err));
+			return null;
+		});
+		collections.set(id, saved);
+	}
+	return saved;
+}
+
 const movies = await prisma.movie.findMany({ select: { id: true }, orderBy: { id: 'asc' } });
 console.log(`${movies.length} filmes no cache…`);
 
@@ -53,6 +87,7 @@ await Promise.all(
 		for (let movie = queue.shift(); movie; movie = queue.shift()) {
 			try {
 				const data = await fetchMovie(movie.id);
+				const collectionId = data.collectionId ? await saveCollection(data.collectionId) : null;
 				await prisma.movie.update({
 					where: { id: movie.id },
 					data: {
@@ -71,7 +106,8 @@ await Promise.all(
 						genreIds: data.genreIds,
 						directors: data.directors,
 						countries: data.countries,
-						runtime: data.runtime
+						runtime: data.runtime,
+						collectionId
 					}
 				});
 				done++;
@@ -83,5 +119,7 @@ await Promise.all(
 	})
 );
 
-console.log(`✔ ${done} atualizados${failures.length ? `, falharam: ${failures.join(', ')}` : ''}`);
+console.log(
+	`✔ ${done} atualizados, ${collections.size} coleções${failures.length ? `, falharam: ${failures.join(', ')}` : ''}`
+);
 await prisma.$disconnect();

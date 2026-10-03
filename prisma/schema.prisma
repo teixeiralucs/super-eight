@@ -77,15 +77,36 @@ model Movie {
   directors        String[]  @default([])
   countries        String[]  @default([]) // ISO 3166-1 (ex.: "US")
   voteAverage      Float?
+  /// Coleção do TMDb (saga) a que o filme pertence; nula = nenhuma.
+  collectionId     Int?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  collection     Collection?    @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   libraryEntries LibraryEntry[]
   artworks       MovieArtwork[]
   diaryEntries   DiaryEntry[]
   listItems      ListMovie[]
   reviews        Review[]
   catalogEntries CatalogEntry[]
+
+  @@index([collectionId])
+}
+
+/// Coleção do TMDb (ex.: "Star Wars"): só leitura; o usuário vê os filmes dela que tem na biblioteca.
+model Collection {
+  id           Int      @id // ID do TMDb
+  /// Nome por idioma (nulo = sem tradução; a UI cai no inglês).
+  namePt       String?
+  nameEn       String
+  nameEs       String?
+  posterPath   String?
+  backdropPath String?
+  /// Todos os filmes da coleção no TMDb, por ordem de lançamento ("3 de 8").
+  partIds      Int[]    @default([])
+  updatedAt    DateTime @updatedAt
+
+  movies Movie[]
 }
 
 model LibraryEntry {

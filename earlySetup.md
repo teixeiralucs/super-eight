@@ -87,6 +87,12 @@ O Super Eight se apoia no conceito de Tracking de Filmes, semelhante ao Letterbo
 - 3.6.2. Chave Estrangeira: `userId`.
 - 3.6.3. Relacionamentos: vários filmes (NxN via `ListMovie`) e likes.
 
+## **3.6-A. Entidade: Collection (Coleção do TMDb)**
+
+- _Objetivo: cache das sagas do TMDb (ex.: "Star Wars"), só leitura._
+- 3.6-A.1. Campos: `id` (Int, = ID da coleção no TMDb), `namePt`/`nameEn`/`nameEs` (nome por idioma; pt/es nulos = sem tradução, a UI cai no inglês), `posterPath`, `backdropPath`, `partIds` (todos os filmes da coleção, por lançamento — o "3 de 8"), `updatedAt`. `Movie.collectionId` aponta para ela (`belongs_to_collection` do TMDb; `ON DELETE SET NULL`).
+- 3.6-A.2. Preenchimento: `ensureMovie` grava a coleção na primeira vez que um filme dela entra no cache; `npm run movies:backfill-i18n` renova filmes e coleções.
+
 ## **3.7. Entidade: ListMovie (Tabela Pivô)**
 
 - 3.7.1. Campos: `position` (Int — ordem do filme na lista, permite reordenação), `note` (texto opcional), `addedAt`.
@@ -408,6 +414,7 @@ model CatalogEntry {
 - 6.1.7. `/lists` (Protegida): listas do usuário em cards largos com o **fundo do 1º filme** (DNA visual do dono) e o título grande por cima, tipo, visibilidade e nº de filmes; "Nova lista" abre um modal (título, descrição, Ranking/Coleção, Privada/Pública).
 - 6.1.7-A. `/lists/[id]`: destaque com o fundo do 1º filme, título, descrição e dono; grade de pôsteres (cards da biblioteca, com o estado de quem vê). Ranking: números grandes e, no modo edição do dono, reordenar arrastando ou com setas (salva na hora). Coleção: quem vê ordena por adição, lançamento ou título original. Modo edição: remover filmes, editar dados e apagar a lista. **Públicas abrem para qualquer pessoa (inclusive sem conta)** e têm "Copiar link"; privadas de outra pessoa respondem 404 (sem revelar que existem). Só `/lists` exato exige login no hook.
 - 6.1.7-B. Nos detalhes do filme, o botão "Listas" (mostra "Em N listas") abre um pop-up ao lado, igual ao do diário, com as listas marcáveis e a criação rápida.
+- 6.1.7-C. `/lists` tem duas divisões (aba na URL, `?tab=collections`): **Listas** (criadas pelo usuário) e **Coleções** (sagas do TMDb, §6.8). Para não confundir, o tipo de lista sem números se chama **Livre** (o enum continua `COLLECTION`).
 - 6.1.8. `/list/[id]`: lista pública ou privada (conforme `isPublic`); se privada, apenas o dono acessa.
 - 6.1.9. `/u/[username]`: perfil (aberto a visitantes): avatar, nome, @, bio, desde quando, números (assistidos, reviews, listas, seguidores, seguindo) e Seguir/Deixar de seguir (ou "Editar perfil" no próprio). Seções: favoritos, assistiu recentemente (datas e notas — **anotações do diário nunca aparecem**), reviews e listas públicas. Perfil privado de outra pessoa: só cabeçalho, números e listas públicas.
 - 6.1.10. `/feed` (Protegida): sessões assistidas por quem o usuário segue (perfis privados ficam de fora; sem anotações), agrupadas por dia (Hoje/Ontem/data), com pôster, título original e traduzido, nota e quando foi registrada. Feed vazio leva à busca de pessoas.
@@ -454,6 +461,12 @@ model CatalogEntry {
 - 6.7.1. Entrada: o .zip de Settings → Data → Export Your Data do Letterboxd, lido **no navegador** (`fflate` + leitor de CSV próprio em `$lib/import`). Pastas `deleted/` e `orphaned/` são ignoradas.
 - 6.7.2. Mapeamento: `diary.csv` → sessões (data assistida, nota ×2 na escala de 10, rewatch); o texto de `reviews.csv` da mesma sessão vira a anotação (até 500 caracteres) e a review mais recente de cada filme vira a review da comunidade (só se ainda não houver). `watched.csv` sem sessão → uma sessão na data em que foi marcado (Assistido exige diário, §3.4.3). `ratings.csv` → nota atual; `likes/films.csv` → favorito (só assistidos); `watchlist.csv` → Quero ver; `lists/*.csv` → listas privadas, tipo coleção, na ordem original. Como o diário e as reviews trazem o URI da sessão (não do filme), a chave é nome + ano.
 - 6.7.3. Envio em lotes por Form Actions da página (`resolve` → `films` → `list`, JSON no campo `payload`): nome + ano → ID do TMDb (`findMovieId`: ano exato, depois lançamento no ano, ano vizinho), depois biblioteca/diário/reviews e por fim as listas (em partes de 50 filmes). Cada chamada é curta (limite de tempo da Vercel) e repetível: sessões na mesma data são ignoradas; nota, favorito e review existentes são mantidos; lista com o mesmo nome é completada em vez de duplicada. Filmes não encontrados aparecem no fim, com link para a busca.
+
+## **6.8. Coleções do TMDb**
+
+- 6.8.1. Aba **Coleções** em `/lists`: uma por saga com pelo menos um filme na biblioteca do usuário, com o fundo da coleção, o nome no idioma de quem vê e o progresso ("3 de 8", barra que fica rosa ao completar). Ordem: as mais completas primeiro.
+- 6.8.2. `/lists/collections/[id]` (Protegida): só os filmes da coleção que estão na biblioteca, com o estado de cada um. **Não se edita** (nada a adicionar, remover ou arrastar): filtros Todos/Assistidos/Quero ver/Favoritos e ordenação (ordem da saga — padrão —, título, sua nota, última vez assistido), sem salvar. Filmes que faltam aparecem só no contador.
+- 6.8.3. Detalhes do filme: o campo **Coleção** na barra lateral leva à coleção (logado).
 
 # **7. Deploy, Infraestrutura e CI/CD**
 

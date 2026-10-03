@@ -1,12 +1,17 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { z } from 'zod';
 import { listFieldsSchema } from '$lib/schemas/lists';
+import { getUserCollections } from '$lib/server/collections';
 import { createList, getUserLists } from '$lib/server/lists';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) error(401);
-	return { lists: await getUserLists(locals.user.id, locals.locale) };
+	const [lists, collections] = await Promise.all([
+		getUserLists(locals.user.id, locals.locale),
+		getUserCollections(locals.user.id, locals.locale)
+	]);
+	return { lists, collections };
 };
 
 export const actions: Actions = {

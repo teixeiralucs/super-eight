@@ -164,7 +164,17 @@
 			},
 			{ label: m.fact_genre(), value: movie.genres.join(', ') || null, wide: true },
 			{ label: m.fact_studio(), value: movie.studios.join(', ') || null, wide: true },
-			{ label: m.fact_music(), value: movie.composers.join(', ') || null, wide: true }
+			{ label: m.fact_music(), value: movie.composers.join(', ') || null, wide: true },
+			// Saga do TMDb: logado, leva à coleção com os filmes da biblioteca (§6.8).
+			{
+				label: m.fact_collection(),
+				value: movie.collection?.name ?? null,
+				wide: true,
+				href:
+					movie.collection && data.signedIn
+						? resolve('/(app)/lists/collections/[id]', { id: String(movie.collection.id) })
+						: undefined
+			}
 		].filter((fact) => fact.value)
 	);
 
@@ -428,7 +438,17 @@
 				{#each facts as fact (fact.label)}
 					<div class={[fact.wide && 'col-span-2']}>
 						<dt class={factLabel}>{fact.label}</dt>
-						<dd class="mt-1 text-sm text-white/90">{fact.value}</dd>
+						<dd class="mt-1 text-sm text-white/90">
+							{#if 'href' in fact && fact.href}
+								<a
+									href={fact.href}
+									class="underline decoration-white/30 underline-offset-4 transition hover:decoration-neon-cyan"
+									>{fact.value}</a
+								>
+							{:else}
+								{fact.value}
+							{/if}
+						</dd>
 					</div>
 				{/each}
 			</dl>

@@ -1,12 +1,20 @@
 import { TMDB_READ_ACCESS_TOKEN } from '$env/static/private';
 import { TMDB_LANGUAGE, type Locale } from '$lib/i18n';
-import type { MovieCacheData, MovieImages, TMDbMovie, TMDbMovieFull } from '$lib/tmdb/types';
+import type {
+	CollectionData,
+	MovieCacheData,
+	MovieImages,
+	TMDbMovie,
+	TMDbMovieFull
+} from '$lib/tmdb/types';
 import {
 	isShowcaseable,
 	toMovie,
 	toMovieCache,
 	toMovieFull,
 	toImages,
+	toCollection,
+	type RawCollection,
 	type CrewLabels,
 	type RawGenreList,
 	type RawImages,
@@ -257,5 +265,23 @@ export function findMovieId(
 		if (!year) return any[0]?.id ?? null;
 		const near = any.find((hit) => Math.abs(Number(hit.release_date?.slice(0, 4)) - year) <= 1);
 		return near?.id ?? null;
+	});
+}
+
+/** Coleção (saga) nos três idiomas do app; o nome muda por idioma. */
+export function getCollection(id: number, fetchFn?: typeof fetch): Promise<CollectionData> {
+	return cached(`collection:${id}`, CATALOG_TTL_MS, async () => {
+		const [pt, en, es] = await Promise.all(
+			(['pt', 'en', 'es'] as const).map((locale) =>
+				withRetry(() =>
+					tmdbFetch<RawCollection>(
+						`/collection/${id}`,
+						{ language: TMDB_LANGUAGE[locale] },
+						fetchFn
+					)
+				)
+			)
+		);
+		return toCollection({ pt, en, es });
 	});
 }

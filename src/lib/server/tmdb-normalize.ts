@@ -1,6 +1,7 @@
 // Normalização das respostas do TMDb — funções puras, sem `$env`, para poderem rodar
 // também nos scripts de linha de comando (ver scripts/movies-backfill-i18n.ts).
 import type {
+	CollectionData,
 	CrewMember,
 	Localized,
 	MovieCacheData,
@@ -42,6 +43,8 @@ export interface RawMovieDetails extends Omit<RawMovie, 'genre_ids'> {
 	genres: { id: number; name: string }[];
 	origin_country?: string[];
 	production_countries?: { iso_3166_1: string }[];
+	/** Saga do TMDb (ex.: "Star Wars Collection"), no idioma pedido. */
+	belongs_to_collection?: { id: number; name: string } | null;
 	credits?: {
 		crew: RawCrewMember[];
 		cast?: RawCastMember[];
@@ -195,7 +198,32 @@ export function toMovieCache(raw: RawMovieForCache): MovieCacheData {
 		genreIds: raw.genres.map((genre) => genre.id),
 		directors: directorsOf(raw),
 		countries: countriesOf(raw),
-		voteAverage: Math.round(raw.vote_average * 10) / 10
+		voteAverage: Math.round(raw.vote_average * 10) / 10,
+		collectionId: raw.belongs_to_collection?.id ?? null
+	};
+}
+
+// ─── Coleções (sagas) ────────────────────────────────────────────────
+export interface RawCollection {
+	id: number;
+	name: string;
+	poster_path: string | null;
+	backdrop_path: string | null;
+	parts: { id: number; release_date?: string }[];
+}
+
+/** Coleção nos três idiomas → cache `Collection`. Partes por lançamento (sem data no fim). */
+export function toCollection(raw: Localized<RawCollection>): CollectionData {
+	const release = (part: { release_date?: string }) => part.release_date || '9999';
+	const parts = [...raw.en.parts].sort((a, b) => release(a).localeCompare(release(b)));
+	// Nome igual ao inglês não acrescenta nada (o TMDb repete o inglês sem tradução).
+	const translated = (name: string) => (name && name !== raw.en.name ? name : null);
+	return {
+		id: raw.en.id,
+		names: { pt: translated(raw.pt.name), en: raw.en.name, es: translated(raw.es.name) },
+		posterPath: raw.pt.poster_path ?? raw.en.poster_path,
+		backdropPath: raw.en.backdrop_path,
+		partIds: parts.map((part) => part.id)
 	};
 }
 
@@ -339,6 +367,9 @@ export function toMovieFull(
 				profilePath: member.profile_path
 			})),
 		trailer: pickTrailer(raw.videos?.results ?? [], trailerLanguage),
-		logoPath: pickLogo(logos, raw.original_language ?? null, trailerLanguage)
+		logoPath: pickLogo(logos, raw.original_language ?? null, trailerLanguage),
+		collection: raw.belongs_to_collection
+			? { id: raw.belongs_to_collection.id, name: raw.belongs_to_collection.name }
+			: null
 	};
 }

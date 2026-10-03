@@ -41,7 +41,15 @@ const i18n: Handle = ({ event, resolve }) =>
 	});
 
 /** Rotas que exigem login (earlySetup.md §6.1). */
-const PROTECTED_PREFIXES = ['/dashboard', '/diary', '/feed', '/settings', '/reset-password'];
+const PROTECTED_PREFIXES = [
+	'/dashboard',
+	'/diary',
+	'/feed',
+	'/settings',
+	'/reset-password',
+	// Coleções do TMDb mostram a biblioteca de quem vê.
+	'/lists/collections'
+];
 /** Protegidas só na rota exata: `/lists/[id]` público abre para qualquer pessoa. */
 const PROTECTED_EXACT = ['/lists'];
 /** Rotas que não fazem sentido para quem já está logado. */

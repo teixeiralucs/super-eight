@@ -1,5 +1,29 @@
 import { prisma } from '$lib/server/db';
-import { getMovieCacheData, getMovieImages, localizedLogos } from '$lib/server/tmdb';
+import { getCollection, getMovieCacheData, getMovieImages, localizedLogos } from '$lib/server/tmdb';
+
+/**
+ * Garante a coleção (saga) no cache `Collection`. Já existente não é buscada de novo (o
+ * script `movies:backfill-i18n` renova). Falhou: o filme fica sem coleção, sem quebrar nada.
+ */
+async function ensureCollection(id: number, fetchFn?: typeof fetch): Promise<number | null> {
+	if (await prisma.collection.findUnique({ where: { id }, select: { id: true } })) return id;
+	try {
+		const data = await getCollection(id, fetchFn);
+		const fields = {
+			namePt: data.names.pt,
+			nameEn: data.names.en,
+			nameEs: data.names.es,
+			posterPath: data.posterPath,
+			backdropPath: data.backdropPath,
+			partIds: data.partIds
+		};
+		await prisma.collection.upsert({ where: { id }, create: { id, ...fields }, update: fields });
+		return id;
+	} catch (err) {
+		console.error('[movies] coleção indisponível:', id, String(err));
+		return null;
+	}
+}
 
 /**
  * Garante que o filme existe no cache local `Movie` (earlySetup.md §4.3.2), buscando no
@@ -12,6 +36,9 @@ export async function ensureMovie(tmdbId: number, fetchFn?: typeof fetch) {
 		getMovieImages(tmdbId, fetchFn).catch(() => null)
 	]);
 	const logos = localizedLogos(images?.logos ?? [], details.originalLanguage);
+	const collectionId = details.collectionId
+		? await ensureCollection(details.collectionId, fetchFn)
+		: null;
 
 	const data = {
 		originalTitle: details.originalTitle,
@@ -31,7 +58,8 @@ export async function ensureMovie(tmdbId: number, fetchFn?: typeof fetch) {
 		genreIds: details.genreIds,
 		directors: details.directors,
 		countries: details.countries,
-		voteAverage: details.voteAverage
+		voteAverage: details.voteAverage,
+		collectionId
 	};
 
 	return prisma.movie.upsert({

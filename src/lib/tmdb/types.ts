@@ -69,6 +69,8 @@ export interface TMDbMovieFull extends TMDbMovie {
 	trailer: Trailer | null;
 	/** Logo padrão do título; nulo = sem logo (o título vai em texto). */
 	logoPath: string | null;
+	/** Coleção (saga) do TMDb, com o nome no idioma de quem vê. */
+	collection: { id: number; name: string } | null;
 }
 
 export type Localized<T> = { pt: T; en: T; es: T };
@@ -89,4 +91,17 @@ export interface MovieCacheData {
 	directors: string[];
 	countries: string[];
 	voteAverage: number;
+	/** Coleção (saga) do TMDb; nula = nenhuma. */
+	collectionId: number | null;
+}
+
+/** Coleção do TMDb para o cache `Collection`. */
+export interface CollectionData {
+	id: number;
+	/** Nome por idioma; pt/es nulos = sem tradução (a UI cai no inglês). */
+	names: { pt: string | null; en: string; es: string | null };
+	posterPath: string | null;
+	backdropPath: string | null;
+	/** Todos os filmes, por lançamento. */
+	partIds: number[];
 }
