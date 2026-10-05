@@ -673,5 +673,14 @@
 	"toast_avatar_removed": "Foto de perfil quitada",
 	"error_avatar_invalid": "Elige una imagen JPG, PNG o WebP.",
 	"error_avatar_too_big": "La imagen es demasiado grande (máx. 512 KB).",
-	"error_avatar_upload": "No pudimos subir la foto. Inténtalo de nuevo."
+	"error_avatar_upload": "No pudimos subir la foto. Inténtalo de nuevo.",
+	"error_page_404_title": "Página no encontrada",
+	"error_page_404_text": "El enlace puede estar roto o la página fue eliminada.",
+	"error_page_403_title": "Sin acceso",
+	"error_page_403_text": "No tienes permiso para ver esta página.",
+	"error_page_500_title": "Algo salió mal",
+	"error_page_500_text": "Tuvimos un problema de nuestro lado. Inténtalo de nuevo en un momento.",
+	"error_page_other_title": "No funcionó",
+	"error_page_retry": "Reintentar",
+	"error_page_go_library": "Ir a la biblioteca"
 }

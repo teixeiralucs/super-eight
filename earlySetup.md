@@ -453,11 +453,12 @@ model CatalogEntry {
 
 ## **6.4. UX, Feedback Visual e Interatividade**
 
-- 6.4.1. Loading States: usar `navigating` de `$app/state` para indicadores globais de carregamento e Skeletons do Shadcn-Svelte nas páginas.
+- 6.4.1. Carregamento: barra fina no topo (`LoadingBar`, com atraso de 150 ms) em toda navegação e ao abrir detalhes. Na área logada, indo para **outra página** (não vale troca de aba/filtro/busca na mesma URL), depois de 200 ms o conteúdo dá lugar a um **esqueleto** no formato da página de destino (`RouteSkeleton`: biblioteca, grade de pôsteres, cards de listas, destaque + grade, perfil, formulários ou linhas); a página atual fica montada e escondida, e volta se a navegação for cancelada. Conteúdo carregado depois (galeria, reviews, comentários) tem os próprios placeholders.
 - 6.4.2. Mutações (`use:enhance`): todos os formulários que alteram o banco usam `use:enhance`, com _Optimistic UI_ onde fizer sentido (ex.: favoritar, marcar como assistido, dar nota).
 - 6.4.3. Notificações: toasts via **svelte-sonner** (o Sonner do Shadcn-Svelte), montado no layout raiz, para sucesso/falha (ex.: "Adicionado a “Melhores do ano”", "Nota salva: 8/10"). Falhas de validação de campo ficam no próprio formulário; mensagens da action e erros inesperados viram toast.
 - 6.4.4. Toda mutação passa por `withFeedback` (`$lib/feedback/submit`): trava o formulário enquanto envia (botões desativados, `aria-busy`; clique duplo/Enter repetido é ignorado), pergunta antes das ações destrutivas (`confirmAction`, diálogo do app em vez do `confirm()` do navegador — remover da biblioteca, apagar sessão/review/comentário/lista, tirar filme da lista) e mostra o toast. Com a confirmação aberta, pop-ups e modais por baixo ignoram Esc e "clique fora".
 - 6.4.5. Na página direta `/movie/[id]` as actions não recarregam a página (a resposta já traz o estado); só o painel sobreposto chama `refreshAll()` para atualizar a página de baixo — evita que o recarregamento lento de uma ação sobrescreva a seguinte.
+- 6.4.6. Erros: página de erro própria (`ErrorView`, em `+error.svelte` na raiz e na área logada — esta mantém a barra lateral), com o código grande, título/texto traduzidos por tipo (404, 401/403, 5xx), Voltar, Tentar de novo (5xx) e Início/Biblioteca. Erros esperados (ex.: "Lista não encontrada.") mostram a mensagem do servidor; inesperados, só um texto genérico — o detalhe vai para o log (`handleError` em `hooks.server.ts`).
 
 ## **6.5. Idiomas e Região (i18n)**
 

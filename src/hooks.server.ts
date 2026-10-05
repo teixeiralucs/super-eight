@@ -1,5 +1,5 @@
 import { createServerClient } from '@supabase/ssr';
-import { redirect, type Handle } from '@sveltejs/kit';
+import { redirect, type Handle, type HandleServerError } from '@sveltejs/kit';
 import { sequence } from '@sveltejs/kit/hooks';
 import { PUBLIC_SUPABASE_ANON_KEY, PUBLIC_SUPABASE_URL } from '$env/static/public';
 import { devLoginUser } from '$lib/server/dev-login';
@@ -102,3 +102,14 @@ const authGuard: Handle = async ({ event, resolve }) => {
 };
 
 export const handle = sequence(i18n, supabase, authGuard);
+
+/**
+ * Erros inesperados (earlySetup.md §6.4.6): o detalhe vai para o log; a tela mostra só um
+ * texto genérico traduzido (ErrorView). Rota inexistente (404) não precisa de log.
+ */
+export const handleError: HandleServerError = ({ error, event, status, message }) => {
+	if (status !== 404) {
+		console.error(`[erro ${status}] ${event.request.method} ${event.url.pathname}:`, error);
+	}
+	return { message };
+};

@@ -673,5 +673,14 @@
 	"toast_avatar_removed": "Foto de perfil removida",
 	"error_avatar_invalid": "Escolha uma imagem JPG, PNG ou WebP.",
 	"error_avatar_too_big": "A imagem ficou grande demais (máx. 512 KB).",
-	"error_avatar_upload": "Não foi possível enviar a foto. Tente novamente."
+	"error_avatar_upload": "Não foi possível enviar a foto. Tente novamente.",
+	"error_page_404_title": "Página não encontrada",
+	"error_page_404_text": "O link pode estar quebrado ou a página foi removida.",
+	"error_page_403_title": "Sem acesso",
+	"error_page_403_text": "Você não tem permissão para ver esta página.",
+	"error_page_500_title": "Algo deu errado",
+	"error_page_500_text": "Tivemos um problema do nosso lado. Tente de novo em instantes.",
+	"error_page_other_title": "Não deu certo",
+	"error_page_retry": "Tentar de novo",
+	"error_page_go_library": "Ir para a biblioteca"
 }
