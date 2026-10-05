@@ -61,9 +61,19 @@ export async function saveTraktList(list: RawTraktList, fetchFn?: typeof fetch) 
 	});
 }
 
+/** Renova uma lista já conhecida (nome, descrição e filmes). Sumiu do Trakt: apaga. */
+export async function refreshTraktList(id: number, fetchFn?: typeof fetch) {
+	const list = await traktFetch<RawTraktList | []>(`/lists/${id}`, fetchFn);
+	if (Array.isArray(list)) {
+		await prisma.traktList.deleteMany({ where: { id } });
+		return;
+	}
+	await saveTraktList(list, fetchFn);
+}
+
 /**
  * Descobre as listas oficiais de um filme e grava as que ainda não conhecemos. Marca o filme
- * como verificado (não volta a perguntar ao Trakt).
+ * como verificado (`traktCheckedAt`); a rotina diária reverifica os antigos.
  */
 async function checkMovie(movie: { id: number; imdbId: string | null }, fetchFn?: typeof fetch) {
 	const target = await traktMovieId(movie.id, movie.imdbId, fetchFn);
@@ -90,6 +100,30 @@ async function checkMovie(movie: { id: number; imdbId: string | null }, fetchFn?
 	});
 }
 
+/**
+ * Verifica filmes no Trakt, em ordem, até o prazo (`deadline`, em ms de `Date.now()`). Limite
+ * ou instabilidade do Trakt: para e devolve quanto esperar (filme inexistente no Trakt não
+ * chega aqui: o 404 vira "nenhuma lista").
+ */
+export async function checkMovies(
+	movies: { id: number; imdbId: string | null }[],
+	deadline: number,
+	fetchFn?: typeof fetch
+) {
+	let checked = 0;
+	for (const movie of movies) {
+		if (Date.now() > deadline) break;
+		try {
+			await checkMovie(movie, fetchFn);
+			checked++;
+		} catch (err) {
+			console.error('[trakt] filme', movie.id, String(err));
+			return { checked, retryAfter: err instanceof TraktRateLimit ? err.retryAfter : 60 };
+		}
+	}
+	return { checked, retryAfter: null };
+}
+
 /** Filmes da biblioteca ainda não verificados no Trakt. */
 export function countTraktPending(userId: string) {
 	if (!traktEnabled()) return Promise.resolve(0);
@@ -98,31 +132,20 @@ export function countTraktPending(userId: string) {
 
 /**
  * Verifica no Trakt um lote de filmes da biblioteca (os mais recentes primeiro) dentro de um
- * orçamento de tempo — a aba Coleções chama em sequência até acabar. Limite do Trakt:
- * para e devolve quanto esperar.
+ * orçamento de tempo — a aba Coleções chama em sequência até acabar.
  */
 export async function syncTraktForUser(userId: string, fetchFn?: typeof fetch, budgetMs = 8000) {
 	if (!traktEnabled()) return { remaining: 0, retryAfter: null };
-	const started = Date.now();
 	const pending = await prisma.libraryEntry.findMany({
 		where: { userId, movie: { traktCheckedAt: null } },
 		orderBy: { addedAt: 'desc' },
 		take: 40,
 		select: { movie: { select: { id: true, imdbId: true } } }
 	});
-
-	let retryAfter: number | null = null;
-	for (const { movie } of pending) {
-		if (Date.now() - started > budgetMs) break;
-		try {
-			await checkMovie(movie, fetchFn);
-		} catch (err) {
-			// Limite ou instabilidade do Trakt: para o lote e tenta de novo mais tarde (filme
-			// inexistente no Trakt não chega aqui: o 404 vira "nenhuma lista").
-			console.error('[trakt] filme', movie.id, String(err));
-			retryAfter = err instanceof TraktRateLimit ? err.retryAfter : 60;
-			break;
-		}
-	}
+	const { retryAfter } = await checkMovies(
+		pending.map((entry) => entry.movie),
+		Date.now() + budgetMs,
+		fetchFn
+	);
 	return { remaining: await countTraktPending(userId), retryAfter };
 }

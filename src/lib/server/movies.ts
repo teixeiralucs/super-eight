@@ -7,15 +7,20 @@ import {
 	localizedLogos
 } from '$lib/server/tmdb';
 
+/** Busca a coleção (saga) no TMDb e grava/renova o cache `Collection`. */
+export async function refreshCollection(id: number, fetchFn?: typeof fetch) {
+	const fields = collectionFields(await getCollection(id, fetchFn));
+	await prisma.collection.upsert({ where: { id }, create: { id, ...fields }, update: fields });
+}
+
 /**
- * Garante a coleção (saga) no cache `Collection`. Já existente não é buscada de novo (o
- * script `movies:backfill-i18n` renova). Falhou: o filme fica sem coleção, sem quebrar nada.
+ * Garante a coleção (saga) no cache `Collection`. Já existente não é buscada de novo (a
+ * rotina diária renova). Falhou: o filme fica sem coleção, sem quebrar nada.
  */
 async function ensureCollection(id: number, fetchFn?: typeof fetch): Promise<number | null> {
 	if (await prisma.collection.findUnique({ where: { id }, select: { id: true } })) return id;
 	try {
-		const fields = collectionFields(await getCollection(id, fetchFn));
-		await prisma.collection.upsert({ where: { id }, create: { id, ...fields }, update: fields });
+		await refreshCollection(id, fetchFn);
 		return id;
 	} catch (err) {
 		console.error('[movies] coleção indisponível:', id, String(err));
@@ -25,7 +30,8 @@ async function ensureCollection(id: number, fetchFn?: typeof fetch): Promise<num
 
 /**
  * Garante que o filme existe no cache local `Movie` (earlySetup.md §4.3.2), buscando no
- * TMDb o título original, as traduções pt/en/es, o pôster e a logo de cada idioma.
+ * TMDb o título original, as traduções pt/en/es, o pôster e a logo de cada idioma. Sempre
+ * busca de novo: também serve para renovar (rotina diária).
  */
 export async function ensureMovie(tmdbId: number, fetchFn?: typeof fetch) {
 	const [details, images] = await Promise.all([

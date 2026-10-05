@@ -373,12 +373,14 @@ model CatalogEntry {
 
 ## **4.4. Pipeline de Ingestão de Dados (Cron Jobs)**
 
-- 4.4.1. Ingestão em Background: rotina diária via **Vercel Cron** buscando os catálogos "Populares" e "Em Cartaz".
-- 4.4.2. Sincronização Local: em uma transação Prisma, fazer _upsert_ dos filmes em `Movie` e substituir as entradas do respectivo `CatalogType` em `CatalogEntry`.
-- 4.4.3. Endpoint do Cron: `src/routes/api/cron/sync-catalogs/+server.ts`, protegido pelo cabeçalho `Authorization: Bearer ${CRON_SECRET}` enviado pela Vercel.
-- 4.4.4. Otimização da Landing Page: a rota `/` consome os catálogos do banco local (`CatalogEntry` + `Movie`), com respostas na casa dos milissegundos. Até o cron existir (ver seção 8), a `/` pode consultar o TMDb diretamente com cache.
-
-# **5. Desenvolvimento do Backend (Regras de Negócio e Server-Side)**
+- 4.4.1. **Rotina diária** via **Vercel Cron** (`vercel.json`: `0 6 * * *`, 3h em Brasília; no plano Hobby a Vercel roda em algum momento dessa hora). Mantém o banco em dia aos poucos (`$lib/server/maintenance.ts`), mais antigos primeiro:
+  1. filmes do cache sem atualização há 7+ dias (`ensureMovie`: títulos, pôsteres, logos, saga, IMDb);
+  2. sagas do TMDb (`Collection`) com 7+ dias;
+  3. listas oficiais do Trakt (`TraktList`) com 7+ dias (removida do Trakt = apagada);
+  4. filmes das bibliotecas nunca verificados no Trakt e os verificados há 30+ dias (listas novas).
+- 4.4.2. Orçamento: 240 s no total (a função tem `maxDuration` 300 s), dividido entre as tarefas; o que não couber continua no dia seguinte. Item com erro não para a tarefa (filmes e sagas com erro esperam a próxima semana); limite do Trakt (429) encerra as tarefas do Trakt naquele dia. Sem `TRAKT_CLIENT_ID`, elas são puladas.
+- 4.4.3. Endpoint: `GET /api/cron/daily`, aceito só com `Authorization: Bearer ${CRON_SECRET}` (comparação em tempo constante; sem segredo configurado, sempre 401). Responde com um relatório por tarefa (`done`, `failed`, `unfinished`, `ms`), também registrado no log.
+- 4.4.4. Catálogos da landing: **continuam vindo do TMDb** (cache em memória de 30 min). A ideia original de guardá-los em `CatalogEntry` foi deixada de lado: depois do i18n (§6.5) eles dependem da região e do idioma de quem vê e exibem sinopse e gêneros traduzidos, que o cache `Movie` não guarda. A tabela `CatalogEntry` segue no schema, sem uso.
 
 ## **5.1. Autenticação, Sessões e Segurança (Supabase Auth)**
 
