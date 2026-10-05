@@ -1,7 +1,12 @@
 import { error, fail } from '@sveltejs/kit';
 import type { z } from 'zod';
-import { importFilmsSchema, importListSchema, resolveSchema } from '$lib/schemas/import';
-import { importFilms, importList, resolveFilms } from '$lib/server/import';
+import {
+	hiddenCollectionsSchema,
+	importFilmsSchema,
+	importListSchema,
+	resolveSchema
+} from '$lib/schemas/import';
+import { importFilms, importHiddenCollections, importList, resolveFilms } from '$lib/server/import';
 import { m } from '$lib/paraglide/messages';
 import type { Actions } from './$types';
 
@@ -39,5 +44,12 @@ export const actions: Actions = {
 		const input = await payload(request, importListSchema);
 		if (!input) return fail(400, { message: m.import_error_batch() });
 		return { added: await importList(locals.user.id, input, fetch) };
+	},
+
+	hidden: async ({ request, locals }) => {
+		if (!locals.user) error(401);
+		const input = await payload(request, hiddenCollectionsSchema);
+		if (!input) return fail(400, { message: m.import_error_batch() });
+		return { hidden: await importHiddenCollections(locals.user.id, input.collections) };
 	}
 };

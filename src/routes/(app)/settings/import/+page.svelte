@@ -8,18 +8,20 @@
 	import CircleCheckIcon from '@lucide/svelte/icons/circle-check';
 	import FileArchiveIcon from '@lucide/svelte/icons/file-archive';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
+	import { backupToImport, isBackup } from '$lib/import/backup';
 	import { parseLetterboxd } from '$lib/import/letterboxd';
 	import type { ImportFilm, ImportStats, LetterboxdExport } from '$lib/import/types';
 	import { FILMS_BATCH, LIST_CHUNK, RESOLVE_BATCH } from '$lib/schemas/import';
 
 	/**
-	 * Importador do Letterboxd (earlySetup.md §6.7): lê o .zip no navegador, mostra o resumo
-	 * e envia em lotes (encontrar no TMDb → biblioteca/diário/reviews → listas).
+	 * Importador (earlySetup.md §6.7, §6.9): o .zip do Letterboxd ou o backup .json do Super
+	 * Eight, lido no navegador; mostra o resumo e envia em lotes (encontrar no TMDb — o backup
+	 * já traz os IDs → biblioteca/diário/reviews → listas → coleções ocultas).
 	 */
 	type Phase =
 		| { name: 'idle'; error?: string }
 		| { name: 'reading' }
-		| { name: 'ready'; data: LetterboxdExport }
+		| { name: 'ready'; data: LetterboxdExport; source: 'letterboxd' | 'backup' }
 		| { name: 'running'; step: 'resolve' | 'films' | 'lists'; done: number; total: number }
 		| {
 				name: 'done';
@@ -37,6 +39,14 @@
 		if (!file) return;
 		phase = { name: 'reading' };
 		try {
+			// Backup do Super Eight (.json).
+			if (file.name.toLowerCase().endsWith('.json')) {
+				const json: unknown = JSON.parse(await file.text());
+				phase = isBackup(json)
+					? { name: 'ready', data: backupToImport(json), source: 'backup' }
+					: { name: 'idle', error: m.import_error_backup() };
+				return;
+			}
 			const entries = unzipSync(new Uint8Array(await file.arrayBuffer()), {
 				filter: (entry) => entry.name.toLowerCase().endsWith('.csv')
 			});
@@ -55,7 +65,7 @@
 			}
 			const data = parseLetterboxd(files);
 			phase = data.films.length
-				? { name: 'ready', data }
+				? { name: 'ready', data, source: 'letterboxd' }
 				: { name: 'idle', error: m.import_error_empty() };
 		} catch (err) {
 			console.error('[import] leitura:', err);
@@ -75,7 +85,10 @@
 			},
 			{ label: m.import_count_ratings(), value: count((f) => f.rating !== null) },
 			{ label: m.import_count_watchlist(), value: count((f) => f.watchlist && !f.sessions.length) },
-			{ label: m.import_count_likes(), value: count((f) => f.liked && f.sessions.length > 0) },
+			{
+				label: phase.source === 'backup' ? m.collection_view_favorites() : m.import_count_likes(),
+				value: count((f) => f.liked && f.sessions.length > 0)
+			},
 			{ label: m.import_count_reviews(), value: count((f) => f.review !== null) },
 			{ label: m.import_count_lists(), value: lists.length }
 		];
@@ -122,11 +135,13 @@
 		};
 		let failedBatches = 0;
 
-		// 1. Nome + ano → ID do TMDb.
+		// 1. Nome + ano → ID do TMDb (o backup já traz os IDs).
 		// eslint-disable-next-line svelte/prefer-svelte-reactivity -- local, não reativo
 		const ids = new Map<string, number>();
-		const resolveBatches = chunks(data.films, RESOLVE_BATCH);
-		phase = { name: 'running', step: 'resolve', done: 0, total: data.films.length };
+		for (const film of data.films) if (film.tmdbId) ids.set(film.key, film.tmdbId);
+		const unresolved = data.films.filter((film) => !film.tmdbId);
+		const resolveBatches = chunks(unresolved, RESOLVE_BATCH);
+		phase = { name: 'running', step: 'resolve', done: 0, total: unresolved.length };
 		for (const batch of resolveBatches) {
 			const result = await call<{ matches: { key: string; tmdbId: number | null }[] }>('resolve', {
 				films: batch.map(({ key, name, year }) => ({ key, name, year }))
@@ -149,7 +164,8 @@
 					rating: film.rating,
 					liked: film.liked,
 					watchlist: film.watchlist,
-					review: film.review
+					review: film.review,
+					artwork: film.artwork ?? null
 				}))
 			});
 			if (!result) failedBatches++;
@@ -168,6 +184,8 @@
 				const result = await call('list', {
 					title: list.title,
 					description: list.description,
+					kind: list.kind,
+					isPublic: list.isPublic,
 					movieIds: part
 				});
 				if (!result) {
@@ -177,6 +195,12 @@
 			}
 			if (ok) stats.lists++;
 			advance(1);
+		}
+
+		// 4. Coleções ocultas (backup).
+		if (data.hiddenCollections?.length) {
+			const result = await call('hidden', { collections: data.hiddenCollections });
+			if (!result) failedBatches++;
 		}
 
 		phase = {
@@ -236,6 +260,7 @@
 					<li>{m.import_how_2()}</li>
 					<li>{m.import_how_3()}</li>
 				</ol>
+				<p class="mt-3 text-sm text-white/60">{m.import_how_backup()}</p>
 			</div>
 
 			<!-- Área de soltar: clicar abre o seletor -->
@@ -273,7 +298,7 @@
 			<input
 				bind:this={input}
 				type="file"
-				accept=".zip,application/zip"
+				accept=".zip,.json,application/zip,application/json"
 				class="hidden"
 				onchange={(event) => read(event.currentTarget.files?.[0])}
 			/>
@@ -304,9 +329,13 @@
 		<section class="{card} flex flex-col gap-3">
 			<h2 class="font-display text-lg font-semibold">{m.import_rules_title()}</h2>
 			<ul class="list-disc space-y-1.5 pl-5 text-sm text-white/75">
-				<li>{m.import_rule_watched()}</li>
-				<li>{m.import_rule_reviews()}</li>
-				<li>{m.import_rule_lists()}</li>
+				{#if phase.source === 'backup'}
+					<li>{m.import_rule_backup()}</li>
+				{:else}
+					<li>{m.import_rule_watched()}</li>
+					<li>{m.import_rule_reviews()}</li>
+					<li>{m.import_rule_lists()}</li>
+				{/if}
 				<li>{m.import_rule_safe()}</li>
 			</ul>
 		</section>

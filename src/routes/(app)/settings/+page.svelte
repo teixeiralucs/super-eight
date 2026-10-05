@@ -5,6 +5,9 @@
 	import { page } from '$app/state';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import CheckIcon from '@lucide/svelte/icons/check';
+	import DownloadIcon from '@lucide/svelte/icons/download';
+	import FileJsonIcon from '@lucide/svelte/icons/file-json';
+	import FileSpreadsheetIcon from '@lucide/svelte/icons/file-spreadsheet';
 	import { countryName } from '$lib/format';
 	import { LOCALE_NAMES, locales, REGIONS } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
@@ -111,7 +114,7 @@
 		</div>
 	</form>
 
-	<!-- Importar do Letterboxd (§6.7) -->
+	<!-- Importar do Letterboxd ou de um backup (§6.7, §6.9) -->
 	<a
 		href={resolve('/settings/import')}
 		class="{card} flex-row items-center justify-between transition hover:border-white/25"
@@ -122,6 +125,31 @@
 		</span>
 		<ArrowRightIcon class="size-5 shrink-0 text-white/60" aria-hidden="true" />
 	</a>
+
+	<!-- Exportar (§6.9): downloads diretos, sem página -->
+	<section class={card} aria-labelledby="export-title">
+		<div>
+			<h2 id="export-title" class={label}>{m.settings_export()}</h2>
+			<p class="mt-1 text-sm text-muted-foreground">{m.settings_export_hint()}</p>
+		</div>
+		<div class="grid gap-3 sm:grid-cols-2">
+			{#each [{ format: 'json', title: m.settings_export_json(), hint: m.settings_export_json_hint(), icon: FileJsonIcon }, { format: 'csv', title: m.settings_export_csv(), hint: m.settings_export_csv_hint(), icon: FileSpreadsheetIcon }] as item (item.format)}
+				<a
+					href={resolve('/(app)/settings/export/[format]', { format: item.format })}
+					download
+					data-sveltekit-reload
+					class="flex flex-col gap-2 rounded-2xl border border-white/10 p-4 transition hover:border-white/30"
+				>
+					<span class="flex items-center gap-2 text-sm font-medium">
+						<item.icon class="size-4 shrink-0" aria-hidden="true" />
+						{item.title}
+						<DownloadIcon class="ml-auto size-4 text-white/50" aria-hidden="true" />
+					</span>
+					<span class="text-xs text-white/55">{item.hint}</span>
+				</a>
+			{/each}
+		</div>
+	</section>
 
 	<h2 class="mt-4 font-display text-2xl font-semibold tracking-[-0.02em]">{m.settings_title()}</h2>
 

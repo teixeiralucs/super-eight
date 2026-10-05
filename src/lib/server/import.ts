@@ -83,7 +83,13 @@ export async function importFilms(
 		lists: 0
 	};
 	const relevant = films.filter(
-		(film) => film.sessions.length || film.watchlist || film.review || film.rating || film.liked
+		(film) =>
+			film.sessions.length ||
+			film.watchlist ||
+			film.review ||
+			film.rating ||
+			film.liked ||
+			film.artwork
 	);
 	const available = new Set(
 		await ensureMovies(
@@ -98,10 +104,11 @@ export async function importFilms(
 		const where = { userId_movieId: { userId, movieId } };
 
 		await prisma.$transaction(async (tx) => {
-			const [existing, entry, review] = await Promise.all([
+			const [existing, entry, review, artwork] = await Promise.all([
 				tx.diaryEntry.findMany({ where: { userId, movieId }, select: { watchedAt: true } }),
 				tx.libraryEntry.findUnique({ where, select: { rating: true, isFavorite: true } }),
-				tx.review.findUnique({ where, select: { id: true } })
+				tx.review.findUnique({ where, select: { id: true } }),
+				tx.movieArtwork.findUnique({ where, select: { userId: true } })
 			]);
 
 			const known = new Set(existing.map((s) => s.watchedAt.toISOString().slice(0, 10)));
@@ -146,10 +153,17 @@ export async function importFilms(
 						userId,
 						movieId,
 						content: clip(film.review.text, REVIEW_MAX),
+						containsSpoilers: film.review.spoilers ?? false,
 						...(date && { createdAt: date })
 					}
 				});
 				stats.reviews++;
+			}
+
+			// Imagens da Galeria (backup): só se você ainda não escolheu outras aqui.
+			const art = film.artwork;
+			if (art && !artwork && (art.posterPath || art.backdropPath || art.logoPath)) {
+				await tx.movieArtwork.create({ data: { userId, movieId, ...art } });
 			}
 		});
 		stats.films++;
@@ -161,7 +175,8 @@ const TITLE_MAX = 80;
 const DESCRIPTION_MAX = 500;
 
 /**
- * Uma lista (ou uma parte dela): entra privada, como coleção. Se você já tem uma lista com o
+ * Uma lista (ou uma parte dela): do Letterboxd entra privada e livre; do backup, com o tipo e
+ * a visibilidade originais. Se você já tem uma lista com o
  * mesmo nome, os filmes que faltam entram no fim dela — importar de novo não cria cópias, e
  * listas grandes chegam em partes.
  */
@@ -178,8 +193,8 @@ export async function importList(userId: string, list: ImportListInput, fetchFn?
 				userId,
 				title,
 				description: list.description ? clip(list.description, DESCRIPTION_MAX) : null,
-				kind: 'COLLECTION',
-				isPublic: false
+				kind: list.kind ?? 'COLLECTION',
+				isPublic: list.isPublic ?? false
 			},
 			select: { id: true }
 		}));
@@ -200,4 +215,20 @@ export async function importList(userId: string, list: ImportListInput, fetchFn?
 		});
 	}
 	return additions.length;
+}
+
+/** Coleções ocultas (backup): volta a ocultá-las. */
+export async function importHiddenCollections(
+	userId: string,
+	collections: { source: 'tmdb' | 'trakt'; id: number }[]
+) {
+	const result = await prisma.hiddenCollection.createMany({
+		data: collections.map((c) => ({
+			userId,
+			source: c.source === 'trakt' ? ('TRAKT' as const) : ('TMDB' as const),
+			collectionId: c.id
+		})),
+		skipDuplicates: true
+	});
+	return result.count;
 }

@@ -478,6 +478,13 @@ model CatalogEntry {
 - 6.8.4. Escopo: são as coleções do TMDb (`belongs_to_collection`), que por regra do TMDb só agrupam franquias/sequências. Filmografias de diretor, box sets de estúdio e curadorias (ex.: listas oficiais do Trakt) não existem como coleção no TMDb.
 - 6.8.3. Detalhes do filme: o campo **Coleção** na barra lateral leva à coleção (logado).
 
+## **6.9. Exportar e restaurar**
+
+- 6.9.1. Em Configurações → **Exportar seus dados**, dois downloads diretos (`GET /settings/export/json|csv`, exceção só de leitura à regra das Form Actions; protegidos por estar sob `/settings`):
+  - **Backup completo (.json)**, formato `super-eight-backup` versão 1 (`$lib/import/backup.ts`): perfil e preferências, cada filme com algo do usuário (estado, nota 1–10, favorito, sessões com anotação, review com spoiler, imagens escolhidas na Galeria), listas (tipo, visibilidade, itens em ordem) e coleções ocultas. Filmes identificados pelo ID do TMDb, com título original e ano só para leitura.
+  - **Planilhas / Letterboxd (.zip com CSV)**: `diary.csv`, `ratings.csv`, `watchlist.csv`, `reviews.csv` e `lists/*.csv`, com `tmdbID`, `Rating` em estrelas (0,5–5) e `Rating10`, no formato aceito pelo importador do Letterboxd; UTF-8 com BOM (Excel) e um `README.txt`.
+- 6.9.2. **Restaurar**: a página de importação (§6.7, agora "Importar") aceita também o `.json`. Como os IDs já vêm no arquivo, pula a busca no TMDb; usa as mesmas actions em lotes, com os extras do backup (imagens escolhidas — só se o filme ainda não tiver outras —, spoiler da review, tipo e visibilidade das listas e a action `hidden` para as coleções ocultas). Mesmas regras de não duplicar nem sobrescrever; um backup restaurado sobre os mesmos dados não muda nada, e restaurar o que foi apagado devolve o estado original (exceto as datas de adição). Perfil e preferências ficam só como registro (não são restaurados).
+
 # **7. Deploy, Infraestrutura e CI/CD**
 
 ## **7.1. Configuração de Build (Vercel + SvelteKit)**
