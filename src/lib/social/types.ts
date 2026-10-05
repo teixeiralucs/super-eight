@@ -75,14 +75,51 @@ export interface ProfileData {
 	lists: ListSummary[];
 }
 
-export interface FeedItem {
-	id: string;
-	watchedAt: Date;
-	createdAt: Date;
-	rating: number | null;
-	isRewatch: boolean;
-	author: UserChip;
-	movie: MovieCard;
+/**
+ * Evento do feed (§6.6.3): sessão assistida, review ou lista pública nova de quem se segue.
+ * `at` ordena e agrupa por dia (sessão: dia assistido; review/lista: quando foi criada).
+ */
+export type FeedItem =
+	| {
+			kind: 'session';
+			id: string;
+			at: Date;
+			createdAt: Date;
+			rating: number | null;
+			isRewatch: boolean;
+			author: UserChip;
+			movie: MovieCard;
+	  }
+	| {
+			kind: 'review';
+			id: string;
+			at: Date;
+			createdAt: Date;
+			/** Nota atual do autor para o filme. */
+			rating: number | null;
+			content: string;
+			containsSpoilers: boolean;
+			author: UserChip;
+			movie: MovieCard;
+	  }
+	| {
+			kind: 'list';
+			id: string;
+			at: Date;
+			createdAt: Date;
+			author: UserChip;
+			list: ListSummary;
+	  };
+
+export type FeedKind = FeedItem['kind'];
+
+/** Pessoa sugerida para seguir, com o motivo. */
+export interface PersonSuggestion {
+	user: UserChip;
+	reason:
+		| { kind: 'taste'; shared: number }
+		| { kind: 'network'; via: string; count: number }
+		| { kind: 'popular'; followers: number };
 }
 
 export interface PersonResult extends UserChip {

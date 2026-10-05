@@ -3,7 +3,14 @@ import { z } from 'zod';
 import { m } from '$lib/paraglide/messages';
 import { listFieldsSchema, listMovieSchema, reorderSchema } from '$lib/schemas/lists';
 import { LibraryRuleError } from '$lib/server/errors';
-import { deleteList, getList, removeFromList, reorderList, updateList } from '$lib/server/lists';
+import {
+	deleteList,
+	getList,
+	removeFromList,
+	reorderList,
+	toggleListLike,
+	updateList
+} from '$lib/server/lists';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -46,6 +53,7 @@ export const actions: Actions = {
 		removeFromList(userId, listId, movieId)
 	),
 	reorder: action(reorderSchema, (userId, listId, { order }) => reorderList(userId, listId, order)),
+	like: action(z.object({}), (userId, listId) => toggleListLike(userId, listId)),
 	delete: async (event) => {
 		const result = await action(z.object({}), (userId, listId) => deleteList(userId, listId))(
 			event

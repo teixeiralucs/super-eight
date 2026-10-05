@@ -8,6 +8,7 @@
 	import CheckIcon from '@lucide/svelte/icons/check';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
 	import GripVerticalIcon from '@lucide/svelte/icons/grip-vertical';
+	import HeartIcon from '@lucide/svelte/icons/heart';
 	import LinkIcon from '@lucide/svelte/icons/link';
 	import ListOrderedIcon from '@lucide/svelte/icons/list-ordered';
 	import LockIcon from '@lucide/svelte/icons/lock';
@@ -197,6 +198,42 @@
 						{m.list_edit()}
 					</button>
 				{/if}
+			{/if}
+			{#if list.isPublic && !list.isOwner && data.signedIn}
+				<!-- Curtir (listas públicas de outras pessoas) -->
+				<form
+					method="POST"
+					action="?/like"
+					use:enhance={withFeedback(undefined, {
+						success: list.likedByMe ? m.toast_list_unliked() : m.toast_list_liked()
+					})}
+				>
+					<button
+						aria-pressed={list.likedByMe}
+						aria-label={list.likedByMe
+							? m.list_unlike_label({ title: list.title })
+							: m.list_like_label({ title: list.title })}
+						class={[
+							'inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition',
+							list.likedByMe
+								? 'border-neon-pink/60 bg-neon-pink/15 text-white'
+								: 'border-white/20 bg-background/40 hover:border-white/50'
+						]}
+					>
+						<HeartIcon
+							class={['size-4', list.likedByMe && 'fill-neon-pink text-neon-pink']}
+							aria-hidden="true"
+						/>
+						{list.likedByMe ? m.list_liked() : m.list_like()}
+						{#if list.likeCount}<span class="text-white/60 tabular-nums">{list.likeCount}</span
+							>{/if}
+					</button>
+				</form>
+			{:else if list.likeCount}
+				<span class="inline-flex items-center gap-2 px-2 text-sm text-white/60">
+					<HeartIcon class="size-4" aria-hidden="true" />
+					{plural(list.likeCount, m.list_likes_one, m.list_likes_other)}
+				</span>
 			{/if}
 			{#if list.isPublic}
 				<button

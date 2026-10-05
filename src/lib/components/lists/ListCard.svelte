@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import GlobeIcon from '@lucide/svelte/icons/globe';
+	import HeartIcon from '@lucide/svelte/icons/heart';
 	import ListOrderedIcon from '@lucide/svelte/icons/list-ordered';
 	import LockIcon from '@lucide/svelte/icons/lock';
 	import { plural } from '$lib/i18n';
@@ -53,6 +54,22 @@
 				<LockIcon class="size-3.5" aria-hidden="true" />{m.list_private()}
 			{/if}
 		</span>
+		{#if list.owner}
+			<span class="text-white/30" aria-hidden="true">·</span>
+			<span class="tracking-normal text-white/60 normal-case"
+				>{m.list_by({ username: list.owner.username })}</span
+			>
+		{/if}
+		{#if list.likeCount}
+			<span
+				class="ml-auto inline-flex items-center gap-1 tracking-normal text-white/70"
+				title={plural(list.likeCount, m.list_likes_one, m.list_likes_other)}
+			>
+				<HeartIcon class="size-3.5 fill-current text-neon-pink" aria-hidden="true" />
+				<span class="tabular-nums">{list.likeCount}</span>
+				<span class="sr-only">{plural(list.likeCount, m.list_likes_one, m.list_likes_other)}</span>
+			</span>
+		{/if}
 	</div>
 	<div class="mt-2 flex items-end justify-between gap-6">
 		<h2

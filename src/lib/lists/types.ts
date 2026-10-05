@@ -14,6 +14,9 @@ export interface ListSummary {
 	count: number;
 	cover: { backdropPath: string | null; originalTitle: string } | null;
 	updatedAt: Date;
+	likeCount: number;
+	/** Dono da lista (só nas listas de outras pessoas, ex.: aba Curtidas). */
+	owner?: { username: string; name: string | null; avatarUrl: string | null };
 }
 
 export interface ListItem {
@@ -32,6 +35,9 @@ export interface ListDetail {
 	isPublic: boolean;
 	owner: { username: string; name: string | null };
 	isOwner: boolean;
+	likeCount: number;
+	/** Quem está vendo curtiu (sempre falso para o dono e para visitantes). */
+	likedByMe: boolean;
 	items: ListItem[];
 }
 

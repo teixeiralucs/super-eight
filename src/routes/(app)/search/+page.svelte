@@ -8,6 +8,7 @@
 	import XIcon from '@lucide/svelte/icons/x';
 	import MoviePosterCard from '$lib/components/MoviePosterCard.svelte';
 	import Avatar from '$lib/components/social/Avatar.svelte';
+	import PeopleSuggestions from '$lib/components/social/PeopleSuggestions.svelte';
 	import FollowButton from '$lib/components/social/FollowButton.svelte';
 	import { plural } from '$lib/i18n';
 	import { infiniteScroll } from '$lib/attachments/infinite-scroll';
@@ -176,6 +177,7 @@
 	</header>
 
 	{#if people}
+		{#if !data.q}<PeopleSuggestions suggestions={data.suggestions} />{/if}
 		{#if data.q && !data.people.length}
 			<p class="rounded-3xl border border-white/10 px-6 py-16 text-center text-muted-foreground">
 				{m.search_people_none()}

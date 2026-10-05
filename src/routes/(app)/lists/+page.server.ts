@@ -3,17 +3,18 @@ import { z } from 'zod';
 import { listFieldsSchema } from '$lib/schemas/lists';
 import { getUserCollections, setCollectionHidden } from '$lib/server/collections';
 import { countTraktPending, syncTraktForUser } from '$lib/server/trakt';
-import { createList, getUserLists } from '$lib/server/lists';
+import { createList, getLikedLists, getUserLists } from '$lib/server/lists';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) error(401);
-	const [lists, collections, traktPending] = await Promise.all([
+	const [lists, liked, collections, traktPending] = await Promise.all([
 		getUserLists(locals.user.id, locals.locale),
+		getLikedLists(locals.user.id, locals.locale),
 		getUserCollections(locals.user.id, locals.locale),
 		countTraktPending(locals.user.id)
 	]);
-	return { lists, collections, traktPending };
+	return { lists, liked, collections, traktPending };
 };
 
 export const actions: Actions = {

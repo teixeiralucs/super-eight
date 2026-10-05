@@ -35,7 +35,7 @@ export async function getUserLists(
 				kind: true,
 				isPublic: true,
 				updatedAt: true,
-				_count: { select: { items: true } },
+				_count: { select: { items: true, likes: true } },
 				items: {
 					orderBy: { position: 'asc' },
 					take: 1,
@@ -51,9 +51,70 @@ export async function getUserLists(
 		return {
 			...list,
 			count: _count.items,
+			likeCount: _count.likes,
 			cover: first ? { backdropPath: first.backdropPath, originalTitle: first.originalTitle } : null
 		};
 	});
+}
+
+/**
+ * Listas de outras pessoas que o usuário curtiu (aba Curtidas), as curtidas mais recentes
+ * primeiro. Lista que virou privada some daqui (a curtida fica guardada).
+ */
+export async function getLikedLists(userId: string, locale: Locale): Promise<ListSummary[]> {
+	const likes = await prisma.listLike.findMany({
+		where: { userId, list: { isPublic: true, userId: { not: userId } } },
+		orderBy: { createdAt: 'desc' },
+		select: {
+			list: {
+				select: {
+					id: true,
+					userId: true,
+					title: true,
+					description: true,
+					kind: true,
+					isPublic: true,
+					updatedAt: true,
+					user: { select: { username: true, name: true, avatarUrl: true } },
+					_count: { select: { items: true, likes: true } },
+					items: {
+						orderBy: { position: 'asc' },
+						take: 1,
+						select: { movie: { select: movieCardSelect } }
+					}
+				}
+			}
+		}
+	});
+	// Capa com o DNA visual de cada dono.
+	const owners = [...new Set(likes.map(({ list }) => list.userId))];
+	const artworks = new Map(
+		await Promise.all(owners.map(async (id) => [id, await getArtworks(id)] as const))
+	);
+	return likes.map(({ list: { _count, items, user, userId: ownerId, ...list } }) => {
+		const first =
+			items[0] && withArtwork(localizeCard(items[0].movie, locale), artworks.get(ownerId)!);
+		return {
+			...list,
+			count: _count.items,
+			likeCount: _count.likes,
+			owner: user,
+			cover: first ? { backdropPath: first.backdropPath, originalTitle: first.originalTitle } : null
+		};
+	});
+}
+
+/** Curtir/descurtir uma lista pública de outra pessoa. */
+export async function toggleListLike(userId: string, listId: string) {
+	const list = await prisma.list.findFirst({
+		where: { id: listId, isPublic: true, userId: { not: userId } },
+		select: { id: true }
+	});
+	if (!list) throw new LibraryRuleError(m.error_list_not_found());
+	const key = { userId_listId: { userId, listId } };
+	const existing = await prisma.listLike.findUnique({ where: key, select: { userId: true } });
+	if (existing) await prisma.listLike.delete({ where: key });
+	else await prisma.listLike.create({ data: { userId, listId } });
 }
 
 /**
@@ -76,6 +137,8 @@ export async function getList(
 			kind: true,
 			isPublic: true,
 			user: { select: { username: true, name: true } },
+			_count: { select: { likes: true } },
+			likes: viewerId ? { where: { userId: viewerId }, select: { userId: true } } : false,
 			items: {
 				orderBy: { position: 'asc' },
 				select: { position: true, addedAt: true, movie: { select: movieCardSelect } }
@@ -99,6 +162,8 @@ export async function getList(
 		isPublic: list.isPublic,
 		owner: list.user,
 		isOwner,
+		likeCount: list._count.likes,
+		likedByMe: Array.isArray(list.likes) && list.likes.length > 0,
 		items: list.items.map((item) => ({
 			position: item.position,
 			addedAt: item.addedAt,

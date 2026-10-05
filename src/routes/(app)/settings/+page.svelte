@@ -8,6 +8,7 @@
 	import DownloadIcon from '@lucide/svelte/icons/download';
 	import FileJsonIcon from '@lucide/svelte/icons/file-json';
 	import FileSpreadsheetIcon from '@lucide/svelte/icons/file-spreadsheet';
+	import AvatarField from '$lib/components/social/AvatarField.svelte';
 	import { countryName } from '$lib/format';
 	import { LOCALE_NAMES, locales, REGIONS } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
@@ -70,6 +71,7 @@
 				class="shrink-0 text-xs text-white/55 hover:text-white">{m.settings_view_profile()}</a
 			>
 		</div>
+		<AvatarField user={data.account} />
 		<label class="flex flex-col gap-2">
 			<span class="text-xs text-white/60">{m.settings_name()}</span>
 			<input name="name" maxlength="60" value={data.account.name ?? ''} class={field} />

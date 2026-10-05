@@ -1,8 +1,12 @@
 import { error } from '@sveltejs/kit';
-import { getFeed } from '$lib/server/social';
+import { getFeed, suggestPeople } from '$lib/server/social';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user) error(401);
-	return { items: await getFeed(locals.user.id, locals.locale) };
+	const [items, suggestions] = await Promise.all([
+		getFeed(locals.user.id, locals.locale),
+		suggestPeople(locals.user.id)
+	]);
+	return { items, suggestions };
 };

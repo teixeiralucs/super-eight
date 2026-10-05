@@ -6,6 +6,7 @@
 	import { untrack } from 'svelte';
 	import ChevronRightIcon from '@lucide/svelte/icons/chevron-right';
 	import LoaderCircleIcon from '@lucide/svelte/icons/loader-circle';
+	import HeartIcon from '@lucide/svelte/icons/heart';
 	import LibraryBigIcon from '@lucide/svelte/icons/library-big';
 	import ListVideoIcon from '@lucide/svelte/icons/list-video';
 	import PlusIcon from '@lucide/svelte/icons/plus';
@@ -23,9 +24,10 @@
 	 */
 	let { data, form }: { data: PageData; form: ActionData } = $props();
 
-	const tab = $derived(
-		page.url.searchParams.get('tab') === 'collections' ? 'collections' : 'lists'
-	);
+	const tab = $derived.by(() => {
+		const value = page.url.searchParams.get('tab');
+		return value === 'collections' || value === 'liked' ? value : 'lists';
+	});
 
 	// ── Coleções: filtro por origem ──
 	let source = $state<'all' | 'tmdb' | 'trakt'>('all');
@@ -99,6 +101,12 @@
 			label: m.lists_tab_lists(),
 			count: data.lists.length,
 			href: resolve('/(app)/lists')
+		},
+		{
+			id: 'liked',
+			label: m.lists_tab_liked(),
+			count: data.liked.length,
+			href: `${resolve('/(app)/lists')}?tab=liked`
 		},
 		{
 			id: 'collections',
@@ -184,6 +192,23 @@
 					<PlusIcon class="size-4" aria-hidden="true" />
 					{m.lists_new()}
 				</button>
+			</section>
+		{/if}
+	{:else if tab === 'liked'}
+		<!-- Listas públicas de outras pessoas que você curtiu -->
+		{#if data.liked.length}
+			<ul class="grid gap-6 md:grid-cols-2">
+				{#each data.liked as list (list.id)}
+					<li><ListCard {list} /></li>
+				{/each}
+			</ul>
+		{:else}
+			<section
+				class="flex flex-col items-center gap-4 rounded-3xl border border-white/10 px-6 py-20 text-center"
+			>
+				<HeartIcon class="size-8 text-neon-pink" aria-hidden="true" />
+				<h2 class="font-display text-2xl font-semibold">{m.lists_liked_empty_title()}</h2>
+				<p class="max-w-md text-sm text-muted-foreground">{m.lists_liked_empty_text()}</p>
 			</section>
 		{/if}
 	{:else}
