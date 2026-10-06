@@ -1,3 +1,4 @@
+import ChartColumnIcon from '@lucide/svelte/icons/chart-column';
 import BookOpenIcon from '@lucide/svelte/icons/book-open';
 import LayoutGridIcon from '@lucide/svelte/icons/layout-grid';
 import ListVideoIcon from '@lucide/svelte/icons/list-video';
@@ -10,6 +11,7 @@ import { m } from '$lib/paraglide/messages';
 export const APP_NAV = [
 	{ href: '/dashboard', label: m.nav_library, icon: LayoutGridIcon },
 	{ href: '/diary', label: m.nav_diary, icon: BookOpenIcon },
+	{ href: '/stats', label: m.nav_stats, icon: ChartColumnIcon },
 	{ href: '/lists', label: m.nav_lists, icon: ListVideoIcon },
 	{ href: '/feed', label: m.nav_community, icon: UsersIcon }
 ] as const;

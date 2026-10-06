@@ -50,7 +50,8 @@ const PROTECTED_PREFIXES = [
 	// Coleções do TMDb mostram a biblioteca de quem vê.
 	'/lists/collections',
 	// Páginas filtradas da biblioteca (pessoa, país, estúdio…).
-	'/library'
+	'/library',
+	'/stats'
 ];
 /** Protegidas só na rota exata: `/lists/[id]` público abre para qualquer pessoa. */
 const PROTECTED_EXACT = ['/lists'];

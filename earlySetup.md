@@ -497,6 +497,15 @@ model CatalogEntry {
 - 6.10.3. Páginas de pessoa, país, idioma, gênero e estúdio repetem a grade do dashboard (abas Todos/Assistidos/Quero ver/Favoritos com contagem, ordenação e direção; `LibraryToolbar` com `base`/`keep`), com cabeçalho próprio: foto da pessoa ou logo do estúdio (TMDb `/person`, `/company`, em cache), nome traduzido do país/idioma/gênero e "N filmes na sua biblioteca". A pessoa tem filtro por função (Todas/Direção/Roteiro/Elenco/Música, só as que têm filmes; `?role=`), contando um filme em mais de uma função quando for o caso.
 - 6.10.4. **Lançamento** (`release/12-25`): os filmes da biblioteca lançados naquele dia em qualquer ano, agrupados por ano (mais recentes primeiro), no formato do diário. Usa a data de lançamento original (a guardada no cache); quando a estreia no país de quem vê é outra, a barra lateral mostra as duas e o link fica na original ("Lançamento original").
 
+## **6.11. Estatísticas**
+
+- 6.11.1. `/stats` (Protegida, na navegação principal): o "seu ano em filmes" a partir do diário. Período por `?year=AAAA` (só anos com sessões) ou `?year=all`; sem parâmetro, o ano atual se tiver sessões, senão desde sempre. Sem sessões, convite para registrar a primeira.
+- 6.11.2. Números: filmes (distintos; quantos vistos pela primeira vez), tempo (soma da duração de cada sessão, em horas e dias), sessões (quantas revisões — marcadas como tal ou de filme já visto antes, mesmo em outro ano) e nota média (as notas da biblioteca dos filmes do período, com histograma).
+- 6.11.3. Gráficos: sessões por mês (um ano) ou por ano (desde sempre), por dia da semana e filmes por década de lançamento.
+- 6.11.4. Destaques: os 6 mais bem avaliados (nota, depois favorito, depois nº de sessões) e recordes — primeira e última sessão do período, mais revisto (2+ sessões), mais longo e mais antigo.
+- 6.11.5. Rankings por filmes distintos (desempate pela sua nota média, mostrada ao lado): direção, elenco (só os 15 primeiros de cada filme), roteiro, música, gênero, país, idioma original e estúdio — com foto/logo do TMDb. Cada linha leva à biblioteca filtrada (§6.10; pessoas já com a função em `?role=`).
+- 6.11.6. Cálculo puro em `$lib/library/insights.ts` (testado); `$lib/server/insights.ts` busca o diário, a biblioteca e os nomes/fotos no TMDb (em cache).
+
 # **7. Deploy, Infraestrutura e CI/CD**
 
 ## **7.1. Configuração de Build (Vercel + SvelteKit)**

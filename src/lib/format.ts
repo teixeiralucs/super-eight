@@ -65,6 +65,11 @@ export function todayIso(offsetDays = 0) {
 /** "domingo" (datas do diário, em UTC). */
 export const formatWeekday = (date: Date) =>
 	dateFormat({ weekday: 'long', timeZone: 'UTC' }).format(date);
+/** 0 → "dom" (dia da semana 0–6, domingo primeiro), para eixos de gráfico. */
+export const formatWeekdayShort = (day: number) =>
+	dateFormat({ weekday: 'short', timeZone: 'UTC' })
+		.format(new Date(Date.UTC(2000, 0, 2 + day)))
+		.replace('.', '');
 /** 8 → "setembro" (mês 0–11). */
 /** "12-25" → "25 de dezembro" (dia de lançamento, sem ano). */
 export const formatDayMonth = (monthDay: string) =>
