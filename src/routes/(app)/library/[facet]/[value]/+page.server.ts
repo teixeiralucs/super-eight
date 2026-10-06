@@ -29,15 +29,7 @@ export const load: PageServerLoad = async ({ params, url, locals, fetch }) => {
 		facet === 'person' && (PERSON_ROLES as readonly string[]).includes(roleParam ?? '')
 			? (roleParam as PersonRole)
 			: 'all';
-	const page = await getFacetPage(
-		locals.user.id,
-		facet,
-		value,
-		filters,
-		role,
-		locals.locale,
-		fetch
-	);
+	const page = await getFacetPage(locals.user.id, facet, value, filters, role, locals, fetch);
 	if (!page) error(404, m.error_facet_not_found());
 	return { facet, value, years: null, page, filters, role };
 };

@@ -6,6 +6,7 @@ import {
 	getMovieImages,
 	localizedLogos
 } from '$lib/server/tmdb';
+import { refreshWatch } from '$lib/server/watch';
 
 /** Busca a coleção (saga) no TMDb e grava/renova o cache `Collection`. */
 export async function refreshCollection(id: number, fetchFn?: typeof fetch) {
@@ -68,9 +69,16 @@ export async function ensureMovie(tmdbId: number, fetchFn?: typeof fetch) {
 		...details.credits
 	};
 
-	return prisma.movie.upsert({
+	const movie = await prisma.movie.upsert({
 		where: { id: tmdbId },
 		create: { id: tmdbId, ...data },
 		update: data
 	});
+	// Filme novo no cache: já sai com "onde assistir" (a rotina diária renova depois).
+	if (!movie.watchCheckedAt) {
+		await refreshWatch(tmdbId, fetchFn).catch((err) =>
+			console.error('[movies] onde assistir indisponível:', tmdbId, String(err))
+		);
+	}
+	return movie;
 }

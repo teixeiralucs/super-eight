@@ -6,10 +6,14 @@ import { prisma } from '$lib/server/db';
 import { removeAvatar, uploadAvatar } from '$lib/server/avatar';
 import { LibraryRuleError } from '$lib/server/errors';
 import { updateProfile } from '$lib/server/social';
+import { getRegionProviders } from '$lib/server/tmdb';
+import { setStreamingServices } from '$lib/server/watch';
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, fetch }) => {
 	if (!locals.user) error(401);
+	// Lista do país de quem vê; se o TMDb falhar, a seção avisa em vez de quebrar a página.
+	const providers = getRegionProviders(locals.region, locals.locale, fetch).catch(() => null);
 	const user = await prisma.user.findUnique({
 		where: { id: locals.user.id },
 		select: {
@@ -19,7 +23,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			avatarUrl: true,
 			isPrivate: true,
 			locale: true,
-			region: true
+			region: true,
+			streamingServices: true
 		}
 	});
 	if (!user) error(404);
@@ -34,9 +39,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 			bio: user.bio,
 			avatarUrl: user.avatarUrl,
 			isPrivate: user.isPrivate
-		}
+		},
+		streaming: { providers: await providers, selected: user.streamingServices }
 	};
 };
+
+const servicesSchema = z.array(z.coerce.number().int().positive().max(999_999)).max(100);
 
 export const actions: Actions = {
 	/** Nome, bio e privacidade (idioma/região vão para /preferences). */
@@ -62,6 +70,15 @@ export const actions: Actions = {
 			throw err;
 		}
 		return { avatarSaved: true };
+	},
+
+	/** Streamings que a pessoa assina (§6.12). */
+	streaming: async ({ request, locals }) => {
+		if (!locals.user) error(401);
+		const parsed = servicesSchema.safeParse((await request.formData()).getAll('service'));
+		if (!parsed.success) return fail(400, { message: m.error_invalid_data() });
+		await setStreamingServices(locals.user.id, parsed.data);
+		return { streamingSaved: true };
 	},
 
 	removeAvatar: async ({ locals }) => {

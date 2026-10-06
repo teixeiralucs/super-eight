@@ -12,7 +12,7 @@ const {
 	toMovieCache,
 	toMovieFull
 } = await import('./tmdb');
-const { creditIds } = await import('./tmdb-normalize');
+const { creditIds, toWatchOptions, toWatchRows } = await import('./tmdb-normalize');
 
 const raw = {
 	id: 1,
@@ -300,5 +300,59 @@ describe('creditIds', () => {
 			composerIds: [3],
 			studioIds: [9]
 		});
+	});
+});
+
+describe('onde assistir (§6.12)', () => {
+	const p = (id: number, priority: number) => ({
+		provider_id: id,
+		provider_name: `P${id}`,
+		logo_path: `/p${id}.png`,
+		display_priority: priority
+	});
+	const raw = {
+		results: {
+			BR: {
+				link: 'https://www.themoviedb.org/movie/1/watch?locale=BR',
+				flatrate: [p(8, 2), p(307, 1)],
+				ads: [p(300, 5)],
+				free: [p(300, 5)],
+				rent: [p(2, 9)]
+			},
+			US: { buy: [p(2, 1)] }
+		}
+	};
+
+	it('junta assinatura, grátis e com anúncios, sem repetir, por prioridade', () => {
+		expect(toWatchOptions(raw.results.BR)).toEqual({
+			link: raw.results.BR.link,
+			stream: [
+				{ id: 307, name: 'P307', logoPath: '/p307.png' },
+				{ id: 8, name: 'P8', logoPath: '/p8.png' },
+				{ id: 300, name: 'P300', logoPath: '/p300.png' }
+			],
+			rent: [{ id: 2, name: 'P2', logoPath: '/p2.png' }],
+			buy: []
+		});
+		expect(toWatchOptions(undefined)).toBeNull();
+		expect(toWatchOptions({ link: 'x' })).toBeNull();
+	});
+
+	it('linhas de cache por região e o catálogo de serviços', () => {
+		const { regions, providers } = toWatchRows(raw);
+		expect(regions).toEqual([
+			{
+				region: 'BR',
+				link: raw.results.BR.link,
+				flatrate: [307, 8],
+				free: [300],
+				rent: [2],
+				buy: []
+			},
+			{ region: 'US', link: null, flatrate: [], free: [], rent: [], buy: [2] }
+		]);
+		expect(providers.map((provider) => provider.id).sort((a, b) => a - b)).toEqual([
+			2, 8, 300, 307
+		]);
 	});
 });

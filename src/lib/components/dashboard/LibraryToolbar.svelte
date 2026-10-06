@@ -150,6 +150,13 @@
 				return ratingLabel(value as RatingFilter);
 			case 'year':
 				return m.filter_year_value({ year: value });
+			case 'stream':
+				return value === 'mine'
+					? m.filter_stream_mine()
+					: m.filter_stream_value({
+							provider:
+								options?.providers.find((provider) => String(provider.id) === value)?.name ?? value
+						});
 		}
 	}
 
@@ -294,7 +301,7 @@
 			<div
 				id="painel-filtros"
 				hidden={!panelOpen}
-				class="grid gap-3 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+				class="grid gap-3 rounded-3xl border border-white/10 bg-white/[0.03] p-4 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7"
 			>
 				<div class="flex flex-col gap-1.5 text-xs text-muted-foreground">
 					<label for="filtro-genero">{m.filter_genre()}</label>
@@ -357,6 +364,22 @@
 						<option value="">{m.filter_any_year()}</option>
 						{#each options.years as year (year)}
 							<option value={year} selected={filters.year === String(year)}>{year}</option>
+						{/each}
+					</select>
+				</div>
+				<div class="flex flex-col gap-1.5 text-xs text-muted-foreground">
+					<label for="filtro-streaming">{m.filter_stream()}</label>
+					<select id="filtro-streaming" name="stream" onchange={submit} class={selectClass}>
+						<option value="">{m.filter_any_stream()}</option>
+						{#if options.hasServices}
+							<option value="mine" selected={filters.stream === 'mine'}
+								>{m.filter_stream_mine()}</option
+							>
+						{/if}
+						{#each options.providers as provider (provider.id)}
+							<option value={provider.id} selected={filters.stream === String(provider.id)}
+								>{provider.name}</option
+							>
 						{/each}
 					</select>
 				</div>

@@ -24,20 +24,22 @@ enum CatalogType {
 }
 
 model User {
-  id        String   @id @db.Uuid // = auth.users.id (criado por trigger)
-  email     String   @unique
-  username  String   @unique
-  name      String?
-  avatarUrl String?
-  bio       String?
+  id                String   @id @db.Uuid // = auth.users.id (criado por trigger)
+  email             String   @unique
+  username          String   @unique
+  name              String?
+  avatarUrl         String?
+  bio               String?
   /// Idioma escolhido ("pt" | "en" | "es"); nulo = segue o navegador.
-  locale    String?
+  locale            String?
   /// País (ISO 3166-1) para "Em cartaz", populares e estreia local; nulo = automático.
-  region    String?
+  region            String?
   /// Perfil privado: só nome, @ e listas públicas aparecem; fica fora do feed (§6.6).
-  isPrivate Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isPrivate         Boolean  @default(false)
+  /// Streamings que a pessoa assina (IDs de WatchProvider), destacados em "Onde assistir" (§6.12).
+  streamingServices Int[]    @default([])
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   library           LibraryEntry[]
   artworks          MovieArtwork[]
@@ -84,6 +86,8 @@ model Movie {
   imdbId           String?
   /// Quando as listas oficiais do Trakt com este filme foram buscadas; nulo = ainda não.
   traktCheckedAt   DateTime?
+  /// Quando "onde assistir" foi buscado (todas as regiões); nulo = ainda não.
+  watchCheckedAt   DateTime?
   /// IDs do TMDb para os filtros da biblioteca (§6.10): pessoas por função e estúdios.
   directorIds      Int[]     @default([])
   writerIds        Int[]     @default([])
@@ -101,6 +105,7 @@ model Movie {
   listItems      ListMovie[]
   reviews        Review[]
   catalogEntries CatalogEntry[]
+  watch          MovieWatch[]
 
   @@index([collectionId])
 }
@@ -186,6 +191,37 @@ model MovieArtwork {
   movie Movie @relation(fields: [movieId], references: [id])
 
   @@id([userId, movieId])
+}
+
+/// Onde assistir um filme numa região (TMDb, dados do JustWatch — §6.12). Renovado pela rotina
+/// diária; guarda todas as regiões que o TMDb devolve.
+model MovieWatch {
+  movieId   Int
+  /// ISO 3166-1 (ex.: "BR").
+  region    String
+  /// Página do TMDb com os links de cada serviço.
+  link      String?
+  /// IDs de WatchProvider: assinatura, grátis (inclui com anúncios), aluguel e compra.
+  flatrate  Int[]    @default([])
+  free      Int[]    @default([])
+  rent      Int[]    @default([])
+  buy       Int[]    @default([])
+  updatedAt DateTime @updatedAt
+
+  movie Movie @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, region])
+  @@index([region])
+}
+
+/// Serviço de streaming/loja (TMDb): nome, logo e prioridade de exibição.
+model WatchProvider {
+  id        Int      @id
+  name      String
+  logoPath  String?
+  /// Menor = mais relevante (ordem do TMDb).
+  priority  Int      @default(999)
+  updatedAt DateTime @updatedAt
 }
 
 model DiaryEntry {

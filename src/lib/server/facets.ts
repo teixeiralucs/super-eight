@@ -139,7 +139,7 @@ export async function getFacetPage(
 	value: string,
 	filters: LibraryFilters,
 	role: PersonRole,
-	locale: Locale,
+	{ locale, region }: { locale: Locale; region: string },
 	fetchFn?: typeof fetch
 ) {
 	const [header, movieWhere] = await Promise.all([
@@ -148,7 +148,7 @@ export async function getFacetPage(
 	]);
 	if (!header) return null;
 	const [grid, total, roles] = await Promise.all([
-		getLibraryGrid(userId, filters, locale, movieWhere),
+		getLibraryGrid(userId, filters, { locale, region }, movieWhere),
 		viewCounts(userId, movieWhere),
 		facet === 'person' ? roleCounts(userId, Number(value)) : null
 	]);

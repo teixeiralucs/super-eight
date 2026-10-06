@@ -6,6 +6,8 @@ import type {
 	Localized,
 	MovieCacheData,
 	MovieImage,
+	MovieWatchOptions,
+	WatchProviderInfo,
 	TMDbMovie,
 	TMDbMovieFull,
 	Trailer
@@ -114,6 +116,81 @@ export interface RawMovieFull extends RawMovieDetails {
 	vote_count: number;
 	videos?: { results: RawVideo[] };
 	release_dates?: RawReleaseDates;
+	'watch/providers'?: RawWatchProviders;
+}
+
+// ─── Onde assistir (JustWatch via TMDb) ──────────────────────────────
+export interface RawWatchProvider {
+	provider_id: number;
+	provider_name: string;
+	logo_path: string | null;
+	display_priority: number;
+}
+
+export interface RawWatchRegion {
+	link?: string;
+	flatrate?: RawWatchProvider[];
+	free?: RawWatchProvider[];
+	ads?: RawWatchProvider[];
+	rent?: RawWatchProvider[];
+	buy?: RawWatchProvider[];
+}
+
+export interface RawWatchProviders {
+	results: Record<string, RawWatchRegion>;
+}
+
+const byPriority = (a: RawWatchProvider, b: RawWatchProvider) =>
+	a.display_priority - b.display_priority;
+
+/** Sem repetir o serviço (o mesmo pode vir em "grátis" e "com anúncios"). */
+function uniqueProviders(lists: (RawWatchProvider[] | undefined)[]) {
+	const seen = new Map<number, RawWatchProvider>();
+	for (const provider of lists.flatMap((list) => list ?? []).sort(byPriority)) {
+		if (!seen.has(provider.provider_id)) seen.set(provider.provider_id, provider);
+	}
+	return [...seen.values()];
+}
+
+const providerInfo = (provider: RawWatchProvider): WatchProviderInfo => ({
+	id: provider.provider_id,
+	name: provider.provider_name,
+	logoPath: provider.logo_path
+});
+
+/** Opções de uma região para a tela do filme; nulo quando não há nenhuma. */
+export function toWatchOptions(region: RawWatchRegion | undefined): MovieWatchOptions | null {
+	if (!region) return null;
+	const stream = uniqueProviders([region.flatrate, region.free, region.ads]).map(providerInfo);
+	const rent = uniqueProviders([region.rent]).map(providerInfo);
+	const buy = uniqueProviders([region.buy]).map(providerInfo);
+	if (!stream.length && !rent.length && !buy.length) return null;
+	return { link: region.link ?? null, stream, rent, buy };
+}
+
+/** Todas as regiões, para o cache `MovieWatch`, e os serviços que aparecem nelas. */
+export function toWatchRows(raw: RawWatchProviders) {
+	const providers = new Map<number, RawWatchProvider>();
+	const ids = (lists: (RawWatchProvider[] | undefined)[]) =>
+		uniqueProviders(lists).map((provider) => {
+			providers.set(provider.provider_id, provider);
+			return provider.provider_id;
+		});
+	const regions = Object.entries(raw.results ?? {}).map(([region, data]) => ({
+		region,
+		link: data.link ?? null,
+		flatrate: ids([data.flatrate]),
+		free: ids([data.free, data.ads]),
+		rent: ids([data.rent]),
+		buy: ids([data.buy])
+	}));
+	return {
+		regions,
+		providers: [...providers.values()].map((provider) => ({
+			...providerInfo(provider),
+			priority: provider.display_priority
+		}))
+	};
 }
 
 // ─── Normalização ────────────────────────────────────────────────────
@@ -463,6 +540,7 @@ export function toMovieFull(
 		logoPath: pickLogo(logos, raw.original_language ?? null, trailerLanguage),
 		collection: raw.belongs_to_collection
 			? { id: raw.belongs_to_collection.id, name: raw.belongs_to_collection.name }
-			: null
+			: null,
+		watch: toWatchOptions(raw['watch/providers']?.results[region])
 	};
 }

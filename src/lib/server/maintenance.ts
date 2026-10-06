@@ -1,5 +1,6 @@
 import { prisma } from '$lib/server/db';
 import { ensureMovie, refreshCollection } from '$lib/server/movies';
+import { refreshWatch } from '$lib/server/watch';
 import { checkMovies, refreshTraktList, traktEnabled, TraktRateLimit } from '$lib/server/trakt';
 
 /**
@@ -13,6 +14,8 @@ const DAY = 24 * 60 * 60 * 1000;
 const STALE_MS = 7 * DAY;
 /** De quanto em quanto tempo reperguntar ao Trakt em que listas um filme está. */
 const TRAKT_RECHECK_MS = 30 * DAY;
+/** "Onde assistir" muda toda semana: renova os filmes das bibliotecas a cada 3 dias. */
+const WATCH_STALE_MS = 3 * DAY;
 
 interface TaskResult {
 	done: number;
@@ -138,6 +141,23 @@ async function checkTraktMovies(deadline: number, fetchFn?: typeof fetch) {
 	};
 }
 
+/** 5. Onde assistir dos filmes das bibliotecas (nunca buscados primeiro, depois os mais antigos). */
+async function refreshWatchProviders(deadline: number, fetchFn?: typeof fetch) {
+	const movies = await prisma.movie.findMany({
+		where: {
+			libraryEntries: { some: {} },
+			OR: [
+				{ watchCheckedAt: null },
+				{ watchCheckedAt: { lt: new Date(Date.now() - WATCH_STALE_MS) } }
+			]
+		},
+		orderBy: { watchCheckedAt: { sort: 'asc', nulls: 'first' } },
+		take: 3000,
+		select: { id: true }
+	});
+	return runUntil(movies, deadline, 8, ({ id }) => refreshWatch(id, fetchFn), 'onde assistir');
+}
+
 /**
  * Roda as tarefas em sequência, cada uma com sua fatia do orçamento total (o que uma não
  * usar passa para as seguintes). Sem `TRAKT_CLIENT_ID`, as tarefas do Trakt são puladas.
@@ -146,8 +166,9 @@ export async function runDailyMaintenance(budgetMs: number, fetchFn?: typeof fet
 	const started = Date.now();
 	const end = started + budgetMs;
 	const tasks = [
-		{ name: 'movies', share: 0.4, run: refreshMovies },
-		{ name: 'collections', share: 0.15, run: refreshCollections },
+		{ name: 'movies', share: 0.35, run: refreshMovies },
+		{ name: 'collections', share: 0.1, run: refreshCollections },
+		{ name: 'watch', share: 0.3, run: refreshWatchProviders },
 		...(traktEnabled()
 			? [
 					{ name: 'traktLists', share: 0.2, run: refreshTraktLists },

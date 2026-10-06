@@ -36,8 +36,10 @@ export interface MovieDetailData {
 	movie: TMDbMovieFull;
 	userData: MovieUserData | null;
 	signedIn: boolean;
-	/** País do usuário (estreia local). */
+	/** País do usuário (estreia local, onde assistir). */
 	region: string;
+	/** Streamings que a pessoa assina (destaque em "Onde assistir"). */
+	services: number[];
 }
 
 export const DETAIL_TABS = ['about', 'cast', 'reviews', 'gallery'] as const;

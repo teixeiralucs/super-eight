@@ -73,6 +73,24 @@ export interface TMDbMovieFull extends TMDbMovie {
 	logoPath: string | null;
 	/** Coleção (saga) do TMDb, com o nome no idioma de quem vê. */
 	collection: { id: number; name: string } | null;
+	/** Onde assistir na região de quem vê (nulo = nenhuma opção). */
+	watch: MovieWatchOptions | null;
+}
+
+/** Serviço de streaming/loja (TMDb, dados do JustWatch). */
+export interface WatchProviderInfo {
+	id: number;
+	name: string;
+	logoPath: string | null;
+}
+
+/** Onde assistir um filme numa região (§6.12). `stream` junta assinatura e grátis. */
+export interface MovieWatchOptions {
+	/** Página do TMDb com os links de cada serviço. */
+	link: string | null;
+	stream: WatchProviderInfo[];
+	rent: WatchProviderInfo[];
+	buy: WatchProviderInfo[];
 }
 
 export type Localized<T> = { pt: T; en: T; es: T };

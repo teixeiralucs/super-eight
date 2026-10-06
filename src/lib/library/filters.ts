@@ -77,14 +77,24 @@ export const libraryFiltersSchema = z
 		lang: optionalMatch(/^[a-z]{2,3}$/),
 		rating: z.enum(RATING_FILTERS).optional().catch(undefined),
 		/** Ano em que foi assistido (alguma sessão no diário). */
-		year: optionalMatch(/^\d{4}$/)
+		year: optionalMatch(/^\d{4}$/),
+		/** Disponível num streaming da região (ID do serviço) ou "mine" (nos que você assina). */
+		stream: optionalMatch(/^(mine|\d{1,6})$/)
 	})
 	.transform((filters) => ({ ...filters, dir: filters.dir ?? DEFAULT_DIRECTION[filters.sort] }));
 
 export type LibraryFilters = z.infer<typeof libraryFiltersSchema>;
 
 /** Filtros do painel (além da busca), na ordem da URL e dos chips. */
-export const EXTRA_FILTERS = ['genre', 'decade', 'country', 'lang', 'rating', 'year'] as const;
+export const EXTRA_FILTERS = [
+	'genre',
+	'decade',
+	'country',
+	'lang',
+	'rating',
+	'year',
+	'stream'
+] as const;
 export type ExtraFilter = (typeof EXTRA_FILTERS)[number];
 
 /** Valores que existem na biblioteca, para as opções do painel de filtros. */
@@ -97,6 +107,10 @@ export interface LibraryFilterOptions {
 	languages: string[];
 	/** Anos com sessões no diário. */
 	years: number[];
+	/** Streamings da região com algum filme da biblioteca. */
+	providers: { id: number; name: string; logoPath: string | null }[];
+	/** A pessoa marcou os streamings que assina (habilita "Nos meus streamings"). */
+	hasServices: boolean;
 }
 
 /** Algum filtro além da aba e da ordenação? */
@@ -115,7 +129,8 @@ export function parseLibraryFilters(params: URLSearchParams): LibraryFilters {
 		country: get('country'),
 		lang: get('lang'),
 		rating: get('rating'),
-		year: get('year')
+		year: get('year'),
+		stream: get('stream')
 	});
 }
 

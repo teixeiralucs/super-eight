@@ -28,6 +28,7 @@ import {
 	toggleFavorite
 } from '$lib/server/library-actions';
 import { getMovieFull, TMDbError } from '$lib/server/tmdb';
+import { getStreamingServices } from '$lib/server/watch';
 import { m } from '$lib/paraglide/messages';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -40,7 +41,7 @@ function parseMovieId(raw: string) {
 export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 	const movieId = parseMovieId(params.id);
 
-	const [movie, userData] = await Promise.all([
+	const [movie, userData, services] = await Promise.all([
 		getMovieFull(
 			movieId,
 			{ locale: locals.locale, region: locals.region, fetch },
@@ -55,10 +56,11 @@ export const load: PageServerLoad = async ({ params, locals, fetch }) => {
 			if (err instanceof TMDbError && err.status === 404) error(404, m.error_movie_not_found());
 			throw err;
 		}),
-		locals.user ? getMovieUserData(locals.user.id, movieId) : null
+		locals.user ? getMovieUserData(locals.user.id, movieId) : null,
+		locals.user ? getStreamingServices(locals.user.id) : []
 	]);
 
-	return { movie, userData, signedIn: Boolean(locals.user), region: locals.region };
+	return { movie, userData, signedIn: Boolean(locals.user), region: locals.region, services };
 };
 
 /**

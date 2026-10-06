@@ -21,7 +21,9 @@ import {
 	type RawMovie,
 	type RawMovieForCache,
 	type RawMovieFull,
-	type RawPage
+	type RawPage,
+	type RawWatchProvider,
+	type RawWatchProviders
 } from '$lib/server/tmdb-normalize';
 
 export {
@@ -192,7 +194,7 @@ export async function getMovieFull(
 				`/movie/${id}`,
 				{
 					language,
-					append_to_response: 'credits,videos,release_dates',
+					append_to_response: 'credits,videos,release_dates,watch/providers',
 					include_video_language: `${language.slice(0, 2)},en,null`
 				},
 				ctx.fetch
@@ -320,5 +322,31 @@ export function getCompany(id: number, fetchFn?: typeof fetch) {
 			logoPath: raw.logo_path,
 			country: raw.origin_country || null
 		};
+	});
+}
+
+/** Onde assistir um filme, em todas as regiões (para o cache `MovieWatch`, §6.12). */
+export function getWatchProviders(id: number, fetchFn?: typeof fetch) {
+	return tmdbFetch<RawWatchProviders>(`/movie/${id}/watch/providers`, {}, fetchFn);
+}
+
+/** Serviços de streaming disponíveis numa região, do mais relevante ao menos (configurações). */
+export function getRegionProviders(region: string, locale: Locale, fetchFn?: typeof fetch) {
+	return cached(`providers:${region}:${locale}`, GENRES_TTL_MS, async () => {
+		const raw = await tmdbFetch<{
+			results: (RawWatchProvider & { display_priorities?: Record<string, number> })[];
+		}>(
+			'/watch/providers/movie',
+			{ watch_region: region, language: TMDB_LANGUAGE[locale] },
+			fetchFn
+		);
+		return raw.results
+			.map((provider) => ({
+				id: provider.provider_id,
+				name: provider.provider_name,
+				logoPath: provider.logo_path,
+				priority: provider.display_priorities?.[region] ?? provider.display_priority
+			}))
+			.sort((a, b) => a.priority - b.priority);
 	});
 }

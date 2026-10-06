@@ -9,6 +9,7 @@
 	import FileJsonIcon from '@lucide/svelte/icons/file-json';
 	import FileSpreadsheetIcon from '@lucide/svelte/icons/file-spreadsheet';
 	import AvatarField from '$lib/components/social/AvatarField.svelte';
+	import StreamingServicesField from '$lib/components/social/StreamingServicesField.svelte';
 	import { countryName } from '$lib/format';
 	import { LOCALE_NAMES, locales, REGIONS } from '$lib/i18n';
 	import { m } from '$lib/paraglide/messages';
@@ -115,6 +116,14 @@
 			>
 		</div>
 	</form>
+
+	<!-- Streamings que a pessoa assina (§6.12) -->
+	<StreamingServicesField
+		providers={data.streaming.providers}
+		selected={data.streaming.selected}
+		region={data.region}
+		class={card}
+	/>
 
 	<!-- Importar do Letterboxd ou de um backup (§6.7, §6.9) -->
 	<a

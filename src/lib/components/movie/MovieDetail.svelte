@@ -27,6 +27,7 @@
 	import MovieBackdrop from './MovieBackdrop.svelte';
 	import MovieLogo from './MovieLogo.svelte';
 	import PersonCard from './PersonCard.svelte';
+	import WatchProviders from './WatchProviders.svelte';
 	import ReviewsPanel from '$lib/components/social/ReviewsPanel.svelte';
 	import TrailerModal from './TrailerModal.svelte';
 
@@ -537,6 +538,13 @@
 					</div>
 				{/each}
 			</dl>
+
+			<WatchProviders
+				watch={movie.watch}
+				region={data.region}
+				services={data.services}
+				labelClass={factLabel}
+			/>
 
 			<div class="border-t border-white/10 pt-7">
 				{#if data.signedIn && userData}

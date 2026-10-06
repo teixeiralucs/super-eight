@@ -11,8 +11,8 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 
 	const filters = parseLibraryFilters(url.searchParams);
 	const [overview, grid, suggestions] = await Promise.all([
-		getDashboardOverview(locals.user.id, locals.locale, fetch),
-		getLibraryGrid(locals.user.id, filters, locals.locale),
+		getDashboardOverview(locals.user.id, locals, fetch),
+		getLibraryGrid(locals.user.id, filters, locals),
 		getLibrarySuggestions(locals.user.id, locals.locale)
 	]);
 

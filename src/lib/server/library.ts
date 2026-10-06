@@ -11,6 +11,7 @@ import { computeStats } from '$lib/library/stats';
 import { getArtworks, withArtwork } from '$lib/server/artwork';
 import { localizeCard, movieCardSelect, type MovieCardRow } from '$lib/server/movie-locale';
 import { getGenreNames } from '$lib/server/tmdb';
+import { getStreamingServices, libraryProviders } from '$lib/server/watch';
 import type { Locale } from '$lib/i18n';
 
 export const movieCard = movieCardSelect;
@@ -38,7 +39,11 @@ function orderBy({ sort, dir }: LibraryFilters): Ordering {
 }
 
 /** Filtros que viram consulta ao banco (a busca por texto é feita depois, sem acentos). */
-function movieFilters(userId: string, filters: LibraryFilters): Prisma.MovieWhereInput[] {
+async function movieFilters(
+	userId: string,
+	filters: LibraryFilters,
+	region: string
+): Promise<Prisma.MovieWhereInput[]> {
 	const where: Prisma.MovieWhereInput[] = [];
 	if (filters.genre) where.push({ genreIds: { has: Number(filters.genre) } });
 	if (filters.decade) {
@@ -57,6 +62,15 @@ function movieFilters(userId: string, filters: LibraryFilters): Prisma.MovieWher
 					userId,
 					watchedAt: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) }
 				}
+			}
+		});
+	}
+	if (filters.stream) {
+		const ids =
+			filters.stream === 'mine' ? await getStreamingServices(userId) : [Number(filters.stream)];
+		where.push({
+			watch: {
+				some: { region, OR: [{ flatrate: { hasSome: ids } }, { free: { hasSome: ids } }] }
 			}
 		});
 	}
@@ -83,12 +97,12 @@ function matchesQuery(movie: MovieCardRow, query: string) {
 export async function getLibraryGrid(
 	userId: string,
 	filters: LibraryFilters,
-	locale: Locale,
+	{ locale, region }: { locale: Locale; region: string },
 	movieWhere: Prisma.MovieWhereInput = {}
 ) {
 	const where: Prisma.LibraryEntryWhereInput = {
 		userId,
-		movie: { AND: [movieWhere, ...movieFilters(userId, filters)] }
+		movie: { AND: [movieWhere, ...(await movieFilters(userId, filters, region))] }
 	};
 	if (filters.rating === 'none') where.rating = null;
 	else if (filters.rating) where.rating = { gte: Number(filters.rating) };
@@ -150,38 +164,45 @@ export async function getLibrarySuggestions(userId: string, locale: Locale, coun
 }
 
 /** Métricas, diário recente e gêneros disponíveis para o filtro. */
-export async function getDashboardOverview(userId: string, locale: Locale, fetchFn?: typeof fetch) {
-	const [library, diary, recentDiary, artworks, genreNames] = await Promise.all([
-		prisma.libraryEntry.findMany({
-			where: { userId },
-			select: {
-				status: true,
-				rating: true,
-				isFavorite: true,
-				movie: {
-					select: { genreIds: true, countries: true, originalLanguage: true, releaseDate: true }
+export async function getDashboardOverview(
+	userId: string,
+	{ locale, region }: { locale: Locale; region: string },
+	fetchFn?: typeof fetch
+) {
+	const [library, diary, recentDiary, artworks, genreNames, providers, services] =
+		await Promise.all([
+			prisma.libraryEntry.findMany({
+				where: { userId },
+				select: {
+					status: true,
+					rating: true,
+					isFavorite: true,
+					movie: {
+						select: { genreIds: true, countries: true, originalLanguage: true, releaseDate: true }
+					}
 				}
-			}
-		}),
-		prisma.diaryEntry.findMany({
-			where: { userId },
-			select: { watchedAt: true, movie: { select: { runtime: true } } }
-		}),
-		prisma.diaryEntry.findMany({
-			where: { userId },
-			orderBy: [{ watchedAt: 'desc' }, { createdAt: 'desc' }],
-			take: 6,
-			select: {
-				id: true,
-				watchedAt: true,
-				rating: true,
-				isRewatch: true,
-				movie: { select: movieCard }
-			}
-		}),
-		getArtworks(userId),
-		getGenreNames(locale, fetchFn).catch(() => new Map<number, string>())
-	]);
+			}),
+			prisma.diaryEntry.findMany({
+				where: { userId },
+				select: { watchedAt: true, movie: { select: { runtime: true } } }
+			}),
+			prisma.diaryEntry.findMany({
+				where: { userId },
+				orderBy: [{ watchedAt: 'desc' }, { createdAt: 'desc' }],
+				take: 6,
+				select: {
+					id: true,
+					watchedAt: true,
+					rating: true,
+					isRewatch: true,
+					movie: { select: movieCard }
+				}
+			}),
+			getArtworks(userId),
+			getGenreNames(locale, fetchFn).catch(() => new Map<number, string>()),
+			libraryProviders(userId, region),
+			getStreamingServices(userId)
+		]);
 
 	const genreName = (id: number) => genreNames.get(id) ?? null;
 	const stats = computeStats(
@@ -209,7 +230,9 @@ export async function getDashboardOverview(userId: string, locale: Locale, fetch
 		).sort((a, b) => b - a),
 		countries: distinct(library.flatMap(({ movie }) => movie.countries)),
 		languages: distinct(library.flatMap(({ movie }) => movie.originalLanguage ?? [])),
-		years: distinct(diary.map((entry) => entry.watchedAt.getUTCFullYear())).sort((a, b) => b - a)
+		years: distinct(diary.map((entry) => entry.watchedAt.getUTCFullYear())).sort((a, b) => b - a),
+		providers,
+		hasServices: services.length > 0
 	};
 
 	return {

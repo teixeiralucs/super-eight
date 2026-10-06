@@ -377,7 +377,8 @@ model CatalogEntry {
   1. filmes do cache sem atualização há 7+ dias (`ensureMovie`: títulos, pôsteres, logos, saga, IMDb);
   2. sagas do TMDb (`Collection`) com 7+ dias;
   3. listas oficiais do Trakt (`TraktList`) com 7+ dias (removida do Trakt = apagada);
-  4. filmes das bibliotecas nunca verificados no Trakt e os verificados há 30+ dias (listas novas).
+  4. filmes das bibliotecas nunca verificados no Trakt e os verificados há 30+ dias (listas novas);
+  5. onde assistir (`MovieWatch`) dos filmes das bibliotecas nunca buscados ou com 3+ dias (§6.12; 8 ao mesmo tempo).
 - 4.4.2. Orçamento: 240 s no total (a função tem `maxDuration` 300 s), dividido entre as tarefas; o que não couber continua no dia seguinte. Item com erro não para a tarefa (filmes e sagas com erro esperam a próxima semana); limite do Trakt (429) encerra as tarefas do Trakt naquele dia. Sem `TRAKT_CLIENT_ID`, elas são puladas.
 - 4.4.3. Endpoint: `GET /api/cron/daily`, aceito só com `Authorization: Bearer ${CRON_SECRET}` (comparação em tempo constante; sem segredo configurado, sempre 401). Responde com um relatório por tarefa (`done`, `failed`, `unfinished`, `ms`), também registrado no log.
 - 4.4.4. Catálogos da landing: **continuam vindo do TMDb** (cache em memória de 30 min). A ideia original de guardá-los em `CatalogEntry` foi deixada de lado: depois do i18n (§6.5) eles dependem da região e do idioma de quem vê e exibem sinopse e gêneros traduzidos, que o cache `Movie` não guarda. A tabela `CatalogEntry` segue no schema, sem uso.
@@ -506,6 +507,13 @@ model CatalogEntry {
 - 6.11.4. Destaques: os 6 mais bem avaliados (nota, depois favorito, depois nº de sessões) e recordes — primeira e última sessão do período, mais revisto (2+ sessões), mais longo e mais antigo.
 - 6.11.5. Rankings por filmes distintos (desempate pela sua nota média, mostrada ao lado): direção, elenco (só os 15 primeiros de cada filme), roteiro, música, gênero, país, idioma original e estúdio — com foto/logo do TMDb. Cada linha leva à biblioteca filtrada (§6.10; pessoas já com a função em `?role=`).
 - 6.11.6. Cálculo puro em `$lib/library/insights.ts` (testado); `$lib/server/insights.ts` busca o diário, a biblioteca e os nomes/fotos no TMDb (em cache).
+
+## **6.12. Onde assistir**
+
+- 6.12.1. Detalhe do filme, coluna lateral: **Onde assistir** na região de quem vê (`locals.region`) — Streaming (assinatura + grátis + com anúncios, sem repetir), Alugar e Comprar, com logos na ordem de relevância do TMDb; link "Ver todas as opções" para a página do TMDb e o crédito obrigatório "Dados: JustWatch". Vem ao vivo com o filme (`append_to_response=watch/providers`). Sem opções: aviso com o nome do país.
+- 6.12.2. **Meus streamings** (Configurações): a pessoa marca os serviços que assina, entre os do seu país (`/watch/providers/movie?watch_region=`, em cache de 24 h; os 18 mais relevantes + "Mostrar todos"). Fica em `User.streamingServices` (IDs). Esses serviços aparecem primeiro e destacados no detalhe do filme.
+- 6.12.3. Filtro **Disponível em** da biblioteca (`stream=<id>` ou `stream=mine`, §6.3.3): filmes com aquele serviço (ou algum dos seus) em assinatura/grátis na região. Opções = serviços que têm algum filme da biblioteca; "Nos meus streamings" só aparece para quem marcou serviços.
+- 6.12.4. Cache: `MovieWatch` (filme × região: link e IDs de `flatrate`, `free`, `rent`, `buy` — todas as regiões que o TMDb devolve) e `WatchProvider` (nome, logo, prioridade). Preenchido quando o filme entra no cache (`ensureMovie`) e renovado pela rotina diária a cada 3 dias para os filmes das bibliotecas (`Movie.watchCheckedAt`).
 
 # **7. Deploy, Infraestrutura e CI/CD**
 
