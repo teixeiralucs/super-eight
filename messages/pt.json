@@ -682,5 +682,16 @@
 	"error_page_500_text": "Tivemos um problema do nosso lado. Tente de novo em instantes.",
 	"error_page_other_title": "Não deu certo",
 	"error_page_retry": "Tentar de novo",
-	"error_page_go_library": "Ir para a biblioteca"
+	"error_page_go_library": "Ir para a biblioteca",
+	"facet_person": "Pessoa",
+	"facet_release": "Lançados em",
+	"facet_role_all": "Todas as funções",
+	"facet_roles_label": "Funções",
+	"facet_count_one": "{count} filme na sua biblioteca",
+	"facet_count_other": "{count} filmes na sua biblioteca",
+	"facet_empty": "Nenhum filme da sua biblioteca aqui ainda.",
+	"facet_back_library": "← Toda a biblioteca",
+	"facet_link_title": "Ver na sua biblioteca",
+	"fact_release_original": "Lançamento original",
+	"error_facet_not_found": "Filtro não encontrado."
 }

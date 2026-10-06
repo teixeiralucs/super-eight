@@ -22,6 +22,7 @@
 	import { actionName, withFeedback } from '$lib/feedback/submit';
 	import type { ConfirmOptions } from '$lib/feedback/confirm.svelte';
 	import GalleryPanel from './GalleryPanel.svelte';
+	import { facetParams, releaseKey, type Facet } from '$lib/library/facets';
 	import LibraryControls from './LibraryControls.svelte';
 	import MovieBackdrop from './MovieBackdrop.svelte';
 	import MovieLogo from './MovieLogo.svelte';
@@ -147,35 +148,111 @@
 		iso ? formatLongDate(new Date(`${iso}T00:00:00Z`)) : null;
 
 	// Direção e roteiro aparecem com foto na aba Elenco.
+	/**
+	 * Logado, cada valor leva à biblioteca filtrada por ele (§6.10): pessoa, país, idioma,
+	 * gênero, estúdio e dia de lançamento. Sem login, só texto.
+	 */
+	const facetHref = (facet: Facet, value: string | number) =>
+		data.signedIn
+			? resolve('/(app)/library/[facet]/[value]', facetParams(facet, value))
+			: undefined;
+
+	type FactPart = { text: string; href?: string };
 	const facts = $derived(
-		[
-			// Estreia no país do usuário quando o TMDb tem; senão, a mundial.
-			movie.regionalRelease
-				? {
-						label: m.fact_release(),
-						value: `${longDate(movie.regionalRelease)} (${countryName(data.region)})`,
-						wide: true
-					}
-				: { label: m.fact_release(), value: longDate(movie.releaseDate), wide: true },
-			{ label: m.fact_country(), value: movie.countries.map(countryName).join(', ') || null },
-			{
-				label: m.fact_original_language(),
-				value: movie.originalLanguage ? languageName(movie.originalLanguage) : null
-			},
-			{ label: m.fact_genre(), value: movie.genres.join(', ') || null, wide: true },
-			{ label: m.fact_studio(), value: movie.studios.join(', ') || null, wide: true },
-			{ label: m.fact_music(), value: movie.composers.join(', ') || null, wide: true },
-			// Saga do TMDb: logado, leva à coleção com os filmes da biblioteca (§6.8).
-			{
-				label: m.fact_collection(),
-				value: movie.collection?.name ?? null,
-				wide: true,
-				href:
-					movie.collection && data.signedIn
-						? resolve('/(app)/lists/collections/[id]', { id: String(movie.collection.id) })
-						: undefined
-			}
-		].filter((fact) => fact.value)
+		(
+			[
+				// Estreia no país do usuário quando o TMDb tem; senão, a mundial. O link usa sempre
+				// a data original (a da biblioteca): se a local for outra, ela aparece à parte.
+				movie.regionalRelease && movie.regionalRelease !== movie.releaseDate
+					? {
+							label: m.fact_release(),
+							parts: [{ text: `${longDate(movie.regionalRelease)} (${countryName(data.region)})` }],
+							wide: true
+						}
+					: null,
+				{
+					label:
+						movie.regionalRelease && movie.regionalRelease !== movie.releaseDate
+							? m.fact_release_original()
+							: m.fact_release(),
+					parts: movie.releaseDate
+						? [
+								{
+									text:
+										movie.regionalRelease === movie.releaseDate
+											? `${longDate(movie.releaseDate)} (${countryName(data.region)})`
+											: longDate(movie.releaseDate)!,
+									href: facetHref('release', releaseKey(movie.releaseDate))
+								}
+							]
+						: [],
+					wide: true
+				},
+				{
+					label: m.fact_country(),
+					parts: movie.countries.map((code) => ({
+						text: countryName(code),
+						href: facetHref('country', code)
+					}))
+				},
+				{
+					label: m.fact_original_language(),
+					parts: movie.originalLanguage
+						? [
+								{
+									text: languageName(movie.originalLanguage),
+									href: facetHref('language', movie.originalLanguage)
+								}
+							]
+						: []
+				},
+				{
+					label: m.fact_genre(),
+					parts: movie.genres.map((name, i) => ({
+						text: name,
+						href: movie.genreIds[i] ? facetHref('genre', movie.genreIds[i]) : undefined
+					})),
+					wide: true
+				},
+				{
+					label: m.fact_studio(),
+					parts: movie.studios.map((studio) => ({
+						text: studio.name,
+						href: facetHref('studio', studio.id)
+					})),
+					wide: true
+				},
+				{
+					label: m.fact_music(),
+					parts: movie.composers.map((person) => ({
+						text: person.name,
+						href: facetHref('person', person.id)
+					})),
+					wide: true
+				},
+				// Saga do TMDb: logado, leva à coleção com os filmes da biblioteca (§6.8).
+				{
+					label: m.fact_collection(),
+					parts: movie.collection
+						? [
+								{
+									text: movie.collection.name,
+									href: data.signedIn
+										? resolve('/(app)/lists/collections/[id]', {
+												id: String(movie.collection.id)
+											})
+										: undefined
+								}
+							]
+						: [],
+					wide: true
+				}
+			] as ({ label: string; parts: FactPart[]; wide?: boolean } | null)[]
+		).filter((fact) => fact !== null && fact.parts.length) as {
+			label: string;
+			parts: FactPart[];
+			wide?: boolean;
+		}[]
 	);
 
 	const crew = $derived(
@@ -361,6 +438,7 @@
 															name={person.name}
 															role={person.job}
 															profilePath={person.profilePath}
+															href={facetHref('person', person.id)}
 														/>
 													{/each}
 												</ul>
@@ -377,6 +455,7 @@
 													name={person.name}
 													role={person.character}
 													profilePath={person.profilePath}
+													href={facetHref('person', person.id)}
 												/>
 											{/each}
 										</ul>
@@ -439,15 +518,21 @@
 					<div class={[fact.wide && 'col-span-2']}>
 						<dt class={factLabel}>{fact.label}</dt>
 						<dd class="mt-1 text-sm text-white/90">
-							{#if 'href' in fact && fact.href}
-								<a
-									href={fact.href}
-									class="underline decoration-white/30 underline-offset-4 transition hover:decoration-neon-cyan"
-									>{fact.value}</a
-								>
-							{:else}
-								{fact.value}
-							{/if}
+							{#each fact.parts as part, i (i)}
+								{#if i}<span class="text-white/40">, </span>{/if}
+								{#if part.href}
+									<!-- eslint-disable svelte/no-navigation-without-resolve -- href vem de resolve() (facetHref) -->
+									<a
+										href={part.href}
+										title={m.facet_link_title()}
+										class="underline decoration-white/25 underline-offset-4 transition hover:text-neon-cyan hover:decoration-neon-cyan"
+										>{part.text}</a
+									>
+									<!-- eslint-enable svelte/no-navigation-without-resolve -->
+								{:else}
+									{part.text}
+								{/if}
+							{/each}
 						</dd>
 					</div>
 				{/each}

@@ -20,17 +20,31 @@
 	let {
 		filters,
 		genres,
-		counts
+		counts,
+		base = resolve('/dashboard'),
+		anchor = '#biblioteca',
+		keep = {}
 	}: {
 		filters: LibraryFilters;
-		/** Gêneros da biblioteca: valor = ID do TMDb, rótulo traduzido. */
+		/** Gêneros da biblioteca: valor = ID do TMDb, rótulo traduzido (vazio = sem o seletor). */
 		genres: { id: number; name: string }[];
 		counts: Record<LibraryView, number>;
+		/** Página da grade (padrão: o dashboard; também as páginas filtradas, §6.10). */
+		base?: string;
+		anchor?: string;
+		/** Parâmetros da página que os filtros mantêm (ex.: `role` na página de uma pessoa). */
+		keep?: Record<string, string>;
 	} = $props();
 
-	/** Link para a biblioteca com os filtros alterados (valores padrão omitidos da URL). */
-	const hrefWith = (changes: Partial<LibraryFilters>) =>
-		`${resolve('/dashboard')}${filtersQuery({ ...filters, ...changes })}#biblioteca`;
+	/** Link com os filtros alterados (valores padrão omitidos da URL). */
+	const hrefWith = (changes: Partial<LibraryFilters>) => {
+		const query = filtersQuery({ ...filters, ...changes });
+		const extra = Object.entries(keep)
+			.map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
+			.join('&');
+		const joined = extra ? (query ? `${query}&${extra}` : `?${extra}`) : query;
+		return `${base}${joined}${anchor}`;
+	};
 
 	const submit = (event: Event) => (event.currentTarget as HTMLSelectElement).form?.requestSubmit();
 
@@ -79,26 +93,33 @@
 
 	<form
 		method="GET"
-		action="{resolve('/dashboard')}#biblioteca"
+		action="{base}{anchor}"
 		data-sveltekit-noscroll
 		data-sveltekit-keepfocus
 		class="flex flex-wrap items-center gap-2"
 	>
 		{#if filters.view !== 'all'}<input type="hidden" name="view" value={filters.view} />{/if}
 		{#if filters.sort !== 'random'}<input type="hidden" name="dir" value={filters.dir} />{/if}
+		{#each Object.entries(keep) as [key, value] (key)}
+			<input type="hidden" name={key} {value} />
+		{/each}
 
-		<label class="sr-only" for="filtro-genero">{m.filter_genre()}</label>
-		<select
-			id="filtro-genero"
-			name="genre"
-			onchange={submit}
-			class="rounded-full border border-white/10 bg-background px-4 py-2 text-sm text-white/80 outline-none focus-visible:border-neon-cyan"
-		>
-			<option value="">{m.filter_all_genres()}</option>
-			{#each genres as genre (genre.id)}
-				<option value={genre.id} selected={filters.genre === String(genre.id)}>{genre.name}</option>
-			{/each}
-		</select>
+		{#if genres.length}
+			<label class="sr-only" for="filtro-genero">{m.filter_genre()}</label>
+			<select
+				id="filtro-genero"
+				name="genre"
+				onchange={submit}
+				class="rounded-full border border-white/10 bg-background px-4 py-2 text-sm text-white/80 outline-none focus-visible:border-neon-cyan"
+			>
+				<option value="">{m.filter_all_genres()}</option>
+				{#each genres as genre (genre.id)}
+					<option value={genre.id} selected={filters.genre === String(genre.id)}
+						>{genre.name}</option
+					>
+				{/each}
+			</select>
+		{/if}
 
 		<label class="sr-only" for="filtro-ordem">{m.filter_sort_by()}</label>
 		<select

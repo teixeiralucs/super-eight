@@ -286,3 +286,39 @@ export function getCollection(id: number, fetchFn?: typeof fetch): Promise<Colle
 		return toCollection({ pt, en, es });
 	});
 }
+
+/** Pessoa (cabeçalho dos filtros da biblioteca, §6.10): nome, foto e área principal. */
+export function getPerson(id: number, locale: Locale, fetchFn?: typeof fetch) {
+	return cached(`person:${id}:${locale}`, GENRES_TTL_MS, async () => {
+		const raw = await tmdbFetch<{
+			id: number;
+			name: string;
+			profile_path: string | null;
+			known_for_department?: string;
+		}>(`/person/${id}`, { language: TMDB_LANGUAGE[locale] }, fetchFn);
+		return {
+			id: raw.id,
+			name: raw.name,
+			profilePath: raw.profile_path,
+			department: raw.known_for_department ?? null
+		};
+	});
+}
+
+/** Estúdio/produtora (cabeçalho dos filtros da biblioteca): nome, logo e país. */
+export function getCompany(id: number, fetchFn?: typeof fetch) {
+	return cached(`company:${id}`, GENRES_TTL_MS, async () => {
+		const raw = await tmdbFetch<{
+			id: number;
+			name: string;
+			logo_path: string | null;
+			origin_country?: string;
+		}>(`/company/${id}`, {}, fetchFn);
+		return {
+			id: raw.id,
+			name: raw.name,
+			logoPath: raw.logo_path,
+			country: raw.origin_country || null
+		};
+	});
+}

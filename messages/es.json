@@ -682,5 +682,16 @@
 	"error_page_500_text": "Tuvimos un problema de nuestro lado. Inténtalo de nuevo en un momento.",
 	"error_page_other_title": "No funcionó",
 	"error_page_retry": "Reintentar",
-	"error_page_go_library": "Ir a la biblioteca"
+	"error_page_go_library": "Ir a la biblioteca",
+	"facet_person": "Persona",
+	"facet_release": "Estrenadas el",
+	"facet_role_all": "Todos los roles",
+	"facet_roles_label": "Roles",
+	"facet_count_one": "{count} película en tu biblioteca",
+	"facet_count_other": "{count} películas en tu biblioteca",
+	"facet_empty": "Aún no hay películas de tu biblioteca aquí.",
+	"facet_back_library": "← Toda la biblioteca",
+	"facet_link_title": "Ver en tu biblioteca",
+	"fact_release_original": "Estreno original",
+	"error_facet_not_found": "Filtro no encontrado."
 }

@@ -32,13 +32,24 @@ function orderBy({ sort, dir }: LibraryFilters): Ordering {
 	}
 }
 
-/** Grade da biblioteca (lista principal) com filtros da URL e nº de sessões por filme. */
-export async function getLibraryGrid(userId: string, filters: LibraryFilters, locale: Locale) {
+/**
+ * Grade da biblioteca com filtros da URL e nº de sessões por filme. `movieWhere` restringe aos
+ * filmes de uma pessoa, país, estúdio… (páginas filtradas, §6.10).
+ */
+export async function getLibraryGrid(
+	userId: string,
+	filters: LibraryFilters,
+	locale: Locale,
+	movieWhere: Prisma.MovieWhereInput = {}
+) {
 	const where: Prisma.LibraryEntryWhereInput = { userId };
 	if (filters.view === 'watched') where.status = 'WATCHED';
 	if (filters.view === 'watchlist') where.status = 'WANT_TO_WATCH';
 	if (filters.view === 'favorites') where.isFavorite = true;
-	if (filters.genre) where.movie = { genreIds: { has: Number(filters.genre) } };
+	where.movie = {
+		...movieWhere,
+		...(filters.genre && { genreIds: { has: Number(filters.genre) } })
+	};
 
 	const [entries, sessions, artworks] = await Promise.all([
 		prisma.libraryEntry.findMany({

@@ -12,6 +12,7 @@ const {
 	toMovieCache,
 	toMovieFull
 } = await import('./tmdb');
+const { creditIds } = await import('./tmdb-normalize');
 
 const raw = {
 	id: 1,
@@ -213,7 +214,7 @@ describe('toMovieFull', () => {
 						{ id: 10, job: 'Director', name: 'D', profile_path: '/d.jpg' },
 						{ id: 11, job: 'Screenplay', name: 'W1' },
 						{ id: 11, job: 'Story', name: 'W1' },
-						{ job: 'Original Music Composer', name: 'M' },
+						{ id: 20, job: 'Original Music Composer', name: 'M' },
 						{ job: 'Music Editor', name: 'X' }
 					],
 					cast: [
@@ -221,7 +222,10 @@ describe('toMovieFull', () => {
 						{ id: 1, name: 'A', character: 'a', profile_path: '/a.jpg', order: 0 }
 					]
 				},
-				production_companies: [{ name: 'S1' }, { name: 'S2' }]
+				production_companies: [
+					{ id: 30, name: 'S1' },
+					{ id: 31, name: 'S2' }
+				]
 			},
 			'pt',
 			'BR',
@@ -233,8 +237,11 @@ describe('toMovieFull', () => {
 		expect(movie.writing).toEqual([
 			{ id: 11, name: 'W1', job: 'Roteiro, História', profilePath: null }
 		]);
-		expect(movie.studios).toEqual(['S1', 'S2']);
-		expect(movie.composers).toEqual(['M']);
+		expect(movie.studios).toEqual([
+			{ id: 30, name: 'S1' },
+			{ id: 31, name: 'S2' }
+		]);
+		expect(movie.composers).toEqual([{ id: 20, name: 'M' }]);
 		expect(movie.cast.map((c) => c.name)).toEqual(['A', 'B']);
 		expect(movie.trailer).toBeNull();
 		expect(movie.logoPath).toBeNull();
@@ -257,5 +264,36 @@ describe('pickLogo', () => {
 	it('cai na mais votada, ou em nulo sem logos', () => {
 		expect(pickLogo([{ path: '/zh.png', language: 'zh' }], 'ko', 'es')).toBe('/zh.png');
 		expect(pickLogo([], 'en', 'pt')).toBeNull();
+	});
+});
+
+describe('creditIds', () => {
+	it('separa pessoas por função (roteiro inclui livro/história) e estúdios', () => {
+		const ids = creditIds({
+			...raw,
+			runtime: 100,
+			genres: [],
+			credits: {
+				crew: [
+					{ id: 1, job: 'Director', name: 'D' },
+					{ id: 2, job: 'Novel', name: 'Stephen King' },
+					{ id: 2, job: 'Screenplay', name: 'Stephen King' },
+					{ id: 3, job: 'Original Music Composer', name: 'M' },
+					{ job: 'Writer', name: 'Sem ID' }
+				],
+				cast: [
+					{ id: 5, name: 'B', character: 'b', profile_path: null, order: 1 },
+					{ id: 4, name: 'A', character: 'a', profile_path: null, order: 0 }
+				]
+			},
+			production_companies: [{ id: 9, name: 'Studio' }]
+		});
+		expect(ids).toEqual({
+			directorIds: [1],
+			writerIds: [2],
+			castIds: [4, 5],
+			composerIds: [3],
+			studioIds: [9]
+		});
 	});
 });

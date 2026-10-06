@@ -682,5 +682,16 @@
 	"error_page_500_text": "Something broke on our side. Try again in a moment.",
 	"error_page_other_title": "That didn't work",
 	"error_page_retry": "Try again",
-	"error_page_go_library": "Go to library"
+	"error_page_go_library": "Go to library",
+	"facet_person": "Person",
+	"facet_release": "Released on",
+	"facet_role_all": "All roles",
+	"facet_roles_label": "Roles",
+	"facet_count_one": "{count} film in your library",
+	"facet_count_other": "{count} films in your library",
+	"facet_empty": "No films from your library here yet.",
+	"facet_back_library": "← Whole library",
+	"facet_link_title": "See in your library",
+	"fact_release_original": "Original release",
+	"error_facet_not_found": "Filter not found."
 }

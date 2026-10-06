@@ -62,9 +62,11 @@ export interface TMDbMovieFull extends TMDbMovie {
 	regionalRelease: string | null;
 	directing: CrewMember[];
 	writing: CrewMember[];
-	composers: string[];
+	/** IDs de gênero (os nomes traduzidos estão em `genres`, na mesma ordem). */
+	genreIds: number[];
+	composers: { id: number; name: string }[];
 	/** Produtoras (até 3). */
-	studios: string[];
+	studios: { id: number; name: string }[];
 	cast: CastMember[];
 	trailer: Trailer | null;
 	/** Logo padrão do título; nulo = sem logo (o título vai em texto). */
@@ -95,6 +97,14 @@ export interface MovieCacheData {
 	collectionId: number | null;
 	/** ID do IMDb (ex.: "tt0114709"), para o Trakt. */
 	imdbId: string | null;
+	/** IDs do TMDb de quem fez o filme (filtros da biblioteca, §6.10). */
+	credits: {
+		directorIds: number[];
+		writerIds: number[];
+		castIds: number[];
+		composerIds: number[];
+		studioIds: number[];
+	};
 }
 
 /** Coleção do TMDb para o cache `Collection`. */

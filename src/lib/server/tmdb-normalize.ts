@@ -44,6 +44,7 @@ export interface RawMovieDetails extends Omit<RawMovie, 'genre_ids'> {
 	origin_country?: string[];
 	production_countries?: { iso_3166_1: string }[];
 	imdb_id?: string | null;
+	production_companies?: { id: number; name: string }[];
 	/** Saga do TMDb (ex.: "Star Wars Collection"), no idioma pedido. */
 	belongs_to_collection?: { id: number; name: string } | null;
 	credits?: {
@@ -112,7 +113,6 @@ export interface RawMovieFull extends RawMovieDetails {
 	tagline: string;
 	vote_count: number;
 	videos?: { results: RawVideo[] };
-	production_companies?: { name: string }[];
 	release_dates?: RawReleaseDates;
 }
 
@@ -139,6 +139,34 @@ export const isShowcaseable = (raw: RawMovie) =>
 
 const directorsOf = (raw: RawMovieDetails) =>
 	(raw.credits?.crew ?? []).filter((member) => member.job === 'Director').map((m) => m.name);
+
+/** Funções de roteiro (crédito "escrito por", como Stephen King em "Novel"). */
+const WRITING_JOBS = ['Screenplay', 'Writer', 'Story', 'Novel', 'Characters'];
+const MUSIC_JOB = 'Original Music Composer';
+/** Elenco guardado para os filtros (os papéis principais). */
+const CAST_FOR_FILTERS = 30;
+
+/** IDs do TMDb de quem fez o filme, para os filtros da biblioteca (§6.10). */
+export function creditIds(raw: RawMovieDetails & { production_companies?: { id: number }[] }) {
+	const crew = raw.credits?.crew ?? [];
+	const ids = (jobs: string[]) => [
+		...new Set(crew.flatMap((m) => (jobs.includes(m.job) && m.id !== undefined ? [m.id] : [])))
+	];
+	return {
+		directorIds: ids(['Director']),
+		writerIds: ids(WRITING_JOBS),
+		castIds: [
+			...new Set(
+				[...(raw.credits?.cast ?? [])]
+					.sort((a, b) => a.order - b.order)
+					.slice(0, CAST_FOR_FILTERS)
+					.map((m) => m.id)
+			)
+		],
+		composerIds: ids([MUSIC_JOB]),
+		studioIds: [...new Set((raw.production_companies ?? []).map((c) => c.id))]
+	};
+}
 
 const countriesOf = (raw: RawMovieDetails) =>
 	raw.origin_country?.length
@@ -201,7 +229,8 @@ export function toMovieCache(raw: RawMovieForCache): MovieCacheData {
 		countries: countriesOf(raw),
 		voteAverage: Math.round(raw.vote_average * 10) / 10,
 		collectionId: raw.belongs_to_collection?.id ?? null,
-		imdbId: raw.imdb_id || null
+		imdbId: raw.imdb_id || null,
+		credits: creditIds(raw)
 	};
 }
 
@@ -269,8 +298,6 @@ export const collectionFields = (data: CollectionData) => ({
 });
 
 // ─── Detalhes completos (página /movie/[id]) ─────────────────────────
-const unique = (items: string[]) => [...new Set(items)];
-
 /** Trailer do YouTube: tipo Trailer > Teaser; idioma de quem vê > inglês > outros; oficial primeiro. */
 export function pickTrailer(videos: RawVideo[], language = 'pt'): Trailer | null {
 	const score = (video: RawVideo) =>
@@ -394,10 +421,17 @@ export function toMovieFull(
 			},
 			6
 		),
-		composers: unique(
-			crew.filter((member) => member.job === 'Original Music Composer').map((member) => member.name)
-		),
-		studios: (raw.production_companies ?? []).slice(0, 3).map((company) => company.name),
+		genreIds: raw.genres.map((genre) => genre.id),
+		composers: [
+			...new Map(
+				crew
+					.filter((member) => member.job === MUSIC_JOB && member.id !== undefined)
+					.map((member) => [member.id!, { id: member.id!, name: member.name }])
+			).values()
+		],
+		studios: (raw.production_companies ?? [])
+			.slice(0, 3)
+			.map((company) => ({ id: company.id, name: company.name })),
 		cast: [...(raw.credits?.cast ?? [])]
 			.sort((a, b) => a.order - b.order)
 			.slice(0, 24)

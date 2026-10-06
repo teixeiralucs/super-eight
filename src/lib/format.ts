@@ -66,6 +66,12 @@ export function todayIso(offsetDays = 0) {
 export const formatWeekday = (date: Date) =>
 	dateFormat({ weekday: 'long', timeZone: 'UTC' }).format(date);
 /** 8 → "setembro" (mês 0–11). */
+/** "12-25" → "25 de dezembro" (dia de lançamento, sem ano). */
+export const formatDayMonth = (monthDay: string) =>
+	dateFormat({ day: 'numeric', month: 'long', timeZone: 'UTC' }).format(
+		new Date(`2000-${monthDay}T00:00:00Z`)
+	);
+
 export const formatMonthName = (month: number) =>
 	dateFormat({ month: 'long', timeZone: 'UTC' }).format(new Date(Date.UTC(2000, month, 1)));
 /** 8 → "set" (mês 0–11), para eixos de gráfico. */

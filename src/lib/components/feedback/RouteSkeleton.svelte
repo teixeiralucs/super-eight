@@ -7,6 +7,7 @@
 		if (!routeId) return 'rows';
 		if (routeId === '/(app)/dashboard') return 'library';
 		if (routeId === '/(app)/search') return 'grid';
+		if (routeId.startsWith('/(app)/library/')) return 'profile';
 		if (routeId === '/(app)/lists') return 'cards';
 		if (routeId.startsWith('/(app)/lists/')) return 'hero';
 		if (routeId === '/(app)/u/[username]') return 'profile';

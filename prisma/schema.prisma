@@ -84,6 +84,13 @@ model Movie {
   imdbId           String?
   /// Quando as listas oficiais do Trakt com este filme foram buscadas; nulo = ainda não.
   traktCheckedAt   DateTime?
+  /// IDs do TMDb para os filtros da biblioteca (§6.10): pessoas por função e estúdios.
+  directorIds      Int[]     @default([])
+  writerIds        Int[]     @default([])
+  /// Os 30 primeiros do elenco.
+  castIds          Int[]     @default([])
+  composerIds      Int[]     @default([])
+  studioIds        Int[]     @default([])
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 

@@ -490,6 +490,13 @@ model CatalogEntry {
   - **Planilhas / Letterboxd (.zip com CSV)**: `diary.csv`, `ratings.csv`, `watchlist.csv`, `reviews.csv` e `lists/*.csv`, com `tmdbID`, `Rating` em estrelas (0,5–5) e `Rating10`, no formato aceito pelo importador do Letterboxd; UTF-8 com BOM (Excel) e um `README.txt`.
 - 6.9.2. **Restaurar**: a página de importação (§6.7, agora "Importar") aceita também o `.json`. Como os IDs já vêm no arquivo, pula a busca no TMDb; usa as mesmas actions em lotes, com os extras do backup (imagens escolhidas — só se o filme ainda não tiver outras —, spoiler da review, tipo e visibilidade das listas e a action `hidden` para as coleções ocultas). Mesmas regras de não duplicar nem sobrescrever; um backup restaurado sobre os mesmos dados não muda nada, e restaurar o que foi apagado devolve o estado original (exceto as datas de adição). Perfil e preferências ficam só como registro (não são restaurados).
 
+## **6.10. Biblioteca filtrada (a partir dos detalhes do filme)**
+
+- 6.10.1. Logado, os valores da barra lateral dos detalhes (lançamento original, país, idioma original, gênero, estúdio, música) e as pessoas da aba Elenco (direção, roteiro, elenco) são links para `/library/[facet]/[valor]` (Protegida): `person/<id TMDb>`, `country/<ISO>`, `language/<ISO 639>`, `genre/<id>`, `studio/<id>` e `release/<MM-DD>`. Sem login, ficam só texto. Valor inválido = 404.
+- 6.10.2. Dados: `Movie.directorIds`, `writerIds` (Screenplay, Writer, Story, Novel, Characters — ex.: Stephen King como autor do livro), `castIds` (os 30 primeiros do elenco), `composerIds` e `studioIds` (IDs do TMDb), preenchidos por `ensureMovie`/backfill (`creditIds` em `tmdb-normalize`). País, idioma e gênero usam colunas que já existiam.
+- 6.10.3. Páginas de pessoa, país, idioma, gênero e estúdio repetem a grade do dashboard (abas Todos/Assistidos/Quero ver/Favoritos com contagem, ordenação e direção; `LibraryToolbar` com `base`/`keep`), com cabeçalho próprio: foto da pessoa ou logo do estúdio (TMDb `/person`, `/company`, em cache), nome traduzido do país/idioma/gênero e "N filmes na sua biblioteca". A pessoa tem filtro por função (Todas/Direção/Roteiro/Elenco/Música, só as que têm filmes; `?role=`), contando um filme em mais de uma função quando for o caso.
+- 6.10.4. **Lançamento** (`release/12-25`): os filmes da biblioteca lançados naquele dia em qualquer ano, agrupados por ano (mais recentes primeiro), no formato do diário. Usa a data de lançamento original (a guardada no cache); quando a estreia no país de quem vê é outra, a barra lateral mostra as duas e o link fica na original ("Lançamento original").
+
 # **7. Deploy, Infraestrutura e CI/CD**
 
 ## **7.1. Configuração de Build (Vercel + SvelteKit)**

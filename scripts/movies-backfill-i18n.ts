@@ -101,6 +101,7 @@ await Promise.all(
 						countries: data.countries,
 						runtime: data.runtime,
 						imdbId: data.imdbId,
+						...data.credits,
 						collectionId
 					}
 				});

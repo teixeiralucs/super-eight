@@ -64,7 +64,8 @@ export async function ensureMovie(tmdbId: number, fetchFn?: typeof fetch) {
 		countries: details.countries,
 		voteAverage: details.voteAverage,
 		collectionId,
-		imdbId: details.imdbId
+		imdbId: details.imdbId,
+		...details.credits
 	};
 
 	return prisma.movie.upsert({
