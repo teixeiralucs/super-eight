@@ -18,7 +18,7 @@
 
 	const SIZE = 256;
 	let busy = $state(false);
-	let input: HTMLInputElement | undefined = $state();
+	const id = $props.id();
 
 	/** Corte quadrado central + redução. WebP quando o navegador sabe gerar; senão PNG. */
 	async function square(file: File): Promise<Blob> {
@@ -101,18 +101,31 @@
 	}
 </script>
 
+<!-- <label> ligado ao campo: o navegador abre o seletor sozinho, mesmo antes de o JavaScript
+     da página carregar (com um botão + input.click(), o primeiro clique podia não fazer nada). -->
 <div class="flex items-center gap-5">
-	<button
-		type="button"
-		onclick={() => input?.click()}
+	<input
+		{id}
+		type="file"
+		accept="image/*"
+		class="peer sr-only"
 		disabled={busy}
-		class="group relative shrink-0 rounded-full"
-		aria-label={m.settings_avatar_change()}
+		aria-label={user.avatarUrl ? m.settings_avatar_change() : m.settings_avatar_add()}
+		{onchange}
+	/>
+	<label
+		for={id}
+		class={[
+			'group relative shrink-0 cursor-pointer rounded-full peer-focus-visible:ring-2 peer-focus-visible:ring-neon-cyan',
+			busy && 'pointer-events-none'
+		]}
 	>
 		<Avatar {user} class="size-20 text-2xl" />
 		<span
-			class="absolute inset-0 grid place-items-center rounded-full bg-background/60 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100"
-			class:opacity-100={busy}
+			class={[
+				'absolute inset-0 grid place-items-center rounded-full bg-background/60 transition group-hover:opacity-100',
+				busy ? 'opacity-100' : 'opacity-0'
+			]}
 			aria-hidden="true"
 		>
 			{#if busy}
@@ -121,16 +134,18 @@
 				<CameraIcon class="size-6" />
 			{/if}
 		</span>
-	</button>
+	</label>
 	<div class="flex flex-col items-start gap-1.5">
-		<button
-			type="button"
-			onclick={() => input?.click()}
-			disabled={busy}
-			class="text-sm font-medium text-white transition hover:text-neon-cyan disabled:opacity-50"
+		<label
+			for={id}
+			aria-hidden="true"
+			class={[
+				'cursor-pointer text-sm font-medium text-white transition hover:text-neon-cyan',
+				busy && 'pointer-events-none opacity-50'
+			]}
 		>
 			{user.avatarUrl ? m.settings_avatar_change() : m.settings_avatar_add()}
-		</button>
+		</label>
 		{#if user.avatarUrl}
 			<button
 				type="button"
@@ -143,5 +158,4 @@
 		{/if}
 		<p class="text-xs text-white/40">{m.settings_avatar_hint()}</p>
 	</div>
-	<input bind:this={input} type="file" accept="image/*" class="hidden" {onchange} />
 </div>
