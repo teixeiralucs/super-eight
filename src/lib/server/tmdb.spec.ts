@@ -219,7 +219,9 @@ describe('toMovieFull', () => {
 					],
 					cast: [
 						{ id: 2, name: 'B', character: 'b', profile_path: null, order: 1 },
-						{ id: 1, name: 'A', character: 'a', profile_path: '/a.jpg', order: 0 }
+						{ id: 1, name: 'A', character: 'a', profile_path: '/a.jpg', order: 0 },
+						// Mesmo ator em dois papéis (ex.: The House on Sorority Row)
+						{ id: 2, name: 'B', character: 'b2', profile_path: null, order: 2 }
 					]
 				},
 				production_companies: [
@@ -242,7 +244,10 @@ describe('toMovieFull', () => {
 			{ id: 31, name: 'S2' }
 		]);
 		expect(movie.composers).toEqual([{ id: 20, name: 'M' }]);
-		expect(movie.cast.map((c) => c.name)).toEqual(['A', 'B']);
+		expect(movie.cast.map((c) => [c.name, c.character])).toEqual([
+			['A', 'a'],
+			['B', 'b / b2']
+		]);
 		expect(movie.trailer).toBeNull();
 		expect(movie.logoPath).toBeNull();
 	});

@@ -332,6 +332,32 @@ function crewPeople(crew: RawCrewMember[], jobs: Record<string, string>, limit: 
 	return [...people.values()].slice(0, limit);
 }
 
+/** Elenco na ordem dos créditos; quem faz mais de um personagem aparece uma vez só. */
+function castPeople(cast: RawCastMember[], limit: number) {
+	const people = new Map<
+		number,
+		{ id: number; name: string; character: string; profilePath: string | null }
+	>();
+	for (const member of [...cast].sort((a, b) => a.order - b.order)) {
+		const known = people.get(member.id);
+		if (known) {
+			if (member.character && !known.character.split(' / ').includes(member.character)) {
+				known.character = known.character
+					? `${known.character} / ${member.character}`
+					: member.character;
+			}
+		} else {
+			people.set(member.id, {
+				id: member.id,
+				name: member.name,
+				character: member.character,
+				profilePath: member.profile_path
+			});
+		}
+	}
+	return [...people.values()].slice(0, limit);
+}
+
 /** Funções da equipe exibidas, já com o rótulo no idioma de quem vê. */
 export interface CrewLabels {
 	directing: string;
@@ -432,15 +458,7 @@ export function toMovieFull(
 		studios: (raw.production_companies ?? [])
 			.slice(0, 3)
 			.map((company) => ({ id: company.id, name: company.name })),
-		cast: [...(raw.credits?.cast ?? [])]
-			.sort((a, b) => a.order - b.order)
-			.slice(0, 24)
-			.map((member) => ({
-				id: member.id,
-				name: member.name,
-				character: member.character,
-				profilePath: member.profile_path
-			})),
+		cast: castPeople(raw.credits?.cast ?? [], 24),
 		trailer: pickTrailer(raw.videos?.results ?? [], trailerLanguage),
 		logoPath: pickLogo(logos, raw.original_language ?? null, trailerLanguage),
 		collection: raw.belongs_to_collection
