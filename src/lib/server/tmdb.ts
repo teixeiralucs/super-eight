@@ -14,6 +14,7 @@ import {
 	toMovieFull,
 	toImages,
 	toCollection,
+	uniqueBy,
 	type RawCollection,
 	type CrewLabels,
 	type RawGenreList,
@@ -118,7 +119,9 @@ async function getCatalog(path: string, { locale, region, fetch: fetchFn }: Tmdb
 			),
 			getGenreNames(locale, fetchFn)
 		]);
-		return page.results.filter(isShowcaseable).map((raw) => toMovie(raw, genreNames));
+		return uniqueBy(page.results.filter(isShowcaseable), (raw) => raw.id).map((raw) =>
+			toMovie(raw, genreNames)
+		);
 	});
 }
 
@@ -154,7 +157,9 @@ export function getMoviePage(query: string, page: number, ctx: TmdbContext) {
 			getGenreNames(ctx.locale, ctx.fetch)
 		]);
 		return {
-			results: raw.results.filter(isShowcaseable).map((movie) => toMovie(movie, genreNames)),
+			results: uniqueBy(raw.results.filter(isShowcaseable), (movie) => movie.id).map((movie) =>
+				toMovie(movie, genreNames)
+			),
 			page: raw.page,
 			totalPages: Math.min(raw.total_pages, MAX_PAGE)
 		} satisfies MoviePage;

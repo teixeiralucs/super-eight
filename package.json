@@ -25,6 +25,7 @@
 		"library:backup": "tsx scripts/library-backup.ts",
 		"library:restore": "tsx scripts/library-restore.ts",
 		"movies:backfill-i18n": "tsx scripts/movies-backfill-i18n.ts",
+		"errors": "tsx scripts/client-errors.ts",
 		"i18n:compile": "node scripts/compile-messages.mjs"
 	},
 	"devDependencies": {

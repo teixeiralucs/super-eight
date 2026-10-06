@@ -29,6 +29,7 @@
 	import MovieLogo from './MovieLogo.svelte';
 	import PersonCard from './PersonCard.svelte';
 	import WatchProviders from './WatchProviders.svelte';
+	import ErrorBoundary from '$lib/components/feedback/ErrorBoundary.svelte';
 	import ReviewsPanel from '$lib/components/social/ReviewsPanel.svelte';
 	import TrailerModal from './TrailerModal.svelte';
 
@@ -429,71 +430,74 @@
 			>
 				{#key tab}
 					<div in:fade={{ duration: 250 }} class="h-full">
-						{#if tab === 'about'}
-							{#if movie.overview}
-								<p class="text-base leading-relaxed text-white/80">{movie.overview}</p>
-							{:else}
-								<p class="text-white/50">{m.no_overview()}</p>
-							{/if}
-						{:else if tab === 'cast'}
-							<div class="space-y-6">
-								{#if crew.length}
-									<div class="-mx-1 flex gap-10 overflow-x-auto px-1">
-										{#each crew as group (group.label)}
-											<section class="shrink-0">
-												<h2 class={sectionLabel}>{group.label}</h2>
-												<ul class="flex gap-4">
-													{#each group.people as person (person.id)}
-														<PersonCard
-															name={person.name}
-															role={person.job}
-															profilePath={person.profilePath}
-															href={facetHref('person', person.id)}
-														/>
-													{/each}
-												</ul>
-											</section>
-										{/each}
-									</div>
+						<!-- Um dado ruim numa aba (ex.: item repetido) não derruba o resto da página -->
+						<ErrorBoundary>
+							{#if tab === 'about'}
+								{#if movie.overview}
+									<p class="text-base leading-relaxed text-white/80">{movie.overview}</p>
+								{:else}
+									<p class="text-white/50">{m.no_overview()}</p>
 								{/if}
-								<section>
-									<h2 class={sectionLabel}>{m.crew_cast()}</h2>
-									{#if movie.cast.length}
-										<ul class="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
-											{#each movie.cast as person (person.id)}
-												<PersonCard
-													name={person.name}
-													role={person.character}
-													profilePath={person.profilePath}
-													href={facetHref('person', person.id)}
-												/>
+							{:else if tab === 'cast'}
+								<div class="space-y-6">
+									{#if crew.length}
+										<div class="-mx-1 flex gap-10 overflow-x-auto px-1">
+											{#each crew as group (group.label)}
+												<section class="shrink-0">
+													<h2 class={sectionLabel}>{group.label}</h2>
+													<ul class="flex gap-4">
+														{#each group.people as person (person.id)}
+															<PersonCard
+																name={person.name}
+																role={person.job}
+																profilePath={person.profilePath}
+																href={facetHref('person', person.id)}
+															/>
+														{/each}
+													</ul>
+												</section>
 											{/each}
-										</ul>
-									{:else}
-										<p class="text-white/50">{m.cast_unknown()}</p>
+										</div>
 									{/if}
-								</section>
-							</div>
-						{:else if tab === 'gallery'}
-							<GalleryPanel
-								movieId={movie.id}
-								signedIn={data.signedIn}
-								artwork={userData?.artwork ?? null}
-								defaults={{
-									posterPath: movie.posterPath,
-									backdropPath: movie.backdropPath,
-									logoPath: movie.logoPath
-								}}
-								preview={{ backdropPath: backdrop, logoPath: logo }}
-								onpreview={(kind, path) => {
-									if (kind === 'logo') logo = path;
-									else backdrop = path;
-								}}
-								{submit}
-							/>
-						{:else if tab === 'reviews'}
-							<ReviewsPanel movieId={movie.id} signedIn={data.signedIn} {loginHref} />
-						{/if}
+									<section>
+										<h2 class={sectionLabel}>{m.crew_cast()}</h2>
+										{#if movie.cast.length}
+											<ul class="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2">
+												{#each movie.cast as person (person.id)}
+													<PersonCard
+														name={person.name}
+														role={person.character}
+														profilePath={person.profilePath}
+														href={facetHref('person', person.id)}
+													/>
+												{/each}
+											</ul>
+										{:else}
+											<p class="text-white/50">{m.cast_unknown()}</p>
+										{/if}
+									</section>
+								</div>
+							{:else if tab === 'gallery'}
+								<GalleryPanel
+									movieId={movie.id}
+									signedIn={data.signedIn}
+									artwork={userData?.artwork ?? null}
+									defaults={{
+										posterPath: movie.posterPath,
+										backdropPath: movie.backdropPath,
+										logoPath: movie.logoPath
+									}}
+									preview={{ backdropPath: backdrop, logoPath: logo }}
+									onpreview={(kind, path) => {
+										if (kind === 'logo') logo = path;
+										else backdrop = path;
+									}}
+									{submit}
+								/>
+							{:else if tab === 'reviews'}
+								<ReviewsPanel movieId={movie.id} signedIn={data.signedIn} {loginHref} />
+							{/if}
+						</ErrorBoundary>
 					</div>
 				{/key}
 			</div>

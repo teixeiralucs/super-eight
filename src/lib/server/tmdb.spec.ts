@@ -356,3 +356,22 @@ describe('onde assistir (§6.12)', () => {
 		]);
 	});
 });
+
+describe('uniqueBy (blindagem contra itens repetidos do TMDb)', () => {
+	it('remove repetidos mantendo a primeira ocorrência', async () => {
+		const { uniqueBy, toImages } = await import('./tmdb-normalize');
+		expect(uniqueBy([3, 1, 3, 2, 1])).toEqual([3, 1, 2]);
+		const image = (path: string, vote: number) => ({
+			file_path: path,
+			iso_639_1: null,
+			vote_average: vote,
+			width: 1,
+			height: 1
+		});
+		// O filme 28169 tinha o mesmo pôster duas vezes.
+		expect(toImages([image('/a.jpg', 5), image('/b.jpg', 9), image('/a.jpg', 5)])).toEqual([
+			{ path: '/b.jpg', language: null },
+			{ path: '/a.jpg', language: null }
+		]);
+	});
+});

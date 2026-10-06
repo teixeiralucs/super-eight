@@ -786,5 +786,7 @@
 	"notif_list_comment": "comentó tu lista",
 	"notif_list_reply": "también comentó la lista",
 	"list_comments_title": "Comentarios",
-	"list_comments_sign_in": "Inicia sesión para comentar."
+	"list_comments_sign_in": "Inicia sesión para comentar.",
+	"boundary_message": "Esta parte no cargó bien. El error quedó registrado para corregirlo.",
+	"boundary_retry": "Intentar de nuevo"
 }

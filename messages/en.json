@@ -786,5 +786,7 @@
 	"notif_list_comment": "commented on your list",
 	"notif_list_reply": "also commented on the list",
 	"list_comments_title": "Comments",
-	"list_comments_sign_in": "Sign in to comment."
+	"list_comments_sign_in": "Sign in to comment.",
+	"boundary_message": "This part didn't load properly. The error was logged so we can fix it.",
+	"boundary_retry": "Try again"
 }

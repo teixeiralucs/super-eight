@@ -401,3 +401,25 @@ model Notification {
   @@index([userId, createdAt(sort: Desc)])
   @@index([userId, readAt])
 }
+
+/// Erros vistos no navegador de quem usa o app (console), agrupados por assinatura
+/// (mensagem + origem + rota). Só o servidor grava/lê; `npm run errors` lista (§6.4.7).
+model ClientError {
+  id        String   @id @default(uuid()) @db.Uuid
+  /// Hash da mensagem, da primeira linha útil da pilha e da rota (sem IDs).
+  signature String   @unique
+  message   String
+  stack     String?
+  /// Página onde aconteceu da última vez.
+  url       String
+  /// Rota do SvelteKit (ex.: /movie/[id]).
+  route     String?
+  /// Onde foi pego: boundary (parte da tela), window (erro solto) ou rejection (promessa).
+  source    String
+  userAgent String?
+  count     Int      @default(1)
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @default(now())
+
+  @@index([lastSeen(sort: Desc)])
+}

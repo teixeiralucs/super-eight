@@ -2,6 +2,7 @@ import { prisma } from '$lib/server/db';
 import { ensureMovie, refreshCollection } from '$lib/server/movies';
 import { refreshWatch } from '$lib/server/watch';
 import { pruneNotifications } from '$lib/server/notifications';
+import { pruneClientErrors } from '$lib/server/client-errors';
 import { checkMovies, refreshTraktList, traktEnabled, TraktRateLimit } from '$lib/server/trakt';
 
 /**
@@ -189,7 +190,16 @@ export async function runDailyMaintenance(budgetMs: number, fetchFn?: typeof fet
 		const result = await task.run(deadline, fetchFn);
 		results[task.name] = { ...result, ms: Date.now() - now };
 	}
-	// Faxina rápida: avisos com mais de 90 dias (§6.13).
-	const prunedNotifications = await pruneNotifications();
-	return { ms: Date.now() - started, trakt: traktEnabled(), results, prunedNotifications };
+	// Faxina rápida: avisos com mais de 90 dias (§6.13) e erros do navegador parados há 30 (§6.4.7).
+	const [prunedNotifications, prunedClientErrors] = await Promise.all([
+		pruneNotifications(),
+		pruneClientErrors()
+	]);
+	return {
+		ms: Date.now() - started,
+		trakt: traktEnabled(),
+		results,
+		prunedNotifications,
+		prunedClientErrors
+	};
 }

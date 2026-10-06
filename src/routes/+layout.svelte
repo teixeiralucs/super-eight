@@ -7,8 +7,25 @@
 	import ConfirmDialog from '$lib/components/feedback/ConfirmDialog.svelte';
 	import { Toaster } from 'svelte-sonner';
 	import { m } from '$lib/paraglide/messages';
+	import { onMount } from 'svelte';
+	import { reportClientError } from '$lib/client/report-error';
+	import ErrorBoundary from '$lib/components/feedback/ErrorBoundary.svelte';
 
 	let { children } = $props();
+
+	// Erros soltos no navegador (fora de qualquer boundary) também são registrados (§6.4.7).
+	onMount(() => {
+		const onError = (event: ErrorEvent) =>
+			reportClientError(event.error ?? event.message, 'window');
+		const onRejection = (event: PromiseRejectionEvent) =>
+			reportClientError(event.reason, 'rejection');
+		window.addEventListener('error', onError);
+		window.addEventListener('unhandledrejection', onRejection);
+		return () => {
+			window.removeEventListener('error', onError);
+			window.removeEventListener('unhandledrejection', onRejection);
+		};
+	});
 </script>
 
 <svelte:head>
@@ -18,7 +35,9 @@
 
 <LoadingBar />
 
-{@render children()}
+<ErrorBoundary class="mx-auto my-24 max-w-md">
+	{@render children()}
+</ErrorBoundary>
 
 <!-- Detalhes abertos por cima de qualquer página (shallow routing, ver $lib/movie/open) -->
 {#if page.state.movie}

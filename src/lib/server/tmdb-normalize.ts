@@ -194,6 +194,21 @@ export function toWatchRows(raw: RawWatchProviders) {
 }
 
 // ─── Normalização ────────────────────────────────────────────────────
+/**
+ * Sem repetição, mantendo a primeira ocorrência. O TMDb às vezes devolve o mesmo item duas
+ * vezes (ex.: o mesmo pôster, o mesmo ator em dois papéis); toda lista que vira `{#each}` com
+ * chave passa por aqui, ou a tela quebra com `each_key_duplicate`.
+ */
+export function uniqueBy<T>(items: T[], key: (item: T) => unknown = (item) => item): T[] {
+	const seen = new Set<unknown>();
+	return items.filter((item) => {
+		const value = key(item);
+		if (seen.has(value)) return false;
+		seen.add(value);
+		return true;
+	});
+}
+
 export function toMovie(raw: RawMovie, genreNames: Map<number, string>): TMDbMovie {
 	const releaseDate = raw.release_date || null;
 	return {
@@ -206,7 +221,7 @@ export function toMovie(raw: RawMovie, genreNames: Map<number, string>): TMDbMov
 		releaseDate,
 		year: releaseDate ? Number(releaseDate.slice(0, 4)) : null,
 		voteAverage: Math.round(raw.vote_average * 10) / 10,
-		genres: raw.genre_ids.flatMap((id) => genreNames.get(id) ?? [])
+		genres: uniqueBy(raw.genre_ids.flatMap((id) => genreNames.get(id) ?? []))
 	};
 }
 
@@ -215,7 +230,9 @@ export const isShowcaseable = (raw: RawMovie) =>
 	!raw.adult && !raw.softcore && Boolean(raw.poster_path);
 
 const directorsOf = (raw: RawMovieDetails) =>
-	(raw.credits?.crew ?? []).filter((member) => member.job === 'Director').map((m) => m.name);
+	uniqueBy(
+		(raw.credits?.crew ?? []).filter((member) => member.job === 'Director').map((m) => m.name)
+	);
 
 /** Funções de roteiro (crédito "escrito por", como Stephen King em "Novel"). */
 const WRITING_JOBS = ['Screenplay', 'Writer', 'Story', 'Novel', 'Characters'];
@@ -246,9 +263,11 @@ export function creditIds(raw: RawMovieDetails & { production_companies?: { id: 
 }
 
 const countriesOf = (raw: RawMovieDetails) =>
-	raw.origin_country?.length
-		? raw.origin_country
-		: (raw.production_countries ?? []).map((country) => country.iso_3166_1);
+	uniqueBy(
+		raw.origin_country?.length
+			? raw.origin_country
+			: (raw.production_countries ?? []).map((country) => country.iso_3166_1)
+	);
 
 /** Título traduzido: país preferido > mesmo idioma em outro país > nulo (a UI usa o original). */
 export function pickTranslation(
@@ -301,7 +320,7 @@ export function toMovieCache(raw: RawMovieForCache): MovieCacheData {
 		releaseDate,
 		year: releaseDate ? Number(releaseDate.slice(0, 4)) : null,
 		runtime: raw.runtime || null,
-		genreIds: raw.genres.map((genre) => genre.id),
+		genreIds: uniqueBy(raw.genres.map((genre) => genre.id)),
 		directors: directorsOf(raw),
 		countries: countriesOf(raw),
 		voteAverage: Math.round(raw.vote_average * 10) / 10,
@@ -329,7 +348,9 @@ export interface RawCollection {
 /** Coleção nos três idiomas → cache `Collection`. Partes por lançamento (sem data no fim). */
 export function toCollection(raw: Localized<RawCollection>): CollectionData {
 	const release = (part: { release_date?: string }) => part.release_date || '9999';
-	const parts = [...raw.en.parts].sort((a, b) => release(a).localeCompare(release(b)));
+	const parts = uniqueBy(raw.en.parts, (part) => part.id).sort((a, b) =>
+		release(a).localeCompare(release(b))
+	);
 	// Nome igual ao inglês não acrescenta nada (o TMDb repete o inglês sem tradução).
 	const translated = (name: string) => (name && name !== raw.en.name ? name : null);
 	const byId = (locale: 'pt' | 'es') => new Map(raw[locale].parts.map((part) => [part.id, part]));
@@ -486,9 +507,10 @@ export const localizedLogos = (
 
 /** Imagens cruas → as mais votadas primeiro; `language` nulo = sem texto. */
 export const toImages = (images: RawImage[]): MovieImage[] =>
-	[...images]
-		.sort((a, b) => b.vote_average - a.vote_average)
-		.map((image) => ({ path: image.file_path, language: image.iso_639_1 }));
+	uniqueBy(
+		[...images].sort((a, b) => b.vote_average - a.vote_average),
+		(image) => image.file_path
+	).map((image) => ({ path: image.file_path, language: image.iso_639_1 }));
 
 /**
  * `trailerLanguage`: ISO 639-1 de quem vê (trailer e logo preferidos).
@@ -524,7 +546,7 @@ export function toMovieFull(
 			},
 			6
 		),
-		genreIds: raw.genres.map((genre) => genre.id),
+		genreIds: uniqueBy(raw.genres.map((genre) => genre.id)),
 		composers: [
 			...new Map(
 				crew
@@ -532,7 +554,7 @@ export function toMovieFull(
 					.map((member) => [member.id!, { id: member.id!, name: member.name }])
 			).values()
 		],
-		studios: (raw.production_companies ?? [])
+		studios: uniqueBy(raw.production_companies ?? [], (company) => company.id)
 			.slice(0, 3)
 			.map((company) => ({ id: company.id, name: company.name })),
 		cast: castPeople(raw.credits?.cast ?? [], 24),
