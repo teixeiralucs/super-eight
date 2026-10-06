@@ -147,12 +147,19 @@ export async function getFacetPage(
 		movieWhereFor(userId, facet, value, role)
 	]);
 	if (!header) return null;
-	const [library, counts, roles] = await Promise.all([
+	const [grid, total, roles] = await Promise.all([
 		getLibraryGrid(userId, filters, locale, movieWhere),
 		viewCounts(userId, movieWhere),
 		facet === 'person' ? roleCounts(userId, Number(value)) : null
 	]);
-	return { header, library: library as LibraryItem[], counts, roles };
+	// `total`: filmes da página sem filtros (cabeçalho); `counts`: abas com os filtros aplicados.
+	return {
+		header,
+		library: grid.items as LibraryItem[],
+		counts: grid.counts,
+		total: total.all,
+		roles
+	};
 }
 
 /**

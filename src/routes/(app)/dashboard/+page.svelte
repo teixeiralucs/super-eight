@@ -24,19 +24,13 @@
 	}).format(new Date());
 	const year = new Date().getFullYear();
 	const hours = $derived(Math.floor(stats.minutesWatched / 60));
-	const counts = $derived({
-		all: stats.watched + stats.watchlist,
-		watched: stats.watched,
-		watchlist: stats.watchlist,
-		favorites: stats.favorites
-	});
 </script>
 
 <svelte:head>
 	<title>{m.dashboard_page_title()}</title>
 </svelte:head>
 
-<main class="mx-auto flex max-w-[1600px] flex-col gap-6 px-5 pt-6 pb-16 md:px-10">
+<main class="mx-auto flex max-w-[1600px] flex-col gap-6 overflow-x-clip px-5 pt-6 pb-16 md:px-10">
 	<!-- Saudação -->
 	<header class="flex flex-wrap items-end justify-between gap-4 pb-2">
 		<div>
@@ -112,7 +106,7 @@
 
 		<!-- Gráficos -->
 		<div class="grid gap-6 xl:grid-cols-3">
-			<div class="xl:col-span-2"><MonthlyChart months={stats.monthly} /></div>
+			<div class="min-w-0 xl:col-span-2"><MonthlyChart months={stats.monthly} /></div>
 			<GenreBars genres={stats.topGenres} />
 		</div>
 
@@ -128,7 +122,7 @@
 				</h2>
 			</div>
 
-			<LibraryToolbar filters={data.filters} genres={data.genres} {counts} />
+			<LibraryToolbar filters={data.filters} options={data.options} counts={data.counts} />
 
 			{#if data.library.length}
 				<ul

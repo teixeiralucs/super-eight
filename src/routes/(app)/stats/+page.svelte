@@ -118,7 +118,7 @@
 	<title>{m.stats_page_title({ period: title })}</title>
 </svelte:head>
 
-<main class="mx-auto flex max-w-[1600px] flex-col gap-6 px-5 pt-6 pb-16 md:px-10">
+<main class="mx-auto flex max-w-[1600px] flex-col gap-6 overflow-x-clip px-5 pt-6 pb-16 md:px-10">
 	<header class="flex flex-col gap-5 pb-2">
 		<div>
 			<p class="text-xs tracking-[0.3em] text-neon-cyan uppercase">

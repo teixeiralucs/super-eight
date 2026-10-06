@@ -10,13 +10,13 @@ export const load: PageServerLoad = async ({ locals, url, fetch }) => {
 	if (!locals.user) error(401);
 
 	const filters = parseLibraryFilters(url.searchParams);
-	const [overview, library, suggestions] = await Promise.all([
+	const [overview, grid, suggestions] = await Promise.all([
 		getDashboardOverview(locals.user.id, locals.locale, fetch),
 		getLibraryGrid(locals.user.id, filters, locals.locale),
 		getLibrarySuggestions(locals.user.id, locals.locale)
 	]);
 
-	return { ...overview, library, suggestions, filters, dev };
+	return { ...overview, library: grid.items, counts: grid.counts, suggestions, filters, dev };
 };
 
 export const actions: Actions = {

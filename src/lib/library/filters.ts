@@ -49,28 +49,73 @@ export const directionLabel = (sort: Exclude<LibrarySort, 'random'>, dir: SortDi
 		title: { asc: m.dir_title_asc, desc: m.dir_title_desc }
 	})[sort][dir]();
 
+/** Nota mínima ("8" = 8 ou mais) ou "none" (sem nota). */
+export const RATING_FILTERS = ['10', '9', '8', '7', '6', '5', 'none'] as const;
+export type RatingFilter = (typeof RATING_FILTERS)[number];
+
+const optionalMatch = (pattern: RegExp) => z.string().regex(pattern).optional().catch(undefined);
+
 export const libraryFiltersSchema = z
 	.object({
 		view: z.enum(LIBRARY_VIEWS).catch('all'),
 		sort: z.enum(LIBRARY_SORTS).catch(DEFAULT_SORT),
 		dir: z.enum(SORT_DIRECTIONS).optional().catch(undefined),
-		// ID de gênero do TMDb (o nome é traduzido na UI).
-		genre: z
+		/** Busca por título (original ou traduzido) ou diretor, sem acento nem caixa. */
+		q: z
 			.string()
-			.regex(/^\d{1,6}$/)
+			.trim()
+			.max(100)
+			.transform((value) => value || undefined)
 			.optional()
-			.catch(undefined)
+			.catch(undefined),
+		// ID de gênero do TMDb (o nome é traduzido na UI).
+		genre: optionalMatch(/^\d{1,6}$/),
+		/** Década de lançamento ("1980"). */
+		decade: optionalMatch(/^\d{3}0$/),
+		country: optionalMatch(/^[A-Z]{2}$/),
+		/** Idioma original (ISO 639-1). */
+		lang: optionalMatch(/^[a-z]{2,3}$/),
+		rating: z.enum(RATING_FILTERS).optional().catch(undefined),
+		/** Ano em que foi assistido (alguma sessão no diário). */
+		year: optionalMatch(/^\d{4}$/)
 	})
 	.transform((filters) => ({ ...filters, dir: filters.dir ?? DEFAULT_DIRECTION[filters.sort] }));
 
 export type LibraryFilters = z.infer<typeof libraryFiltersSchema>;
 
+/** Filtros do painel (além da busca), na ordem da URL e dos chips. */
+export const EXTRA_FILTERS = ['genre', 'decade', 'country', 'lang', 'rating', 'year'] as const;
+export type ExtraFilter = (typeof EXTRA_FILTERS)[number];
+
+/** Valores que existem na biblioteca, para as opções do painel de filtros. */
+export interface LibraryFilterOptions {
+	genres: { id: number; name: string }[];
+	decades: number[];
+	/** ISO 3166-1 (o nome é traduzido na UI). */
+	countries: string[];
+	/** ISO 639-1. */
+	languages: string[];
+	/** Anos com sessões no diário. */
+	years: number[];
+}
+
+/** Algum filtro além da aba e da ordenação? */
+export const hasActiveFilters = (filters: LibraryFilters) =>
+	!!filters.q || EXTRA_FILTERS.some((key) => filters[key]);
+
 export function parseLibraryFilters(params: URLSearchParams): LibraryFilters {
+	const get = (key: string) => params.get(key) || undefined;
 	return libraryFiltersSchema.parse({
-		view: params.get('view') ?? undefined,
-		sort: params.get('sort') ?? undefined,
-		dir: params.get('dir') ?? undefined,
-		genre: params.get('genre') || undefined
+		view: get('view'),
+		sort: get('sort'),
+		dir: get('dir'),
+		q: get('q'),
+		genre: get('genre'),
+		decade: get('decade'),
+		country: get('country'),
+		lang: get('lang'),
+		rating: get('rating'),
+		year: get('year')
 	});
 }
 
@@ -78,7 +123,11 @@ export function parseLibraryFilters(params: URLSearchParams): LibraryFilters {
 export function filtersQuery(filters: LibraryFilters) {
 	const pairs: [string, string][] = [];
 	if (filters.view !== 'all') pairs.push(['view', filters.view]);
-	if (filters.genre) pairs.push(['genre', filters.genre]);
+	if (filters.q) pairs.push(['q', filters.q]);
+	for (const key of EXTRA_FILTERS) {
+		const value = filters[key];
+		if (value) pairs.push([key, value]);
+	}
 	if (filters.sort !== DEFAULT_SORT) pairs.push(['sort', filters.sort]);
 	if (filters.sort !== 'random' && filters.dir !== DEFAULT_DIRECTION[filters.sort]) {
 		pairs.push(['dir', filters.dir]);
@@ -86,3 +135,7 @@ export function filtersQuery(filters: LibraryFilters) {
 	const query = pairs.map(([key, value]) => `${key}=${encodeURIComponent(value)}`).join('&');
 	return query ? `?${query}` : '';
 }
+
+/** Texto comparável: sem acentos, minúsculo ("Amélie" → "amelie"). */
+export const foldText = (text: string) =>
+	text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();

@@ -449,6 +449,7 @@ model CatalogEntry {
 
 - 6.3.1. Reatividade Local: Runes (`$state`, `$derived`) para abas, filtros temporários e modais.
 - 6.3.2. Sincronização de URL: estados que afetam os dados exibidos (paginação, busca, filtros e ordenação da grade) ficam na URL, não só na memória do componente.
+- 6.3.3. Filtros da biblioteca (`LibraryToolbar`, dashboard e páginas filtradas §6.10): abas (`view`), busca enquanto digita (`q`, 300 ms, `replaceState` — título original/traduções ou diretor, sem acento nem caixa, feita em memória) e o painel **Filtros** (só no dashboard): gênero (`genre`), década de lançamento (`decade=1980`), país (`country`), idioma original (`lang`), sua nota (`rating`: `10`, mínimo `5`–`9` ou `none` = sem nota) e assistido em (`year`, alguma sessão naquele ano). As opções vêm do que existe na biblioteca. Filtros ativos viram chips removíveis (+ "Limpar filtros") com o nº de filmes; as contagens das abas respeitam os filtros. Com JavaScript a URL sai limpa (`filtersQuery`: sem campos vazios nem valores padrão); sem JavaScript o formulário GET continua funcionando.
 - 6.3.3. Compartilhamento Global: estado compartilhado entre componentes distantes (ex.: player de trailer global) em módulos `.svelte.ts` com Runes, usando a Context API (`setContext`/`getContext`) quando o estado for por requisição/usuário, para evitar vazamento de estado entre usuários no SSR.
 
 ## **6.4. UX, Feedback Visual e Interatividade**

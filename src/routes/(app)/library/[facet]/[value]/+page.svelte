@@ -41,7 +41,7 @@
 	const total = $derived(
 		data.years
 			? data.years.reduce((sum, year) => sum + year.items.length, 0)
-			: (data.page?.counts.all ?? 0)
+			: (data.page?.total ?? 0)
 	);
 
 	const image = $derived(
@@ -157,7 +157,7 @@
 
 		<LibraryToolbar
 			filters={data.filters}
-			genres={[]}
+			options={null}
 			counts={data.page.counts}
 			base={page.url.pathname}
 			anchor=""
@@ -174,7 +174,7 @@
 			</ul>
 		{:else}
 			<p class="rounded-3xl border border-white/10 px-6 py-16 text-center text-muted-foreground">
-				{data.page.counts.all ? m.no_movies_with_filters() : m.facet_empty()}
+				{data.page.total ? m.no_movies_with_filters() : m.facet_empty()}
 			</p>
 		{/if}
 		<a href={resolve('/dashboard')} class="self-start text-sm text-white/55 hover:text-white"

@@ -1,10 +1,15 @@
 import { prisma } from '$lib/server/db';
 import type { Prisma } from '$lib/server/generated/prisma/client';
-import type { LibraryFilters } from '$lib/library/filters';
+import {
+	foldText,
+	type LibraryFilterOptions,
+	type LibraryFilters,
+	type LibraryView
+} from '$lib/library/filters';
 import { shuffle } from '$lib/library/shuffle';
 import { computeStats } from '$lib/library/stats';
 import { getArtworks, withArtwork } from '$lib/server/artwork';
-import { localizeCard, movieCardSelect } from '$lib/server/movie-locale';
+import { localizeCard, movieCardSelect, type MovieCardRow } from '$lib/server/movie-locale';
 import { getGenreNames } from '$lib/server/tmdb';
 import type { Locale } from '$lib/i18n';
 
@@ -32,9 +37,48 @@ function orderBy({ sort, dir }: LibraryFilters): Ordering {
 	}
 }
 
+/** Filtros que viram consulta ao banco (a busca por texto é feita depois, sem acentos). */
+function movieFilters(userId: string, filters: LibraryFilters): Prisma.MovieWhereInput[] {
+	const where: Prisma.MovieWhereInput[] = [];
+	if (filters.genre) where.push({ genreIds: { has: Number(filters.genre) } });
+	if (filters.decade) {
+		const from = Number(filters.decade);
+		where.push({
+			releaseDate: { gte: new Date(Date.UTC(from, 0, 1)), lt: new Date(Date.UTC(from + 10, 0, 1)) }
+		});
+	}
+	if (filters.country) where.push({ countries: { has: filters.country } });
+	if (filters.lang) where.push({ originalLanguage: filters.lang });
+	if (filters.year) {
+		const year = Number(filters.year);
+		where.push({
+			diaryEntries: {
+				some: {
+					userId,
+					watchedAt: { gte: new Date(Date.UTC(year, 0, 1)), lt: new Date(Date.UTC(year + 1, 0, 1)) }
+				}
+			}
+		});
+	}
+	return where;
+}
+
+/** O filme bate com a busca? Título original, traduções ou diretor, sem acento nem caixa. */
+function matchesQuery(movie: MovieCardRow, query: string) {
+	const needle = foldText(query);
+	return [
+		movie.originalTitle,
+		movie.titlePt,
+		movie.titleEn,
+		movie.titleEs,
+		...movie.directors
+	].some((text) => text && foldText(text).includes(needle));
+}
+
 /**
  * Grade da biblioteca com filtros da URL e nº de sessões por filme. `movieWhere` restringe aos
- * filmes de uma pessoa, país, estúdio… (páginas filtradas, §6.10).
+ * filmes de uma pessoa, país, estúdio… (páginas filtradas, §6.10). As contagens das abas
+ * respeitam os demais filtros (busca, gênero, década…).
  */
 export async function getLibraryGrid(
 	userId: string,
@@ -42,16 +86,14 @@ export async function getLibraryGrid(
 	locale: Locale,
 	movieWhere: Prisma.MovieWhereInput = {}
 ) {
-	const where: Prisma.LibraryEntryWhereInput = { userId };
-	if (filters.view === 'watched') where.status = 'WATCHED';
-	if (filters.view === 'watchlist') where.status = 'WANT_TO_WATCH';
-	if (filters.view === 'favorites') where.isFavorite = true;
-	where.movie = {
-		...movieWhere,
-		...(filters.genre && { genreIds: { has: Number(filters.genre) } })
+	const where: Prisma.LibraryEntryWhereInput = {
+		userId,
+		movie: { AND: [movieWhere, ...movieFilters(userId, filters)] }
 	};
+	if (filters.rating === 'none') where.rating = null;
+	else if (filters.rating) where.rating = { gte: Number(filters.rating) };
 
-	const [entries, sessions, artworks] = await Promise.all([
+	const [rows, sessions, artworks] = await Promise.all([
 		prisma.libraryEntry.findMany({
 			where,
 			orderBy: orderBy(filters),
@@ -66,13 +108,28 @@ export async function getLibraryGrid(
 		getArtworks(userId)
 	]);
 
+	const entries = filters.q ? rows.filter((row) => matchesQuery(row.movie, filters.q!)) : rows;
+	const counts = {
+		all: entries.length,
+		watched: entries.filter((entry) => entry.status === 'WATCHED').length,
+		watchlist: entries.filter((entry) => entry.status === 'WANT_TO_WATCH').length,
+		favorites: entries.filter((entry) => entry.isFavorite).length
+	} satisfies Record<LibraryView, number>;
+	const inView = entries.filter(
+		(entry) =>
+			filters.view === 'all' ||
+			(filters.view === 'watched' && entry.status === 'WATCHED') ||
+			(filters.view === 'watchlist' && entry.status === 'WANT_TO_WATCH') ||
+			(filters.view === 'favorites' && entry.isFavorite)
+	);
+
 	const watchCounts = new Map(sessions.map((row) => [row.movieId, row._count._all]));
-	const items = entries.map((entry) => ({
+	const items = inView.map((entry) => ({
 		...entry,
 		movie: withArtwork(localizeCard(entry.movie, locale), artworks),
 		watchCount: watchCounts.get(entry.movie.id) ?? 0
 	}));
-	return filters.sort === 'random' ? shuffle(items) : items;
+	return { items: filters.sort === 'random' ? shuffle(items) : items, counts };
 }
 
 /** Filmes aleatórios da própria biblioteca (assistidos ou não) para o carrossel. */
@@ -101,7 +158,9 @@ export async function getDashboardOverview(userId: string, locale: Locale, fetch
 				status: true,
 				rating: true,
 				isFavorite: true,
-				movie: { select: { genreIds: true } }
+				movie: {
+					select: { genreIds: true, countries: true, originalLanguage: true, releaseDate: true }
+				}
 			}
 		}),
 		prisma.diaryEntry.findMany({
@@ -133,13 +192,25 @@ export async function getDashboardOverview(userId: string, locale: Locale, fetch
 		diary.map((entry) => ({ watchedAt: entry.watchedAt, runtime: entry.movie.runtime }))
 	);
 
-	// Gêneros presentes na biblioteca, para o filtro (valor = ID; rótulo no idioma de quem vê).
+	// Valores presentes na biblioteca, para o painel de filtros (rótulos traduzidos na UI).
 	const genres = [...new Set(library.flatMap((entry) => entry.movie.genreIds))]
 		.flatMap((id) => {
 			const name = genreName(id);
 			return name ? [{ id, name }] : [];
 		})
 		.sort((a, b) => a.name.localeCompare(b.name, locale));
+	const distinct = <T>(values: T[]) => [...new Set(values)];
+	const options: LibraryFilterOptions = {
+		genres,
+		decades: distinct(
+			library.flatMap(({ movie }) =>
+				movie.releaseDate ? [Math.floor(movie.releaseDate.getUTCFullYear() / 10) * 10] : []
+			)
+		).sort((a, b) => b - a),
+		countries: distinct(library.flatMap(({ movie }) => movie.countries)),
+		languages: distinct(library.flatMap(({ movie }) => movie.originalLanguage ?? [])),
+		years: distinct(diary.map((entry) => entry.watchedAt.getUTCFullYear())).sort((a, b) => b - a)
+	};
 
 	return {
 		stats,
@@ -147,7 +218,7 @@ export async function getDashboardOverview(userId: string, locale: Locale, fetch
 			...entry,
 			movie: withArtwork(localizeCard(entry.movie, locale), artworks)
 		})),
-		genres,
+		options,
 		isEmpty: library.length === 0
 	};
 }
