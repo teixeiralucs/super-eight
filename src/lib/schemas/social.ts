@@ -27,6 +27,9 @@ export const commentSchema = z.object({
 		.max(1000, { error: () => m.error_comment_too_long() })
 });
 
+/** Comentário numa lista (o ID da lista vem da rota). */
+export const listCommentSchema = commentSchema.omit({ reviewId: true });
+
 export const commentIdSchema = z.object({
 	commentId: z.uuid({ error: () => m.error_comment_not_found() })
 });

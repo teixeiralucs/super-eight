@@ -3,7 +3,13 @@ import type { UserChip } from './types';
 // Notificações (earlySetup.md §6.13): agrupamento puro, testável.
 
 export type NotificationKind =
-	'FOLLOW' | 'REVIEW_LIKE' | 'LIST_LIKE' | 'REVIEW_COMMENT' | 'REVIEW_REPLY';
+	| 'FOLLOW'
+	| 'REVIEW_LIKE'
+	| 'LIST_LIKE'
+	| 'REVIEW_COMMENT'
+	| 'REVIEW_REPLY'
+	| 'LIST_COMMENT'
+	| 'LIST_REPLY';
 
 export interface NotificationRow {
 	id: string;

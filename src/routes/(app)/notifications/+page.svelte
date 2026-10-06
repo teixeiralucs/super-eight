@@ -23,16 +23,19 @@
 		REVIEW_LIKE: { icon: HeartIcon, color: 'text-neon-pink' },
 		LIST_LIKE: { icon: HeartIcon, color: 'text-neon-pink' },
 		REVIEW_COMMENT: { icon: MessageCircleIcon, color: 'text-neon-purple' },
-		REVIEW_REPLY: { icon: MessageCircleIcon, color: 'text-neon-purple' }
+		REVIEW_REPLY: { icon: MessageCircleIcon, color: 'text-neon-purple' },
+		LIST_COMMENT: { icon: MessageCircleIcon, color: 'text-neon-purple' },
+		LIST_REPLY: { icon: MessageCircleIcon, color: 'text-neon-purple' }
 	};
 
-	/** Para onde o aviso leva: perfil, aba de reviews do filme ou a lista. */
+	/** Para onde o aviso leva: perfil, aba de reviews do filme ou a lista (nos comentários). */
 	function hrefOf(item: NotificationItem) {
 		if (item.type === 'FOLLOW') {
 			return resolve('/(app)/u/[username]', { username: item.actors[0].username });
 		}
-		if (item.type === 'LIST_LIKE' && item.list) {
-			return resolve('/(app)/lists/[id]', { id: item.list.id });
+		if (item.list) {
+			const path = resolve('/(app)/lists/[id]', { id: item.list.id });
+			return item.type === 'LIST_LIKE' ? path : `${path}#comentarios`;
 		}
 		if (item.movie) return `${resolve('/movie/[id]', { id: String(item.movie.id) })}?tab=reviews`;
 		return resolve('/notifications');
@@ -52,6 +55,10 @@
 				return m.notif_review_comment();
 			case 'REVIEW_REPLY':
 				return m.notif_review_reply();
+			case 'LIST_COMMENT':
+				return m.notif_list_comment();
+			case 'LIST_REPLY':
+				return m.notif_list_reply();
 		}
 	}
 

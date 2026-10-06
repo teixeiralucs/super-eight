@@ -782,5 +782,9 @@
 	"notif_review_comment": "commented on your review of",
 	"notif_review_reply": "also commented on the review of",
 	"notif_and_others_one": "and {count} other",
-	"notif_and_others_other": "and {count} others"
+	"notif_and_others_other": "and {count} others",
+	"notif_list_comment": "commented on your list",
+	"notif_list_reply": "also commented on the list",
+	"list_comments_title": "Comments",
+	"list_comments_sign_in": "Sign in to comment."
 }

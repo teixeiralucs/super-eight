@@ -46,25 +46,28 @@ export async function unnotify(
 }
 
 /**
- * Comentário novo numa review: avisa o autor da review e quem já tinha comentado nela
+ * Comentário novo numa review ou lista: avisa o dono dela e quem já tinha comentado ali
  * (uma vez por pessoa).
  */
 export async function notifyComment(
 	actorId: string,
-	review: { id: string; userId: string },
+	target: { kind: 'review' | 'list'; id: string; ownerId: string },
 	commentId: string
 ) {
+	const field = target.kind === 'review' ? 'reviewId' : 'listId';
 	const previous = await prisma.comment.findMany({
-		where: { reviewId: review.id, userId: { notIn: [actorId, review.userId] } },
+		where: { [field]: target.id, userId: { notIn: [actorId, target.ownerId] } },
 		distinct: ['userId'],
 		select: { userId: true }
 	});
+	const [ownerType, replyType] =
+		target.kind === 'review'
+			? (['REVIEW_COMMENT', 'REVIEW_REPLY'] as const)
+			: (['LIST_COMMENT', 'LIST_REPLY'] as const);
 	const data: Prisma.NotificationCreateManyInput[] = [
-		...(review.userId !== actorId
-			? [{ userId: review.userId, type: 'REVIEW_COMMENT' as const }]
-			: []),
-		...previous.map((row) => ({ userId: row.userId, type: 'REVIEW_REPLY' as const }))
-	].map((row) => ({ ...row, actorId, reviewId: review.id, commentId }));
+		...(target.ownerId !== actorId ? [{ userId: target.ownerId, type: ownerType }] : []),
+		...previous.map((row) => ({ userId: row.userId, type: replyType }))
+	].map((row) => ({ ...row, actorId, [field]: target.id, commentId }));
 	if (data.length) await prisma.notification.createMany({ data });
 }
 

@@ -1,5 +1,5 @@
 import { prisma } from '$lib/server/db';
-import { notify, unnotify } from '$lib/server/notifications';
+import { notify, notifyComment, unnotify } from '$lib/server/notifications';
 import { getArtworks, withArtwork } from '$lib/server/artwork';
 import { LibraryRuleError } from '$lib/server/errors';
 import { localizeCard, movieCardSelect } from '$lib/server/movie-locale';
@@ -9,6 +9,7 @@ import { m } from '$lib/paraglide/messages';
 import type { Locale } from '$lib/i18n';
 import type { ListDetail, ListMembership, ListSummary } from '$lib/lists/types';
 import type { ListFields } from '$lib/schemas/lists';
+import type { CommentView } from '$lib/social/types';
 
 // Listas personalizadas (earlySetup.md §3.6, §5.2.4). Toda mutação confere o dono.
 
@@ -103,6 +104,55 @@ export async function getLikedLists(userId: string, locale: Locale): Promise<Lis
 			cover: first ? { backdropPath: first.backdropPath, originalTitle: first.originalTitle } : null
 		};
 	});
+}
+
+const commentAuthor = { username: true, name: true, avatarUrl: true } as const;
+
+/** Lista que a pessoa pode ver (pública ou dela) ou erro. */
+async function visibleList(listId: string, viewerId: string | null) {
+	const list = await prisma.list.findFirst({
+		where: { id: listId, OR: [{ isPublic: true }, ...(viewerId ? [{ userId: viewerId }] : [])] },
+		select: { id: true, userId: true }
+	});
+	if (!list) throw new LibraryRuleError(m.error_list_not_found());
+	return list;
+}
+
+/** Comentários de uma lista visível, do mais antigo ao mais novo (§6.6). */
+export async function getListComments(
+	listId: string,
+	viewerId: string | null
+): Promise<CommentView[]> {
+	const list = await visibleList(listId, viewerId).catch(() => null);
+	if (!list) return [];
+	const rows = await prisma.comment.findMany({
+		where: { listId },
+		orderBy: { createdAt: 'asc' },
+		take: 300,
+		select: {
+			id: true,
+			userId: true,
+			content: true,
+			createdAt: true,
+			user: { select: commentAuthor }
+		}
+	});
+	return rows.map((row) => ({
+		id: row.id,
+		content: row.content,
+		createdAt: row.createdAt,
+		author: row.user,
+		canDelete: Boolean(viewerId && (row.userId === viewerId || list.userId === viewerId))
+	}));
+}
+
+export async function addListComment(userId: string, listId: string, content: string) {
+	const list = await visibleList(listId, userId);
+	const comment = await prisma.comment.create({
+		data: { userId, listId, content },
+		select: { id: true }
+	});
+	await notifyComment(userId, { kind: 'list', id: list.id, ownerId: list.userId }, comment.id);
 }
 
 /** Curtir/descurtir uma lista pública de outra pessoa. */

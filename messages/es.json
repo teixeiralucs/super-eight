@@ -782,5 +782,9 @@
 	"notif_review_comment": "comentó tu reseña de",
 	"notif_review_reply": "también comentó la reseña de",
 	"notif_and_others_one": "y {count} persona más",
-	"notif_and_others_other": "y {count} personas más"
+	"notif_and_others_other": "y {count} personas más",
+	"notif_list_comment": "comentó tu lista",
+	"notif_list_reply": "también comentó la lista",
+	"list_comments_title": "Comentarios",
+	"list_comments_sign_in": "Inicia sesión para comentar."
 }

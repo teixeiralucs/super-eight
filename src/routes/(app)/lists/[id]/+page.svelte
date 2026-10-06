@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { withFeedback } from '$lib/feedback/submit';
+	import { actionName, withFeedback } from '$lib/feedback/submit';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { enhance } from '$app/forms';
 	import { resolve } from '$app/paths';
@@ -18,6 +18,7 @@
 	import Modal from '$lib/components/Modal.svelte';
 	import MoviePosterCard from '$lib/components/MoviePosterCard.svelte';
 	import ListForm from '$lib/components/lists/ListForm.svelte';
+	import CommentThread from '$lib/components/social/CommentThread.svelte';
 	import { intlLocale, plural } from '$lib/i18n';
 	import { posterFromCard } from '$lib/library/poster';
 	import { COLLECTION_SORTS, type CollectionSort, type ListItem } from '$lib/lists/types';
@@ -26,6 +27,28 @@
 	import type { ActionData, PageData } from './$types';
 
 	let { data, form }: { data: PageData; form: ActionData } = $props();
+
+	// Comentários: escrever limpa o campo; apagar pede confirmação (a página recarrega a conversa).
+	const commentSubmit = withFeedback(
+		({ formElement }) =>
+			async ({ result, update }) => {
+				await update({ reset: false });
+				if (result.type === 'success' && formElement.dataset.reset !== undefined) {
+					formElement.reset();
+				}
+			},
+		{
+			confirm: (input) =>
+				actionName(input) === 'deleteComment'
+					? {
+							title: m.confirm_delete_comment_title(),
+							confirmLabel: m.action_delete(),
+							destructive: true
+						}
+					: null,
+			success: (input) => (actionName(input) === 'deleteComment' ? m.toast_comment_deleted() : null)
+		}
+	);
 
 	const list = $derived(data.list);
 	const ranked = $derived(list.kind === 'RANKED');
@@ -383,6 +406,42 @@
 			{#if list.isOwner}
 				<p class="mt-2 text-sm text-muted-foreground">{m.list_empty_items_hint()}</p>
 			{/if}
+		</section>
+	{/if}
+
+	<!-- Comentários (só em listas públicas: nas privadas não há com quem conversar) -->
+	{#if list.isPublic}
+		<section
+			id="comentarios"
+			aria-labelledby="comentarios-titulo"
+			class="mx-auto w-full max-w-3xl scroll-mt-24 pt-6"
+		>
+			<h2
+				id="comentarios-titulo"
+				class="flex items-baseline gap-3 font-display text-2xl font-semibold tracking-[-0.02em]"
+			>
+				{m.list_comments_title()}
+				{#if data.comments.length}
+					<span class="text-base font-normal text-white/40 tabular-nums"
+						>{data.comments.length}</span
+					>
+				{/if}
+			</h2>
+			<div class="mt-5 space-y-3 rounded-3xl border border-white/10 bg-white/[0.02] p-5">
+				<CommentThread
+					comments={data.comments}
+					signedIn={data.signedIn}
+					base=""
+					submit={commentSubmit}
+				/>
+				{#if !data.signedIn}
+					<a
+						href="{resolve('/login')}?next={encodeURIComponent(`/lists/${list.id}#comentarios`)}"
+						class="inline-block text-sm text-white/60 underline-offset-4 hover:text-white hover:underline"
+						>{m.list_comments_sign_in()}</a
+					>
+				{/if}
+			</div>
 		</section>
 	{/if}
 </main>

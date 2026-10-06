@@ -113,7 +113,7 @@ O Super Eight se apoia no conceito de Tracking de Filmes, semelhante ao Letterbo
 
 - 3.9.1. `Follow`: `followerId`, `followingId`, `createdAt`. PK composta `@@id([followerId, followingId])`.
 - 3.9.2. `ReviewLike` e `ListLike`: `userId` + `reviewId`/`listId`, `createdAt`. PK composta.
-- 3.9.3. `Comment`: comentário em uma review. `id`, `userId`, `reviewId`, `content`, `createdAt`, `updatedAt`.
+- 3.9.3. `Comment`: comentário em uma review **ou** numa lista pública. `id`, `userId`, `reviewId?`, `listId?`, `content`, `createdAt`, `updatedAt`; `CHECK` no banco exige exatamente um alvo (`Comment_one_target_check`). Apaga quem escreveu ou o dono da review/lista. Nas listas, a seção **Comentários** fica no fim da página (`/lists/[id]#comentarios`, só listas públicas; visitantes veem e são convidados a entrar), com as actions `comment`/`deleteComment` da própria página; reviews e listas usam o mesmo componente (`CommentThread`).
 - 3.9.4. Feed de atividades: **não** terá tabela própria inicialmente; é derivado das entradas de diário, reviews e listas públicas dos usuários seguidos.
 
 ## **3.10. Entidade: CatalogEntry (Catálogos do TMDb)**
@@ -518,7 +518,7 @@ model CatalogEntry {
 
 ## **6.13. Notificações**
 
-- 6.13.1. Avisos (`Notification`: destinatário, autor, tipo e alvo): **seguiu você** (`FOLLOW`), **curtiu sua review** (`REVIEW_LIKE`), **curtiu sua lista** (`LIST_LIKE`), **comentou na sua review** (`REVIEW_COMMENT`) e **também comentou numa review que você comentou** (`REVIEW_REPLY`, uma vez por pessoa). Criados junto com a ação (`$lib/server/notifications.ts`); ninguém é avisado das próprias ações.
+- 6.13.1. Avisos (`Notification`: destinatário, autor, tipo e alvo): **seguiu você** (`FOLLOW`), **curtiu sua review** (`REVIEW_LIKE`), **curtiu sua lista** (`LIST_LIKE`), **comentou na sua review/lista** (`REVIEW_COMMENT`/`LIST_COMMENT`) e **também comentou numa review/lista que você comentou** (`REVIEW_REPLY`/`LIST_REPLY`, uma vez por pessoa). Criados junto com a ação (`$lib/server/notifications.ts`); ninguém é avisado das próprias ações.
 - 6.13.2. Desfazer apaga o aviso: deixar de seguir e descurtir (`unnotify`); apagar review, comentário ou lista apaga os avisos por cascata.
 - 6.13.3. Sino no topo da área logada com o número de não lidas (o layout `(app)` recarrega a contagem a cada navegação). `/notifications` (Protegida) lista as 100 mais recentes — curtidas no mesmo alvo agrupadas ("Ana e mais 2 pessoas curtiram…"), trecho do comentário, pôster do filme — e marca tudo como lido ao abrir (os que eram novos ficam destacados nessa visita). Cada aviso leva ao perfil, à lista ou ao filme já na aba Reviews (`/movie/[id]?tab=reviews`).
 - 6.13.4. A rotina diária apaga avisos com mais de 90 dias.

@@ -258,6 +258,7 @@ model List {
   items         ListMovie[]
   likes         ListLike[]
   notifications Notification[]
+  comments      Comment[]
 
   @@index([userId])
 }
@@ -332,17 +333,21 @@ model ListLike {
 model Comment {
   id        String   @id @default(uuid()) @db.Uuid
   userId    String   @db.Uuid
-  reviewId  String   @db.Uuid
+  /// Comentário numa review OU numa lista (CHECK no banco: exatamente um dos dois).
+  reviewId  String?  @db.Uuid
+  listId    String?  @db.Uuid
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  review Review? @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  list   List?   @relation(fields: [listId], references: [id], onDelete: Cascade)
 
   notifications Notification[]
 
   @@index([reviewId, createdAt])
+  @@index([listId, createdAt])
 }
 
 model CatalogEntry {
@@ -367,6 +372,10 @@ enum NotificationType {
   REVIEW_COMMENT
   /// Comentou numa review que você também comentou.
   REVIEW_REPLY
+  /// Comentou na sua lista.
+  LIST_COMMENT
+  /// Comentou numa lista que você também comentou.
+  LIST_REPLY
 }
 
 /// Aviso para `userId` sobre algo que `actorId` fez (§6.13). Desfazer (descurtir, deixar de

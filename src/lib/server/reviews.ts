@@ -147,13 +147,17 @@ export async function addComment(userId: string, reviewId: string, content: stri
 		data: { userId, reviewId, content },
 		select: { id: true }
 	});
-	await notifyComment(userId, review, comment.id);
+	await notifyComment(
+		userId,
+		{ kind: 'review', id: review.id, ownerId: review.userId },
+		comment.id
+	);
 }
 
-/** Apaga o comentário: quem escreveu ou o autor da review. */
+/** Apaga o comentário: quem escreveu ou o dono da review/lista em que ele está. */
 export async function deleteComment(userId: string, commentId: string) {
 	const { count } = await prisma.comment.deleteMany({
-		where: { id: commentId, OR: [{ userId }, { review: { userId } }] }
+		where: { id: commentId, OR: [{ userId }, { review: { userId } }, { list: { userId } }] }
 	});
 	if (!count) throw new LibraryRuleError(m.error_comment_not_found());
 }

@@ -3,9 +3,13 @@ import { z } from 'zod';
 import { m } from '$lib/paraglide/messages';
 import { listFieldsSchema, listMovieSchema, reorderSchema } from '$lib/schemas/lists';
 import { LibraryRuleError } from '$lib/server/errors';
+import { commentIdSchema, listCommentSchema } from '$lib/schemas/social';
+import { deleteComment } from '$lib/server/reviews';
 import {
+	addListComment,
 	deleteList,
 	getList,
+	getListComments,
 	removeFromList,
 	reorderList,
 	toggleListLike,
@@ -19,7 +23,8 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 		: null;
 	// Privada de outra pessoa = inexistente (não revela que existe).
 	if (!list) error(404, m.error_list_not_found());
-	return { list, signedIn: Boolean(locals.user) };
+	const comments = await getListComments(list.id, locals.user?.id ?? null);
+	return { list, comments, signedIn: Boolean(locals.user) };
 };
 
 /** Exige login, valida o formulário e converte regras violadas em `fail(400)`. */
@@ -54,6 +59,12 @@ export const actions: Actions = {
 	),
 	reorder: action(reorderSchema, (userId, listId, { order }) => reorderList(userId, listId, order)),
 	like: action(z.object({}), (userId, listId) => toggleListLike(userId, listId)),
+	comment: action(listCommentSchema, (userId, listId, { content }) =>
+		addListComment(userId, listId, content)
+	),
+	deleteComment: action(commentIdSchema, (userId, _listId, { commentId }) =>
+		deleteComment(userId, commentId)
+	),
 	delete: async (event) => {
 		const result = await action(z.object({}), (userId, listId) => deleteList(userId, listId))(
 			event
