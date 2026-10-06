@@ -1,4 +1,5 @@
 import { prisma } from '$lib/server/db';
+import { notify, notifyComment, unnotify } from '$lib/server/notifications';
 import { LibraryRuleError } from '$lib/server/errors';
 import { ensureMovie } from '$lib/server/movies';
 import { m } from '$lib/paraglide/messages';
@@ -104,8 +105,13 @@ export async function toggleReviewLike(userId: string, reviewId: string) {
 	if (review.userId === userId) throw new LibraryRuleError(m.error_like_own_review());
 	const key = { userId_reviewId: { userId, reviewId } };
 	const liked = await prisma.reviewLike.findUnique({ where: key, select: { userId: true } });
-	if (liked) await prisma.reviewLike.delete({ where: key });
-	else await prisma.reviewLike.create({ data: { userId, reviewId } });
+	if (liked) {
+		await prisma.reviewLike.delete({ where: key });
+		await unnotify(review.userId, userId, 'REVIEW_LIKE', { reviewId });
+	} else {
+		await prisma.reviewLike.create({ data: { userId, reviewId } });
+		await notify(review.userId, userId, 'REVIEW_LIKE', { reviewId });
+	}
 }
 
 export async function getComments(
@@ -136,8 +142,12 @@ export async function getComments(
 }
 
 export async function addComment(userId: string, reviewId: string, content: string) {
-	await visibleReview(reviewId, userId);
-	await prisma.comment.create({ data: { userId, reviewId, content } });
+	const review = await visibleReview(reviewId, userId);
+	const comment = await prisma.comment.create({
+		data: { userId, reviewId, content },
+		select: { id: true }
+	});
+	await notifyComment(userId, review, comment.id);
 }
 
 /** Apaga o comentário: quem escreveu ou o autor da review. */

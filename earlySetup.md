@@ -378,7 +378,8 @@ model CatalogEntry {
   2. sagas do TMDb (`Collection`) com 7+ dias;
   3. listas oficiais do Trakt (`TraktList`) com 7+ dias (removida do Trakt = apagada);
   4. filmes das bibliotecas nunca verificados no Trakt e os verificados há 30+ dias (listas novas);
-  5. onde assistir (`MovieWatch`) dos filmes das bibliotecas nunca buscados ou com 3+ dias (§6.12; 8 ao mesmo tempo).
+  5. onde assistir (`MovieWatch`) dos filmes das bibliotecas nunca buscados ou com 3+ dias (§6.12; 8 ao mesmo tempo);
+  6. avisos com mais de 90 dias são apagados (§6.13).
 - 4.4.2. Orçamento: 240 s no total (a função tem `maxDuration` 300 s), dividido entre as tarefas; o que não couber continua no dia seguinte. Item com erro não para a tarefa (filmes e sagas com erro esperam a próxima semana); limite do Trakt (429) encerra as tarefas do Trakt naquele dia. Sem `TRAKT_CLIENT_ID`, elas são puladas.
 - 4.4.3. Endpoint: `GET /api/cron/daily`, aceito só com `Authorization: Bearer ${CRON_SECRET}` (comparação em tempo constante; sem segredo configurado, sempre 401). Responde com um relatório por tarefa (`done`, `failed`, `unfinished`, `ms`), também registrado no log.
 - 4.4.4. Catálogos da landing: **continuam vindo do TMDb** (cache em memória de 30 min). A ideia original de guardá-los em `CatalogEntry` foi deixada de lado: depois do i18n (§6.5) eles dependem da região e do idioma de quem vê e exibem sinopse e gêneros traduzidos, que o cache `Movie` não guarda. A tabela `CatalogEntry` segue no schema, sem uso.
@@ -514,6 +515,13 @@ model CatalogEntry {
 - 6.12.2. **Meus streamings** (Configurações): a pessoa marca os serviços que assina, entre os do seu país (`/watch/providers/movie?watch_region=`, em cache de 24 h; os 18 mais relevantes + "Mostrar todos"). Fica em `User.streamingServices` (IDs). Esses serviços aparecem primeiro e destacados no detalhe do filme.
 - 6.12.3. Filtro **Disponível em** da biblioteca (`stream=<id>` ou `stream=mine`, §6.3.3): filmes com aquele serviço (ou algum dos seus) em assinatura/grátis na região. Opções = serviços que têm algum filme da biblioteca; "Nos meus streamings" só aparece para quem marcou serviços.
 - 6.12.4. Cache: `MovieWatch` (filme × região: link e IDs de `flatrate`, `free`, `rent`, `buy` — todas as regiões que o TMDb devolve) e `WatchProvider` (nome, logo, prioridade). Preenchido quando o filme entra no cache (`ensureMovie`) e renovado pela rotina diária a cada 3 dias para os filmes das bibliotecas (`Movie.watchCheckedAt`).
+
+## **6.13. Notificações**
+
+- 6.13.1. Avisos (`Notification`: destinatário, autor, tipo e alvo): **seguiu você** (`FOLLOW`), **curtiu sua review** (`REVIEW_LIKE`), **curtiu sua lista** (`LIST_LIKE`), **comentou na sua review** (`REVIEW_COMMENT`) e **também comentou numa review que você comentou** (`REVIEW_REPLY`, uma vez por pessoa). Criados junto com a ação (`$lib/server/notifications.ts`); ninguém é avisado das próprias ações.
+- 6.13.2. Desfazer apaga o aviso: deixar de seguir e descurtir (`unnotify`); apagar review, comentário ou lista apaga os avisos por cascata.
+- 6.13.3. Sino no topo da área logada com o número de não lidas (o layout `(app)` recarrega a contagem a cada navegação). `/notifications` (Protegida) lista as 100 mais recentes — curtidas no mesmo alvo agrupadas ("Ana e mais 2 pessoas curtiram…"), trecho do comentário, pôster do filme — e marca tudo como lido ao abrir (os que eram novos ficam destacados nessa visita). Cada aviso leva ao perfil, à lista ou ao filme já na aba Reviews (`/movie/[id]?tab=reviews`).
+- 6.13.4. A rotina diária apaga avisos com mais de 90 dias.
 
 # **7. Deploy, Infraestrutura e CI/CD**
 

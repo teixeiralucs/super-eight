@@ -51,7 +51,8 @@ const PROTECTED_PREFIXES = [
 	'/lists/collections',
 	// Páginas filtradas da biblioteca (pessoa, país, estúdio…).
 	'/library',
-	'/stats'
+	'/stats',
+	'/notifications'
 ];
 /** Protegidas só na rota exata: `/lists/[id]` público abre para qualquer pessoa. */
 const PROTECTED_EXACT = ['/lists'];

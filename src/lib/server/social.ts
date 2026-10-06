@@ -1,4 +1,5 @@
 import { prisma } from '$lib/server/db';
+import { notify, unnotify } from '$lib/server/notifications';
 import { getArtworks, withArtwork } from '$lib/server/artwork';
 import { LibraryRuleError } from '$lib/server/errors';
 import { getUserLists } from '$lib/server/lists';
@@ -154,15 +155,17 @@ export async function follow(followerId: string, username: string) {
 	const target = await prisma.user.findUnique({ where: { username }, select: { id: true } });
 	if (!target) throw new LibraryRuleError(m.error_user_not_found());
 	if (target.id === followerId) throw new LibraryRuleError(m.error_follow_self());
-	await prisma.follow.upsert({
-		where: { followerId_followingId: { followerId, followingId: target.id } },
-		create: { followerId, followingId: target.id },
-		update: {}
-	});
+	const key = { followerId_followingId: { followerId, followingId: target.id } };
+	if (await prisma.follow.findUnique({ where: key, select: { followerId: true } })) return;
+	await prisma.follow.create({ data: { followerId, followingId: target.id } });
+	await notify(target.id, followerId, 'FOLLOW');
 }
 
 export async function unfollow(followerId: string, username: string) {
-	await prisma.follow.deleteMany({ where: { followerId, following: { username } } });
+	const target = await prisma.user.findUnique({ where: { username }, select: { id: true } });
+	if (!target) return;
+	await prisma.follow.deleteMany({ where: { followerId, followingId: target.id } });
+	await unnotify(target.id, followerId, 'FOLLOW');
 }
 
 const FEED_LIMIT = 80;

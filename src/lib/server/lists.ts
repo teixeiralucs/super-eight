@@ -1,4 +1,5 @@
 import { prisma } from '$lib/server/db';
+import { notify, unnotify } from '$lib/server/notifications';
 import { getArtworks, withArtwork } from '$lib/server/artwork';
 import { LibraryRuleError } from '$lib/server/errors';
 import { localizeCard, movieCardSelect } from '$lib/server/movie-locale';
@@ -108,13 +109,18 @@ export async function getLikedLists(userId: string, locale: Locale): Promise<Lis
 export async function toggleListLike(userId: string, listId: string) {
 	const list = await prisma.list.findFirst({
 		where: { id: listId, isPublic: true, userId: { not: userId } },
-		select: { id: true }
+		select: { id: true, userId: true }
 	});
 	if (!list) throw new LibraryRuleError(m.error_list_not_found());
 	const key = { userId_listId: { userId, listId } };
 	const existing = await prisma.listLike.findUnique({ where: key, select: { userId: true } });
-	if (existing) await prisma.listLike.delete({ where: key });
-	else await prisma.listLike.create({ data: { userId, listId } });
+	if (existing) {
+		await prisma.listLike.delete({ where: key });
+		await unnotify(list.userId, userId, 'LIST_LIKE', { listId });
+	} else {
+		await prisma.listLike.create({ data: { userId, listId } });
+		await notify(list.userId, userId, 'LIST_LIKE', { listId });
+	}
 }
 
 /**

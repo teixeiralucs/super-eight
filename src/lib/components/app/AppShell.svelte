@@ -4,17 +4,22 @@
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
+	import BellIcon from '@lucide/svelte/icons/bell';
 	import SearchIcon from '@lucide/svelte/icons/search';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import Logo from '$lib/components/brand/Logo.svelte';
+	import { plural } from '$lib/i18n';
 	import { APP_NAV } from './nav';
 
 	let {
 		profile,
+		unread = 0,
 		children
 	}: {
 		/** `null` para visitantes (rotas públicas do grupo, como /search). */
 		profile: { username: string; name: string | null; avatarUrl: string | null } | null;
+		/** Avisos não lidos (§6.13). */
+		unread?: number;
 		children: Snippet;
 	} = $props();
 
@@ -137,6 +142,27 @@
 						>{m.auth_create_account()}</a
 					>
 				{:else}
+					<a
+						href={resolve('/notifications')}
+						aria-current={isActive('/notifications') ? 'page' : undefined}
+						aria-label={unread
+							? plural(unread, m.notifications_unread_one, m.notifications_unread_other)
+							: m.notifications_title()}
+						class={[
+							'relative grid size-9 place-items-center rounded-full border transition',
+							isActive('/notifications')
+								? 'border-white bg-white text-background'
+								: 'border-white/10 text-white/70 hover:text-white'
+						]}
+					>
+						<BellIcon class="size-4" aria-hidden="true" />
+						{#if unread}
+							<span
+								class="absolute -top-1 -right-1 grid h-4.5 min-w-4.5 place-items-center rounded-full bg-neon-pink px-1 text-[10px] font-bold text-background tabular-nums"
+								aria-hidden="true">{unread > 99 ? '99+' : unread}</span
+							>
+						{/if}
+					</a>
 					<a
 						href={resolve('/(app)/u/[username]', { username: profile.username })}
 						class="hidden text-sm text-white/70 transition hover:text-white sm:block"

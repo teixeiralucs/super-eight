@@ -766,5 +766,21 @@
 	"settings_streaming_saved": "Services saved",
 	"settings_streaming_count_one": "{count} selected",
 	"settings_streaming_count_other": "{count} selected",
-	"settings_streaming_unavailable": "Couldn't load the list right now."
+	"settings_streaming_unavailable": "Couldn't load the list right now.",
+	"notifications_title": "Notifications",
+	"notifications_page_title": "Notifications — Super Eight",
+	"notifications_unread_one": "{count} new notification",
+	"notifications_unread_other": "{count} new notifications",
+	"notifications_empty": "Nothing here yet. When someone follows you, likes or comments on something of yours, it shows up here.",
+	"notifications_empty_cta": "See the community",
+	"notifications_new": "New",
+	"notif_follow": "started following you",
+	"notif_review_like_one": "liked your review of",
+	"notif_review_like_other": "liked your review of",
+	"notif_list_like_one": "liked your list",
+	"notif_list_like_other": "liked your list",
+	"notif_review_comment": "commented on your review of",
+	"notif_review_reply": "also commented on the review of",
+	"notif_and_others_one": "and {count} other",
+	"notif_and_others_other": "and {count} others"
 }

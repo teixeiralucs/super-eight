@@ -1,6 +1,7 @@
 import { prisma } from '$lib/server/db';
 import { ensureMovie, refreshCollection } from '$lib/server/movies';
 import { refreshWatch } from '$lib/server/watch';
+import { pruneNotifications } from '$lib/server/notifications';
 import { checkMovies, refreshTraktList, traktEnabled, TraktRateLimit } from '$lib/server/trakt';
 
 /**
@@ -188,5 +189,7 @@ export async function runDailyMaintenance(budgetMs: number, fetchFn?: typeof fet
 		const result = await task.run(deadline, fetchFn);
 		results[task.name] = { ...result, ms: Date.now() - now };
 	}
-	return { ms: Date.now() - started, trakt: traktEnabled(), results };
+	// Faxina rápida: avisos com mais de 90 dias (§6.13).
+	const prunedNotifications = await pruneNotifications();
+	return { ms: Date.now() - started, trakt: traktEnabled(), results, prunedNotifications };
 }

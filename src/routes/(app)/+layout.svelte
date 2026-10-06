@@ -32,7 +32,7 @@
 	});
 </script>
 
-<AppShell profile={data.profile}>
+<AppShell profile={data.profile} unread={data.unread}>
 	{#if skeleton}
 		<RouteSkeleton kind={skeletonFor(skeleton)} />
 	{/if}

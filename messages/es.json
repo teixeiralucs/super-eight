@@ -766,5 +766,21 @@
 	"settings_streaming_saved": "Streamings guardados",
 	"settings_streaming_count_one": "{count} seleccionado",
 	"settings_streaming_count_other": "{count} seleccionados",
-	"settings_streaming_unavailable": "No se pudo cargar la lista ahora."
+	"settings_streaming_unavailable": "No se pudo cargar la lista ahora.",
+	"notifications_title": "Notificaciones",
+	"notifications_page_title": "Notificaciones — Super Eight",
+	"notifications_unread_one": "{count} notificación nueva",
+	"notifications_unread_other": "{count} notificaciones nuevas",
+	"notifications_empty": "Nada por aquí todavía. Cuando alguien te siga, le guste o comente algo tuyo, aparecerá aquí.",
+	"notifications_empty_cta": "Ver la comunidad",
+	"notifications_new": "Nueva",
+	"notif_follow": "empezó a seguirte",
+	"notif_review_like_one": "le dio me gusta a tu reseña de",
+	"notif_review_like_other": "le dieron me gusta a tu reseña de",
+	"notif_list_like_one": "le dio me gusta a tu lista",
+	"notif_list_like_other": "le dieron me gusta a tu lista",
+	"notif_review_comment": "comentó tu reseña de",
+	"notif_review_reply": "también comentó la reseña de",
+	"notif_and_others_one": "y {count} persona más",
+	"notif_and_others_other": "y {count} personas más"
 }

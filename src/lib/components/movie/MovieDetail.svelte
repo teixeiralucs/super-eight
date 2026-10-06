@@ -4,6 +4,7 @@
 	import { refreshAll, replaceState } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { untrack } from 'svelte';
 	import { fade } from 'svelte/transition';
 	import ArrowLeftIcon from '@lucide/svelte/icons/arrow-left';
 	import PlayIcon from '@lucide/svelte/icons/play';
@@ -42,7 +43,15 @@
 	// Estado do usuário: começa com o do servidor e é atualizado pelas respostas das actions.
 	let userData = $derived<MovieUserData | null>(data.userData);
 
-	let tab = $state<DetailTab>('about');
+	// Página aberta com `?tab=reviews` (ex.: link de uma notificação) já começa na aba pedida.
+	const requestedTab = page.url.searchParams.get('tab');
+	let tab = $state<DetailTab>(
+		untrack(() =>
+			!onClose && DETAIL_TABS.includes(requestedTab as DetailTab)
+				? (requestedTab as DetailTab)
+				: 'about'
+		)
+	);
 	// Fora do "Sobre" a tela fica mais leve: some a linha de dados e a frase do filme.
 	const compact = $derived(tab !== 'about');
 

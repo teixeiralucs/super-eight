@@ -52,6 +52,8 @@ model User {
   listLikes         ListLike[]
   following         Follow[]           @relation("follower")
   followers         Follow[]           @relation("following")
+  notifications     Notification[]     @relation("recipient")
+  notificationsSent Notification[]     @relation("actor")
 }
 
 model Movie {
@@ -252,9 +254,10 @@ model List {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items ListMovie[]
-  likes ListLike[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         ListMovie[]
+  likes         ListLike[]
+  notifications Notification[]
 
   @@index([userId])
 }
@@ -282,10 +285,11 @@ model Review {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  movie    Movie        @relation(fields: [movieId], references: [id])
-  likes    ReviewLike[]
-  comments Comment[]
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie         Movie          @relation(fields: [movieId], references: [id])
+  likes         ReviewLike[]
+  comments      Comment[]
+  notifications Notification[]
 
   @@unique([userId, movieId])
   @@index([movieId, createdAt(sort: Desc)])
@@ -336,6 +340,8 @@ model Comment {
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
 
+  notifications Notification[]
+
   @@index([reviewId, createdAt])
 }
 
@@ -348,4 +354,41 @@ model CatalogEntry {
   movie Movie @relation(fields: [movieId], references: [id])
 
   @@id([type, position])
+}
+
+enum NotificationType {
+  /// Começou a seguir você.
+  FOLLOW
+  /// Curtiu sua review.
+  REVIEW_LIKE
+  /// Curtiu sua lista.
+  LIST_LIKE
+  /// Comentou na sua review.
+  REVIEW_COMMENT
+  /// Comentou numa review que você também comentou.
+  REVIEW_REPLY
+}
+
+/// Aviso para `userId` sobre algo que `actorId` fez (§6.13). Desfazer (descurtir, deixar de
+/// seguir, apagar o comentário/review/lista) apaga o aviso.
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @db.Uuid
+  actorId   String           @db.Uuid
+  type      NotificationType
+  reviewId  String?          @db.Uuid
+  listId    String?          @db.Uuid
+  commentId String?          @db.Uuid
+  /// Nulo = não lido.
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user    User     @relation("recipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor   User     @relation("actor", fields: [actorId], references: [id], onDelete: Cascade)
+  review  Review?  @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  list    List?    @relation(fields: [listId], references: [id], onDelete: Cascade)
+  comment Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, readAt])
 }
