@@ -798,5 +798,6 @@
 	"quick_search_none": "Nada encontrado para “{q}”.",
 	"quick_search_see_all": "Ver todos os resultados para “{q}”",
 	"quick_search_see_all_short": "Ver todos os resultados",
-	"quick_search_clear": "Limpar busca"
+	"quick_search_clear": "Limpar busca",
+	"toast_saving": "Salvando…"
 }

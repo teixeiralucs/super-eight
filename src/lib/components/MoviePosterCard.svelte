@@ -103,7 +103,7 @@
 	<div
 		class="tilt-surface pointer-events-none absolute inset-x-0 top-0 flex aspect-[2/3] items-start justify-between p-2"
 	>
-		<div class="pointer-events-auto">
+		<div class="pointer-events-auto" data-tilt-freeze>
 			{#if status}
 				<span class={badge} title={status.label}>
 					<status.icon
@@ -161,6 +161,7 @@
 
 		{#if current && current.watchCount > 1}
 			<span
+				data-tilt-freeze
 				class="pointer-events-auto grid h-7 min-w-7 place-items-center rounded-full bg-background/80 px-2 text-xs font-medium tabular-nums"
 				title={m.card_watched_times({ count: current.watchCount })}
 			>

@@ -7,6 +7,9 @@ import { confirmAction, type ConfirmOptions } from './confirm.svelte';
 // por aqui para ganhar trava contra envio repetido, confirmação opcional e toast.
 
 type SubmitInput = Parameters<SubmitFunction>[0];
+
+/** A partir de quanto tempo de espera o toast "Salvando…" aparece. */
+const SLOW_MS = 450;
 type Resolvable<T> = T | ((input: SubmitInput, result: ActionResult) => T);
 
 export interface FeedbackOptions {
@@ -85,7 +88,14 @@ export function withFeedback(
 			return;
 		}
 
+		// Demorou? Um toast "Salvando…" aparece e depois vira o de sucesso/erro no mesmo lugar.
+		let slowToast: string | number | undefined;
+		const slow = setTimeout(() => {
+			slowToast = toast.loading(m.toast_saving());
+		}, SLOW_MS);
+
 		return async (opts) => {
+			clearTimeout(slow);
 			try {
 				if (callback) await callback(opts);
 				else await opts.update();
@@ -93,16 +103,19 @@ export function withFeedback(
 				setPending(form, false);
 			}
 
+			const same = slowToast === undefined ? {} : { id: slowToast };
 			const { result } = opts;
 			if (result.type === 'success' || result.type === 'redirect') {
 				const message =
 					typeof options.success === 'function' ? options.success(input, result) : options.success;
-				if (message) toast.success(message);
+				if (message) toast.success(message, same);
+				else if (slowToast !== undefined) toast.dismiss(slowToast);
 			} else if (result.type === 'failure') {
 				const message = result.data?.message;
-				if (typeof message === 'string') toast.error(message);
+				if (typeof message === 'string') toast.error(message, same);
+				else if (slowToast !== undefined) toast.dismiss(slowToast);
 			} else if (result.type === 'error') {
-				toast.error(m.error_generic());
+				toast.error(m.error_generic(), same);
 			}
 		};
 	};

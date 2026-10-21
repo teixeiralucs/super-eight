@@ -16,6 +16,9 @@ export const tilt: Action<HTMLElement> = (node) => {
 	let frame = 0;
 
 	function onMove(event: PointerEvent) {
+		// Sobre um botão do card (ex.: o "+"), a inclinação congela: se continuasse, o botão
+		// sairia de baixo do cursor e o hover ficaria piscando.
+		if ((event.target as Element).closest('button, form, [data-tilt-freeze]')) return;
 		const surface = node.querySelector<HTMLElement>('.tilt-surface');
 		if (!surface) return;
 		const rect = surface.getBoundingClientRect();

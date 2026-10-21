@@ -5,8 +5,7 @@
 	import LoadingBar from '$lib/components/LoadingBar.svelte';
 	import MovieOverlay from '$lib/components/movie/MovieOverlay.svelte';
 	import ConfirmDialog from '$lib/components/feedback/ConfirmDialog.svelte';
-	import { Toaster } from 'svelte-sonner';
-	import { m } from '$lib/paraglide/messages';
+	import AppToaster from '$lib/components/feedback/AppToaster.svelte';
 	import { onMount } from 'svelte';
 	import { reportClientError } from '$lib/client/report-error';
 	import ErrorBoundary from '$lib/components/feedback/ErrorBoundary.svelte';
@@ -47,11 +46,5 @@
 {/if}
 
 <!-- Feedback global (earlySetup.md §6.4.3): toasts e o diálogo de confirmação -->
-<Toaster
-	theme="dark"
-	position="top-center"
-	closeButton
-	closeButtonAriaLabel={m.toast_close()}
-	toastOptions={{ classes: { toast: 'super-eight-toast' } }}
-/>
+<AppToaster />
 <ConfirmDialog />
