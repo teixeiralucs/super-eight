@@ -57,6 +57,26 @@
 	// Fora do "Sobre" a tela fica mais leve: some a linha de dados e a frase do filme.
 	const compact = $derived(tab !== 'about');
 
+	// Título desliza até a nova posição ao trocar de aba (FLIP): mede antes e depois da troca
+	// e anima a diferença com a mesma curva da logo e da linha de dados (--detail-easing).
+	let titleBlock = $state<HTMLElement>();
+	let titleTop: number | null = null;
+	$effect.pre(() => {
+		void tab;
+		titleTop = untrack(() => titleBlock)?.getBoundingClientRect().top ?? null;
+	});
+	$effect(() => {
+		void tab;
+		const block = untrack(() => titleBlock);
+		if (!block || titleTop === null) return;
+		const dy = titleTop - block.getBoundingClientRect().top;
+		if (Math.abs(dy) < 2 || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		block.animate([{ transform: `translateY(${dy}px)` }, { transform: 'translateY(0)' }], {
+			duration: 600,
+			easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+		});
+	});
+
 	// Fundo: o escolhido pelo usuário (DNA do filme) ou o padrão; sem login, a galeria só faz prévia.
 	let backdrop = $derived(userData?.artwork?.backdropPath ?? movie.backdropPath);
 	// Título: a logo escolhida, a padrão ou (sem logo no TMDb) o texto.
@@ -282,7 +302,9 @@
 	const factLabel = 'text-[11px] font-semibold tracking-[0.2em] text-white/50 uppercase';
 </script>
 
-<article class="relative isolate text-foreground lg:h-svh">
+<article
+	class="relative isolate text-foreground [--detail-easing:cubic-bezier(0.22,1,0.36,1)] lg:h-svh"
+>
 	<MovieBackdrop path={backdrop} />
 
 	<div class="grid min-h-svh grid-cols-1 lg:h-full lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -353,14 +375,12 @@
 				</div>
 			</header>
 
-			<!-- Espaço flexível: na galeria encolhe e o título sobe para o topo -->
-			<div
-				class="min-h-8 shrink-0 transition-[flex-grow] duration-500 ease-out"
-				style:flex-grow={tab === 'gallery' ? 0 : 1}
-			></div>
+			<!-- Espaço flexível: no Sobre o título fica embaixo (abertura); nas outras abas, no topo,
+			     sem depender da altura do conteúdo. A mudança de posição é animada (FLIP, abaixo). -->
+			<div class="min-h-8 shrink-0" style:flex-grow={tab === 'about' ? 1 : 0}></div>
 
 			<!-- Título -->
-			<div>
+			<div bind:this={titleBlock}>
 				<div class={['collapsible', compact && 'is-collapsed']}>
 					<div class="min-h-0 overflow-hidden">
 						<p
@@ -394,7 +414,7 @@
 						<MovieLogo
 							path={logo}
 							class={[
-								'block w-auto max-w-[min(100%,40rem)] object-contain object-left-bottom transition-[height] duration-500 ease-out',
+								'block w-auto max-w-[min(100%,40rem)] object-contain object-left-bottom transition-[height] duration-600 ease-[var(--detail-easing)]',
 								compact ? 'h-[clamp(3.5rem,7vw,5.5rem)]' : 'h-[clamp(6rem,15vw,12rem)]'
 							]}
 						/>
@@ -402,7 +422,7 @@
 				{:else}
 					<h1
 						class={[
-							'max-w-5xl font-display leading-[0.9] font-bold tracking-[-0.045em] text-balance transition-[font-size] duration-500 ease-out',
+							'max-w-5xl font-display leading-[0.9] font-bold tracking-[-0.045em] text-balance transition-[font-size] duration-600 ease-[var(--detail-easing)]',
 							compact ? 'text-[clamp(2.25rem,4.5vw,4.25rem)]' : 'text-[clamp(2.75rem,7vw,7rem)]'
 						]}
 						lang={movie.originalLanguage ?? undefined}
@@ -613,7 +633,7 @@
 		display: grid;
 		grid-template-rows: 1fr;
 		transition:
-			grid-template-rows 500ms ease-out,
+			grid-template-rows 600ms var(--detail-easing),
 			opacity 300ms ease-out;
 	}
 

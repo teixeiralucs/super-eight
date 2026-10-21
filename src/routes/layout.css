@@ -257,6 +257,28 @@ form[aria-busy='true'] :is(button, input[type='submit']):disabled {
 	opacity: 1;
 }
 
+/* Zoom do pôster ao abrir um filme (View Transitions, open.svelte.ts): o pôster cresce até
+   cobrir a tela e se funde no fundo do filme; o resto da página só faz um fade rápido. */
+::view-transition-group(movie-hero) {
+	animation-duration: 600ms;
+	animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-old(movie-hero),
+::view-transition-new(movie-hero) {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	animation-duration: 600ms;
+}
+/* O pôster continua visível na maior parte do zoom antes de dar lugar ao fundo. */
+::view-transition-old(movie-hero) {
+	animation-timing-function: cubic-bezier(0.7, 0, 0.84, 0);
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+	animation-duration: 320ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
 	.pill-indicator,
 	.tilt-surface {

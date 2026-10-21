@@ -10,7 +10,8 @@
 	let { path }: { path: string | null } = $props();
 </script>
 
-<div class="fixed inset-0 -z-10 overflow-hidden bg-background" aria-hidden="true">
+<!-- `data-movie-hero`: alvo do zoom do pôster ao abrir o filme (open.svelte.ts) -->
+<div class="fixed inset-0 -z-10 overflow-hidden bg-background" aria-hidden="true" data-movie-hero>
 	{#if path}
 		{#key path}
 			<!-- w300 ampliado já fica suave enquanto o w1280 carrega (sem filter: blur, que é caro) -->
