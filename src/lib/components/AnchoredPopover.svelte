@@ -1,14 +1,17 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import { fly } from 'svelte/transition';
+	import { fade } from 'svelte/transition';
+	import { cubicIn, quintOut } from 'svelte/easing';
 	import { prefersReducedMotion } from 'svelte/motion';
+	import { sheetDrag } from '$lib/motion/sheet-drag';
 	import XIcon from '@lucide/svelte/icons/x';
 	import { isConfirmOpen } from '$lib/feedback/confirm.svelte';
 
 	/**
 	 * Pop-up ao lado de um botão (desktop: à esquerda dele, centralizado na vertical sem sair
-	 * da tela; celular: painel inferior). Fica por cima do painel de detalhes do filme:
-	 * Esc e clique fora fecham só ele.
+	 * da tela; celular: painel inferior que sobe da borda, escurece o fundo e fecha arrastando
+	 * para baixo — §6.4.8). Fica por cima do painel de detalhes do filme: Esc e clique fora
+	 * fecham só ele.
 	 */
 	let {
 		anchor,
@@ -55,6 +58,36 @@
 		return () => observer.disconnect();
 	});
 
+	const isDesktop = () => matchMedia('(min-width: 1024px)').matches;
+
+	/** Celular: sobe da borda (entrada com desaceleração longa, saída rápida). Desktop: desliza de lado. */
+	function sheet(
+		node: HTMLElement,
+		_params: unknown,
+		{ direction }: { direction: 'in' | 'out' | 'both' }
+	) {
+		const reduced = prefersReducedMotion.current;
+		// Fechado arrastando: o próprio gesto já levou o painel para fora.
+		if (reduced || node.dataset.dismissed !== undefined) return { duration: 0 };
+		if (isDesktop()) {
+			return {
+				duration: 200,
+				css: (t: number) => `opacity: ${t}; transform: translateX(${(1 - t) * 12}px)`
+			};
+		}
+		return direction === 'out'
+			? {
+					duration: 220,
+					easing: cubicIn,
+					css: (t: number) => `transform: translateY(${(1 - t) * 100}%)`
+				}
+			: {
+					duration: 460,
+					easing: quintOut,
+					css: (t: number) => `transform: translateY(${(1 - t) * 100}%)`
+				};
+	}
+
 	function onPointerDown(event: PointerEvent) {
 		if (isConfirmOpen()) return;
 		const target = event.target as Node;
@@ -68,22 +101,37 @@
 	onkeydown={(event) => event.key === 'Escape' && !isConfirmOpen() && onClose()}
 />
 
+<!-- Celular: fundo escurecido atrás do painel (tocar nele fecha, via clique fora) -->
+<div
+	class="fixed inset-0 z-[69] bg-black/50 lg:hidden"
+	aria-hidden="true"
+	transition:fade={{ duration: prefersReducedMotion.current ? 0 : 200 }}
+></div>
+
 <!-- data-nested-dialog: o painel de detalhes por baixo ignora o Esc enquanto este estiver aberto -->
 <div
 	bind:this={panel}
+	use:sheetDrag={onClose}
 	data-nested-dialog
 	role="dialog"
 	aria-label={label}
 	class={[
 		'fixed z-[70] flex max-h-[min(640px,calc(100svh-2rem))] flex-col overflow-hidden border border-white/10 bg-background/95 shadow-2xl shadow-black/60',
-		'inset-x-0 bottom-0 rounded-t-3xl lg:inset-x-auto lg:bottom-auto lg:w-[380px] lg:rounded-3xl',
+		'inset-x-0 bottom-0 rounded-t-3xl pb-[env(safe-area-inset-bottom)] lg:inset-x-auto lg:bottom-auto lg:w-[380px] lg:rounded-3xl lg:pb-0',
 		!position && 'lg:invisible'
 	]}
 	style:top={position ? `${position.top}px` : undefined}
 	style:right={position ? `${position.right}px` : undefined}
-	transition:fly={{ x: prefersReducedMotion.current ? 0 : 12, duration: 200 }}
+	transition:sheet
 >
-	<header class="flex items-center justify-between px-6 pt-5">
+	<!-- Celular: alça para arrastar (o cabeçalho inteiro também arrasta) -->
+	<div data-sheet-handle class="flex touch-none justify-center pt-3 lg:hidden" aria-hidden="true">
+		<span class="h-1.5 w-10 rounded-full bg-white/25"></span>
+	</div>
+	<header
+		data-sheet-handle
+		class="flex touch-none items-center justify-between px-6 pt-2 lg:touch-auto lg:pt-5"
+	>
 		<h2 class="text-xs font-semibold tracking-[0.2em] text-white/60 uppercase">{heading}</h2>
 		<button
 			type="button"

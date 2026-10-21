@@ -65,7 +65,6 @@
 		class="block"
 	>
 		<div
-			data-poster
 			class="tilt-surface relative aspect-[2/3] overflow-hidden rounded-xl bg-muted ring-1 ring-white/10 group-hover:ring-2 group-hover:ring-neon-pink"
 		>
 			{#if movie.posterPath}
