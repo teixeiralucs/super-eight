@@ -1,10 +1,11 @@
 import { error, json } from '@sveltejs/kit';
-import { parseSearchPage, parseSearchQuery } from '$lib/search';
+import { parseSearchLimit, parseSearchPage, parseSearchQuery } from '$lib/search';
 import { searchPage } from '$lib/server/search';
 import { m } from '$lib/paraglide/messages';
 import type { RequestHandler } from './$types';
 
-// Exceção permitida (earlySetup.md §5.2): endpoint só de LEITURA para a rolagem infinita da busca.
+// Exceção permitida (earlySetup.md §5.2): endpoint só de LEITURA para a rolagem infinita da busca
+// e as sugestões da busca rápida (`limit`).
 // Mutações continuam exclusivamente em Form Actions.
 export const GET: RequestHandler = async ({ url, locals, fetch }) => {
 	const q = parseSearchQuery(url.searchParams);
@@ -12,11 +13,13 @@ export const GET: RequestHandler = async ({ url, locals, fetch }) => {
 
 	try {
 		return json(
-			await searchPage(locals.user?.id ?? null, q, page, {
-				locale: locals.locale,
-				region: locals.region,
-				fetch
-			}),
+			await searchPage(
+				locals.user?.id ?? null,
+				q,
+				page,
+				{ locale: locals.locale, region: locals.region, fetch },
+				parseSearchLimit(url.searchParams)
+			),
 			{
 				// Contém o estado da biblioteca do usuário: nunca em cache compartilhado.
 				headers: { 'cache-control': 'private, no-store' }

@@ -789,5 +789,14 @@
 	"boundary_message": "This part didn't load properly. The error was logged so we can fix it.",
 	"boundary_retry": "Try again",
 	"stats_days_one": "{days} day of screen time",
-	"stats_days_other": "{days} days of screen time"
+	"stats_days_other": "{days} days of screen time",
+	"quick_search_label": "Quick search",
+	"quick_search_shortcut": "Shortcut: / or {keys}",
+	"quick_search_recent": "Recent searches",
+	"quick_search_hint": "Search for a film by its title — in any language.",
+	"quick_search_remove_recent": "Remove “{term}” from recent searches",
+	"quick_search_none": "Nothing found for “{q}”.",
+	"quick_search_see_all": "See all results for “{q}”",
+	"quick_search_see_all_short": "See all results",
+	"quick_search_clear": "Clear search"
 }

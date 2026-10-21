@@ -789,5 +789,14 @@
 	"boundary_message": "Esta parte não carregou direito. O erro foi registrado para correção.",
 	"boundary_retry": "Tentar de novo",
 	"stats_days_one": "{days} dia de tela",
-	"stats_days_other": "{days} dias de tela"
+	"stats_days_other": "{days} dias de tela",
+	"quick_search_label": "Busca rápida",
+	"quick_search_shortcut": "Atalho: / ou {keys}",
+	"quick_search_recent": "Buscas recentes",
+	"quick_search_hint": "Busque um filme pelo título — em qualquer idioma.",
+	"quick_search_remove_recent": "Remover “{term}” das buscas recentes",
+	"quick_search_none": "Nada encontrado para “{q}”.",
+	"quick_search_see_all": "Ver todos os resultados para “{q}”",
+	"quick_search_see_all_short": "Ver todos os resultados",
+	"quick_search_clear": "Limpar busca"
 }

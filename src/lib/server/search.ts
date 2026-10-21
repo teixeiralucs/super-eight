@@ -18,9 +18,12 @@ export async function searchPage(
 	userId: string | null,
 	query: string,
 	page: number,
-	ctx: TmdbContext
+	ctx: TmdbContext,
+	/** Só os primeiros N (sugestões enquanto digita): menos detalhes para buscar. */
+	limit?: number
 ): Promise<SearchPage> {
-	const result = await getMoviePage(query, page, ctx);
+	const full = await getMoviePage(query, page, ctx);
+	const result = limit ? { ...full, results: full.results.slice(0, limit) } : full;
 	const ids = result.results.map((movie) => movie.id);
 
 	const [details, library, artworks] = await Promise.all([

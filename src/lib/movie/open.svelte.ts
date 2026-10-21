@@ -15,18 +15,22 @@ export async function openMovie(event: MouseEvent, movieId: number) {
 	if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
 	event.preventDefault();
+	await showMovie(movieId);
+}
+
+/** Abre os detalhes por cima da página atual sem um clique (ex.: Enter na busca rápida). */
+export async function showMovie(movieId: number) {
+	const href = resolve('/movie/[id]', { id: String(movieId) });
 	movieOpening.id = movieId;
 	try {
-		const result = await preloadData(resolve('/movie/[id]', { id: String(movieId) }));
+		const result = await preloadData(href);
 		if (result.type === 'loaded' && result.status === 200) {
-			pushState(resolve('/movie/[id]', { id: String(movieId) }), {
-				movie: result.data as unknown as MovieDetailData
-			});
+			pushState(href, { movie: result.data as unknown as MovieDetailData });
 		} else {
-			await goto(resolve('/movie/[id]', { id: String(movieId) }));
+			await goto(href);
 		}
 	} catch {
-		await goto(resolve('/movie/[id]', { id: String(movieId) }));
+		await goto(href);
 	} finally {
 		movieOpening.id = null;
 	}

@@ -6,9 +6,9 @@
 	import { page } from '$app/state';
 	import LogOutIcon from '@lucide/svelte/icons/log-out';
 	import BellIcon from '@lucide/svelte/icons/bell';
-	import SearchIcon from '@lucide/svelte/icons/search';
 	import SettingsIcon from '@lucide/svelte/icons/settings';
 	import Logo from '$lib/components/brand/Logo.svelte';
+	import MorphingSearch from './MorphingSearch.svelte';
 	import { plural } from '$lib/i18n';
 	import { APP_NAV } from './nav';
 
@@ -101,37 +101,10 @@
 				<Logo class="h-9 w-auto" />
 			</a>
 
-			<form
-				method="GET"
-				action={resolve('/search')}
-				role="search"
-				class={['mx-auto hidden w-full max-w-md', showTopSearch && 'md:block']}
-			>
-				<label
-					class="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 transition focus-within:border-neon-cyan/60"
-				>
-					<SearchIcon class="size-4 text-white/50" aria-hidden="true" />
-					<span class="sr-only">{m.search_movies()}</span>
-					<input
-						name="q"
-						type="search"
-						placeholder={m.search_movies_placeholder()}
-						class="w-full bg-transparent text-sm outline-none placeholder:text-white/40"
-					/>
-				</label>
-			</form>
+			<!-- Busca rápida (§6.14): o campo/lupa que estica para os resultados; atalho / ou Ctrl+K -->
+			<MorphingSearch showTrigger={showTopSearch} />
 
-			<div class={['ml-auto flex items-center gap-3', showTopSearch && 'md:ml-0']}>
-				<!-- Celular: o campo do topo some, então a busca vira um ícone -->
-				{#if showTopSearch}
-					<a
-						href={resolve('/search')}
-						class="grid size-9 place-items-center rounded-full border border-white/10 text-white/70 transition hover:text-white md:hidden"
-						aria-label={m.search_movies()}
-					>
-						<SearchIcon class="size-4" aria-hidden="true" />
-					</a>
-				{/if}
+			<div class={['flex items-center gap-3', showTopSearch ? 'ml-3 md:ml-0' : 'ml-auto']}>
 				{#if !profile}
 					<a
 						href={resolve('/login')}

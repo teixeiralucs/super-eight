@@ -525,6 +525,12 @@ model CatalogEntry {
 - 6.13.3. Sino no topo da área logada com o número de não lidas (o layout `(app)` recarrega a contagem a cada navegação). `/notifications` (Protegida) lista as 100 mais recentes — curtidas no mesmo alvo agrupadas ("Ana e mais 2 pessoas curtiram…"), trecho do comentário, pôster do filme — e marca tudo como lido ao abrir (os que eram novos ficam destacados nessa visita). Cada aviso leva ao perfil, à lista ou ao filme já na aba Reviews (`/movie/[id]?tab=reviews`).
 - 6.13.4. A rotina diária apaga avisos com mais de 90 dias.
 
+## **6.14. Busca rápida**
+
+- 6.14.1. O campo do topo da área logada (no celular, a lupa) abre a **busca rápida** (`MorphingSearch`, inspirada no "Morphing Search" da beUI) por clique ou atalho — `/` (fora de campos de texto) ou Ctrl/⌘ K, de qualquer tela; na página `/search` o atalho vai para o campo grande dela. A superfície de vidro nasce do recorte do campo e se abre com quique (`backOut`), escurecendo e desfocando a página; Esc ou clique fora fecham.
+- 6.14.2. Sempre abre vazia, com as **3 últimas buscas** (só neste navegador — `localStorage`, `$lib/recent-searches.svelte.ts`; sem repetir, ignorando maiúsculas; cada uma com × para remover). Clicar numa recente refaz a busca ali.
+- 6.14.3. Digitando (2+ letras, espera de 180 ms, pedidos antigos cancelados): até **6 filmes** (`GET /api/search?q=&limit=6`) com pôster, título original/traduzido, ano, diretor e o estado na biblioteca; entram em cascata. Setas navegam (padrão combobox, `aria-activedescendant`), Enter abre o destacado por cima da página (`showMovie`). A última linha — e também Enter sem nada destacado e a lupa — leva à página completa `/search?q=`. Abrir um filme ou a página completa grava o termo nas recentes.
+
 # **7. Deploy, Infraestrutura e CI/CD**
 
 ## **7.1. Configuração de Build (Vercel + SvelteKit)**
