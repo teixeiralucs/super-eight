@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slidingPill } from '$lib/motion/sliding-pill';
 	import { m } from '$lib/paraglide/messages';
 	import type { SubmitFunction } from '@sveltejs/kit';
 	import { refreshAll, replaceState } from '$app/navigation';
@@ -332,7 +333,8 @@
 				<div
 					role="tablist"
 					aria-label={m.tabs_label()}
-					class="-mx-1 flex max-w-full min-w-0 gap-1 overflow-x-auto px-1"
+					use:slidingPill={'rounded-full bg-white'}
+					class="relative -mx-1 flex max-w-full min-w-0 gap-1 overflow-x-auto px-1"
 				>
 					{#each DETAIL_TABS as t (t)}
 						<button

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slidingPill } from '$lib/motion/sliding-pill';
 	import { resolve } from '$app/paths';
 	import ArrowRightIcon from '@lucide/svelte/icons/arrow-right';
 	import MoviePosterCard from '$lib/components/MoviePosterCard.svelte';
@@ -131,7 +132,11 @@
 			</h1>
 		</div>
 		{#if data.years.length}
-			<nav aria-label={m.stats_period_label()} class="-mx-1 flex gap-1 overflow-x-auto px-1">
+			<nav
+				aria-label={m.stats_period_label()}
+				use:slidingPill={'rounded-full bg-white'}
+				class="relative -mx-1 flex gap-1 overflow-x-auto px-1"
+			>
 				{#each [...data.years, 'all' as const] as period (period)}
 					<!-- eslint-disable svelte/no-navigation-without-resolve -- caminho resolvido + query -->
 					<a
@@ -178,11 +183,16 @@
 				value={String(hours)}
 				unit="h"
 				accent="bg-neon-cyan"
-				caption={m.stats_days({
-					days: new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 1 }).format(
-						stats.minutes / 1440
-					)
-				})}
+				caption={plural(
+					Math.round((stats.minutes / 1440) * 10) / 10,
+					m.stats_days_one,
+					m.stats_days_other,
+					{
+						days: new Intl.NumberFormat(intlLocale(), { maximumFractionDigits: 1 }).format(
+							stats.minutes / 1440
+						)
+					}
+				)}
 			/>
 			<StatTile
 				label={m.stats_sessions()}

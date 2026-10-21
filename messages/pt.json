@@ -705,7 +705,6 @@
 	"stats_films": "Filmes",
 	"stats_new_films_one": "{count} visto pela primeira vez",
 	"stats_new_films_other": "{count} vistos pela primeira vez",
-	"stats_days": "{days} dias de tela",
 	"stats_sessions": "Sessões",
 	"stats_rewatches_one": "{count} revisão",
 	"stats_rewatches_other": "{count} revisões",
@@ -788,5 +787,7 @@
 	"list_comments_title": "Comentários",
 	"list_comments_sign_in": "Entre para comentar.",
 	"boundary_message": "Esta parte não carregou direito. O erro foi registrado para correção.",
-	"boundary_retry": "Tentar de novo"
+	"boundary_retry": "Tentar de novo",
+	"stats_days_one": "{days} dia de tela",
+	"stats_days_other": "{days} dias de tela"
 }

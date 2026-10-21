@@ -705,7 +705,6 @@
 	"stats_films": "Films",
 	"stats_new_films_one": "{count} seen for the first time",
 	"stats_new_films_other": "{count} seen for the first time",
-	"stats_days": "{days} days of screen time",
 	"stats_sessions": "Sessions",
 	"stats_rewatches_one": "{count} rewatch",
 	"stats_rewatches_other": "{count} rewatches",
@@ -788,5 +787,7 @@
 	"list_comments_title": "Comments",
 	"list_comments_sign_in": "Sign in to comment.",
 	"boundary_message": "This part didn't load properly. The error was logged so we can fix it.",
-	"boundary_retry": "Try again"
+	"boundary_retry": "Try again",
+	"stats_days_one": "{days} day of screen time",
+	"stats_days_other": "{days} days of screen time"
 }

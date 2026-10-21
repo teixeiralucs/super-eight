@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import AnimatedNumber from '$lib/components/motion/AnimatedNumber.svelte';
 
 	// Cartão de métrica: número grande (estilo "85%" das referências) + legenda.
 	let {
@@ -28,8 +29,8 @@
 	<p
 		class="mt-6 font-display text-6xl leading-none font-semibold tracking-[-0.05em] tabular-nums md:text-7xl"
 	>
-		{value}{#if unit}<span class="ml-1 text-2xl font-normal tracking-normal text-white/40"
-				>{unit}</span
+		<AnimatedNumber {value} />{#if unit}<span
+				class="ml-1 text-2xl font-normal tracking-normal text-white/40">{unit}</span
 			>{/if}
 	</p>
 	{#if children}

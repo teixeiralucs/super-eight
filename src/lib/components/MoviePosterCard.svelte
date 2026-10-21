@@ -13,6 +13,7 @@
 	import { movieMeta } from '$lib/format';
 	import type { LibraryState, PosterMovie } from '$lib/library/types';
 	import { posterSrcset, posterUrl } from '$lib/tmdb/images';
+	import { tilt } from '$lib/motion/tilt';
 
 	/**
 	 * Card de pôster usado na biblioteca e na busca.
@@ -57,14 +58,14 @@
 	const badge = 'grid size-7 place-items-center rounded-full bg-background/80';
 </script>
 
-<article class="group relative">
+<article class="group relative" use:tilt>
 	<a
 		href={resolve('/movie/[id]', { id: String(movie.id) })}
 		onclick={(event) => openMovie(event, movie.id)}
 		class="block"
 	>
 		<div
-			class="relative aspect-[2/3] overflow-hidden rounded-xl bg-muted ring-1 ring-white/10 transition duration-300 group-hover:ring-2 group-hover:ring-neon-pink"
+			class="tilt-surface relative aspect-[2/3] overflow-hidden rounded-xl bg-muted ring-1 ring-white/10 group-hover:ring-2 group-hover:ring-neon-pink"
 		>
 			{#if movie.posterPath}
 				<img
@@ -85,6 +86,8 @@
 					<RatingBadge rating={current.rating} />
 				</div>
 			{/if}
+			<!-- Reflexo que segue o mouse (ação `tilt`) -->
+			<div class="tilt-glare absolute inset-0" aria-hidden="true"></div>
 		</div>
 
 		<CardTitle title={movie.title} originalTitle={movie.originalTitle} year={movie.year} />
@@ -95,8 +98,11 @@
 		/>
 	</a>
 
-	<!-- Selos sobre o pôster (fora do link: botões não podem ficar dentro de <a>) -->
-	<div class="pointer-events-none absolute inset-x-2 top-2 flex items-start justify-between">
+	<!-- Selos sobre o pôster (fora do link: botões não podem ficar dentro de <a>). Mesma caixa
+	     do pôster para inclinar junto com ele. -->
+	<div
+		class="tilt-surface pointer-events-none absolute inset-x-0 top-0 flex aspect-[2/3] items-start justify-between p-2"
+	>
 		<div class="pointer-events-auto">
 			{#if status}
 				<span class={badge} title={status.label}>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slidingPill } from '$lib/motion/sliding-pill';
 	import { resolve } from '$app/paths';
 	import EyeIcon from '@lucide/svelte/icons/eye';
 	import ListVideoIcon from '@lucide/svelte/icons/list-video';
@@ -109,7 +110,12 @@
 			<!-- eslint-enable svelte/no-navigation-without-resolve -->
 		</section>
 	{:else}
-		<div class="flex min-w-0 gap-1 overflow-x-auto" role="group" aria-label={m.feed_filter_label()}>
+		<div
+			class="relative flex min-w-0 gap-1 overflow-x-auto"
+			role="group"
+			aria-label={m.feed_filter_label()}
+			use:slidingPill={'rounded-full bg-white'}
+		>
 			{#each filters as [value, label] (value)}
 				<button
 					type="button"

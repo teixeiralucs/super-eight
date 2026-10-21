@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slidingPill } from '$lib/motion/sliding-pill';
 	import { untrack } from 'svelte';
 	import { m } from '$lib/paraglide/messages';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -167,7 +168,11 @@
 </script>
 
 <div class="flex flex-col gap-4">
-	<nav aria-label={m.filter_library()} class="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1">
+	<nav
+		aria-label={m.filter_library()}
+		use:slidingPill={'rounded-full bg-white'}
+		class="relative -mx-1 flex gap-1 overflow-x-auto px-1 pb-1"
+	>
 		{#each LIBRARY_VIEWS as view (view)}
 			{@const { icon: Icon, color } = VIEW_ICONS[view]}
 			<!-- eslint-disable svelte/no-navigation-without-resolve -- caminho vem de resolve(); a regra não suporta query string -->

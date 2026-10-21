@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slidingPill } from '$lib/motion/sliding-pill';
 	import { m } from '$lib/paraglide/messages';
 	import type { Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
@@ -36,6 +37,7 @@
 	<!-- Barra lateral flutuante (desktop) -->
 	<nav
 		aria-label={m.nav_main()}
+		use:slidingPill={'rounded-full bg-white'}
 		class="fixed top-1/2 left-5 z-40 hidden -translate-y-1/2 flex-col gap-2 rounded-full border border-white/10 bg-card/95 p-2 lg:flex"
 	>
 		{#each APP_NAV as item (item.href)}
@@ -191,6 +193,7 @@
 	<!-- Barra inferior (celular) -->
 	<nav
 		aria-label={m.nav_main()}
+		use:slidingPill={'rounded-full bg-white'}
 		class="fixed inset-x-3 bottom-3 z-40 flex justify-around rounded-full border border-white/10 bg-card/95 p-1.5 lg:hidden"
 	>
 		{#each APP_NAV as item (item.href)}

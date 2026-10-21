@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slidingPill } from '$lib/motion/sliding-pill';
 	import { page } from '$app/state';
 	import { resolve } from '$app/paths';
 	import Building2Icon from '@lucide/svelte/icons/building-2';
@@ -135,7 +136,11 @@
 		{#if data.page.roles}
 			{@const roles = data.page.roles}
 			<!-- Funções da pessoa (só as que têm filmes) -->
-			<nav aria-label={m.facet_roles_label()} class="-mx-1 flex gap-1 overflow-x-auto px-1">
+			<nav
+				aria-label={m.facet_roles_label()}
+				use:slidingPill={'rounded-full bg-white/15'}
+				class="relative -mx-1 flex gap-1 overflow-x-auto px-1"
+			>
 				{#each PERSON_ROLES.filter((role) => role === 'all' || roles[role]) as role (role)}
 					<!-- eslint-disable svelte/no-navigation-without-resolve -- caminho atual (já resolvido) + query -->
 					<a

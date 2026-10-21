@@ -165,3 +165,101 @@ form[aria-busy='true'] :is(button, input[type='submit']):disabled {
 	opacity: 0.55;
 	cursor: progress;
 }
+
+/* ─── Movimento (earlySetup.md §6.4.8, inspirado na beUI) ─────────────── */
+
+/* Pílula deslizante: atrás do item ativo, com uma curva de mola (leve quique ao parar). */
+.pill-indicator {
+	position: absolute;
+	top: 0;
+	left: 0;
+	z-index: 0;
+	pointer-events: none;
+	transition:
+		transform 520ms var(--spring-easing),
+		width 520ms var(--spring-easing),
+		height 520ms var(--spring-easing),
+		opacity 150ms ease-out;
+	will-change: transform, width;
+}
+:root {
+	--spring-easing: cubic-bezier(0.34, 1.32, 0.64, 1);
+}
+@supports (transition-timing-function: linear(0, 1)) {
+	:root {
+		/* Mola amortecida (stiffness ~300, damping ~24), amostrada em linear(). */
+		--spring-easing: linear(
+			0,
+			0.009,
+			0.035 2.1%,
+			0.141 4.4%,
+			0.723 12.9%,
+			0.938 16.7%,
+			1.017 19.4%,
+			1.067,
+			1.099 24.3%,
+			1.108 26%,
+			1.1 28%,
+			1.071 31.3%,
+			1.019 37.3%,
+			0.995 41.2%,
+			0.982 45.6%,
+			0.98 50.4%,
+			1.002 64.5%,
+			1
+		);
+	}
+}
+/* Itens por cima da pílula; o ativo perde o próprio fundo (a pílula faz esse papel). */
+[data-pill-ready] > :not(.pill-indicator) {
+	position: relative;
+	z-index: 1;
+}
+[data-pill-ready] :is([aria-current='page'], [aria-selected='true'], [aria-pressed='true']) {
+	background-color: transparent !important;
+	border-color: transparent !important;
+}
+/* Clique antes da página responder: o clicado já fica com o texto do ativo e o antigo volta
+   ao texto normal (só com pílula clara, onde o texto ativo é escuro). */
+[data-pill-light][data-pill-pending] [data-pill-target] {
+	color: var(--color-background) !important;
+}
+[data-pill-light][data-pill-pending]
+	:is([aria-current='page'], [aria-selected='true'], [aria-pressed='true']):not(
+		[data-pill-target]
+	) {
+	color: rgb(255 255 255 / 0.7) !important;
+}
+
+/* Inclinação 3D dos pôsteres (ação `tilt`): os filhos inclinam juntos, o brilho segue o mouse. */
+.tilt-surface {
+	transform: perspective(900px) rotateX(var(--tilt-rx, 0deg)) rotateY(var(--tilt-ry, 0deg))
+		scale(var(--tilt-scale, 1));
+	transition: transform 450ms cubic-bezier(0.2, 0.8, 0.2, 1);
+	transform-style: preserve-3d;
+}
+[data-tilting] .tilt-surface {
+	--tilt-scale: 1.025;
+	transition-duration: 120ms;
+}
+.tilt-glare {
+	pointer-events: none;
+	background: radial-gradient(
+		circle at var(--glare-x, 50%) var(--glare-y, 50%),
+		rgb(255 255 255 / 0.28),
+		transparent 55%
+	);
+	mix-blend-mode: soft-light;
+	opacity: 0;
+	transition: opacity 300ms ease-out;
+}
+[data-tilting] .tilt-glare {
+	opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.pill-indicator,
+	.tilt-surface {
+		transition: none;
+	}
+}
